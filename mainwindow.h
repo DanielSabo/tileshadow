@@ -3,6 +3,9 @@
 
 #include <QMainWindow>
 #include <QLabel>
+#include <QScopedPointer>
+#include "systeminfodialog.h"
+#include "canvaswidget.h"
 
 namespace Ui {
 class MainWindow;
@@ -18,10 +21,11 @@ public:
 
 private:
     Ui::MainWindow *ui;
-    QLabel *outputLabel;
+    QScopedPointer<SystemInfoDialog> infoWindow;
+    CanvasWidget *canvas;
 
 private slots:
-    void on_queryButton_clicked();
+    void showOpenCLInfo();
 };
 
 #endif // MAINWINDOW_H

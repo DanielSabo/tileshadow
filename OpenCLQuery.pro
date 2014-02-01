@@ -7,7 +7,7 @@ mac {
 cache()
 }
 
-QT       += core gui
+QT       += core gui opengl
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -18,11 +18,16 @@ TEMPLATE = app
 #QMAKE_CXXFLAGS += -std=gnu++0x
 
 SOURCES += main.cpp\
-        mainwindow.cpp
+        mainwindow.cpp \
+    systeminfodialog.cpp \
+    canvaswidget.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h \
+    systeminfodialog.h \
+    canvaswidget.h
 
-FORMS    += mainwindow.ui
+FORMS    += mainwindow.ui \
+    systeminfodialog.ui
 
 win32 {
     INCLUDEPATH += "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v5.5\include"
