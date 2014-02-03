@@ -13,7 +13,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    canvas = findChild<CanvasWidget*>("centralWidget");
+    canvas = findChild<CanvasWidget*>("mainCanvas");
 }
 
 MainWindow::~MainWindow()
