@@ -33,7 +33,7 @@ win32 {
     INCLUDEPATH += "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v5.5\include"
     LIBS += -L"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v5.5\lib\Win32" -lOpenCL
 } mac {
-    QMAKE_CXXFLAGS += -framework OpenCL
+    QMAKE_CXXFLAGS += -framework OpenCL -Qunused-arguments
     LIBS += -framework OpenCL
 } unix:!mac {
     LIBS += -lOpenCL
