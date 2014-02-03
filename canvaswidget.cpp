@@ -29,8 +29,21 @@ void _check_gl_error(const char *file, int line) {
         }
 }
 
+static QOpenGLFunctions_3_2_Core *glFuncs = NULL;
 
-static QOpenGLFunctions_3_2_Core *glFuncs;
+static inline GLint getShaderInt(GLuint program, GLenum pname)
+{
+    GLint value;
+    glFuncs->glGetShaderiv(program, pname, &value);
+    return value;
+}
+
+static inline GLint getProgramInt(GLuint program, GLenum pname)
+{
+    GLint value;
+    glFuncs->glGetProgramiv(program, pname, &value);
+    return value;
+}
 
 class CanvasWidget::CanvasContext
 {
@@ -75,17 +88,15 @@ static GLuint compileFile (QOpenGLFunctions_3_2_Core &gl,
     gl.glShaderSource(shader, 1, &source_str, NULL);
     gl.glCompileShader(shader);
 
-    GLint compiled;
-    gl.glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
-    if (!compiled) {
-        qWarning() << "Shader compile failed, couldn't build " << path;
-        GLint logSize;
-        gl.glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logSize);
+    if (!getShaderInt(shader, GL_COMPILE_STATUS)) {
+        GLint logSize = getShaderInt(shader, GL_INFO_LOG_LENGTH);
         char* logMsg = new char[logSize];
         gl.glGetShaderInfoLog(shader, logSize, NULL, logMsg);
-        qWarning() << logMsg;
-        delete[] logMsg;
 
+        qWarning() << "Shader compile failed, couldn't build " << path;
+        qWarning() << logMsg;
+
+        delete[] logMsg;
         gl.glDeleteShader(shader);
         return 0;
     }
@@ -121,35 +132,33 @@ CanvasWidget::~CanvasWidget()
     delete ctx;
 }
 
-
 void CanvasWidget::initializeGL()
 {
-    glFuncs = new QOpenGLFunctions_3_2_Core();
-    QOpenGLFunctions_3_2_Core &gl = *glFuncs;
-    gl.initializeOpenGLFunctions();
+    if (!glFuncs)
+        glFuncs = new QOpenGLFunctions_3_2_Core();
+    glFuncs->initializeOpenGLFunctions();
 
-    ctx->vertexShader = compileFile(gl, ":/CanvasShader.vert", GL_VERTEX_SHADER);
-    ctx->fragmentShader = compileFile(gl, ":/CanvasShader.frag", GL_FRAGMENT_SHADER);
+    ctx->vertexShader = compileFile(*glFuncs, ":/CanvasShader.vert", GL_VERTEX_SHADER);
+    ctx->fragmentShader = compileFile(*glFuncs, ":/CanvasShader.frag", GL_FRAGMENT_SHADER);
 
     if (ctx->vertexShader && ctx->fragmentShader)
     {
-        GLuint program = gl.glCreateProgram();
-        gl.glAttachShader(program, ctx->vertexShader);
-        gl.glAttachShader(program, ctx->fragmentShader);
-        gl.glBindFragDataLocation(program, 0, "fragColor");
-        gl.glLinkProgram(program);
+        GLuint program = glFuncs->glCreateProgram();
+        glFuncs->glAttachShader(program, ctx->vertexShader);
+        glFuncs->glAttachShader(program, ctx->fragmentShader);
+        glFuncs->glBindFragDataLocation(program, 0, "fragColor");
+        glFuncs->glLinkProgram(program);
 
-        GLint linked;
-        gl.glGetProgramiv(program, GL_LINK_STATUS, &linked);
-        if (!linked) {
-            qWarning() << "Failed to link shader";
-            GLint logSize;
-            gl.glGetProgramiv( program, GL_INFO_LOG_LENGTH, &logSize);
+        if (!getProgramInt(program, GL_LINK_STATUS)) {
+            GLint logSize = getProgramInt(program, GL_INFO_LOG_LENGTH);
             char* logMsg = new char[logSize];
-            gl.glGetProgramInfoLog(program, logSize, NULL, logMsg);
+            glFuncs->glGetProgramInfoLog(program, logSize, NULL, logMsg);
+
+            qWarning() << "Failed to link shader";
             qWarning() << logMsg;
+
             delete[] logMsg;
-            gl.glDeleteProgram(program);
+            glFuncs->glDeleteProgram(program);
             program = 0;
         }
 
@@ -157,44 +166,50 @@ void CanvasWidget::initializeGL()
     }
 
     float positionData[] = {
-            -0.2f, -0.2f, 0.0f,
-             0.2f, -0.2f, 0.0f,
-             0.2f,  0.2f, 0.0f
+            0.0f, 0.0f, 0.0f,
+            1.0f, 0.0f, 0.0f,
+            1.0f, 1.0f, 0.0f,
+            0.0f, 1.0f, 0.0f,
     };
 
-    gl.glGenBuffers(1, &ctx->vertexBuffer);
+    glFuncs->glGenBuffers(1, &ctx->vertexBuffer);
 
-    gl.glBindBuffer(GL_ARRAY_BUFFER, ctx->vertexBuffer);
-    gl.glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(float), positionData,
-                 GL_STATIC_DRAW);
+    glFuncs->glBindBuffer(GL_ARRAY_BUFFER, ctx->vertexBuffer);
+    glFuncs->glBufferData(GL_ARRAY_BUFFER, sizeof(positionData), positionData, GL_STATIC_DRAW);
 
-    gl.glGenVertexArrays(1, &ctx->vertexArray);
-    gl.glBindVertexArray(ctx->vertexArray);
-    gl.glEnableVertexAttribArray(0);
-    gl.glBindBuffer(GL_ARRAY_BUFFER, ctx->vertexBuffer);
-    gl.glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL);
+    glFuncs->glGenVertexArrays(1, &ctx->vertexArray);
+    glFuncs->glBindVertexArray(ctx->vertexArray);
+    glFuncs->glEnableVertexAttribArray(0);
+    glFuncs->glBindBuffer(GL_ARRAY_BUFFER, ctx->vertexBuffer);
+    glFuncs->glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL);
 
-
-//    cout << "GL Initialize" << endl;
-    glClearColor(0.2, 0.2, 0.4, 1.0);
+    glFuncs->glClearColor(0.2, 0.2, 0.4, 1.0);
 }
 
 void CanvasWidget::resizeGL(int w, int h)
 {
-    glViewport( 0, 0, qMax(w, 1), qMax(h, 1));
+    glFuncs->glViewport( 0, 0, qMax(w, 1), qMax(h, 1));
 }
 
 void CanvasWidget::paintGL()
 {
-    QOpenGLFunctions_3_2_Core &gl = *glFuncs;
+    GLuint locationTileOrigin = glFuncs->glGetUniformLocation(ctx->program, "tileOrigin");
 
-    glClear(GL_COLOR_BUFFER_BIT);
-    gl.glUseProgram(ctx->program);
-    check_gl_error();
-    gl.glBindVertexArray(ctx->vertexArray);
-    check_gl_error();
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-    check_gl_error();
-    gl.glUseProgram(0);
-    check_gl_error();
+    glFuncs->glClear(GL_COLOR_BUFFER_BIT);
+    glFuncs->glUseProgram(ctx->program);
+    glFuncs->glBindVertexArray(ctx->vertexArray);
+
+    glFuncs->glUniform2f(locationTileOrigin, -1, -1);
+    glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+    glFuncs->glUniform2f(locationTileOrigin, 0, -1);
+    glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+    glFuncs->glUniform2f(locationTileOrigin, -1, 0);
+    glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+    glFuncs->glUniform2f(locationTileOrigin, 0, 0);
+    glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+    glFuncs->glUseProgram(0);
 }
