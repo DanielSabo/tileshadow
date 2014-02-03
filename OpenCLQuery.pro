@@ -39,3 +39,10 @@ win32 {
     LIBS += -lOpenCL
 }
 
+OTHER_FILES += \
+    CanvasShader.frag \
+    CanvasShader.vert
+
+RESOURCES += \
+    Resources.qrc
+
