@@ -1,6 +1,7 @@
 #include "systeminfodialog.h"
 #include "ui_systeminfodialog.h"
 
+#include <QOpenGLFunctions_3_2_Core>
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
 #else
@@ -16,6 +17,30 @@ SystemInfoDialog::SystemInfoDialog(QWidget *parent) :
     outputLabel = findChild<QLabel*>("queryOutput");
 }
 
+void addSectionHeader(QString &str, const char *name)
+{
+   str.append("<div class=\"sectionHeader\">");
+   str.append(name);
+   str.append("</div>\n");
+}
+
+void addPlatformHeader(QString &str, const char *name)
+{
+    str.append("<div class=\"platformHeader\">");
+    str.append(name);
+    str.append("</div>\n");
+}
+
+void addPlatformValue(QString &str, const char *name, const char *value)
+{
+    str.append("<div class=\"platformValue\">");
+    if (name && strlen(name))
+        str.append(name).append(": ");
+    str.append(value);
+    str.append("</div>\n");
+
+}
+
 void SystemInfoDialog::showEvent(QShowEvent *event)
 {
     (void)event;
@@ -29,7 +54,28 @@ void SystemInfoDialog::showEvent(QShowEvent *event)
         unsigned int num_platforms;
         clGetPlatformIDs (0, NULL, &num_platforms);
 
-        queryResultString->append(QString("Platforms: %1\n").arg(num_platforms));
+        QOpenGLFunctions_3_2_Core gl = QOpenGLFunctions_3_2_Core();
+        gl.initializeOpenGLFunctions();
+
+        queryResultString->append("<html><head>\n");
+
+        queryResultString->append("<style>\n");
+        queryResultString->append(".queryContent { }\n");
+        queryResultString->append(".sectionHeader { font-size: x-large; font-weight: bold;  }\n");
+        queryResultString->append(".platformHeader { font-weight: bold; margin-left: 10px; }\n");
+        queryResultString->append(".platformValue { margin-left: 20px; white-space: normal; }\n");
+        queryResultString->append("</style>\n");
+
+        queryResultString->append("</head><body><div class=\"queryContent\">\n");
+
+        addSectionHeader(*queryResultString, "OpenGL");
+
+        addPlatformHeader(*queryResultString, (const char *)gl.glGetString(GL_VENDOR));
+        addPlatformValue(*queryResultString, "Renderer", (const char *)gl.glGetString(GL_RENDERER));
+        addPlatformValue(*queryResultString, "GL Version", (const char *)gl.glGetString(GL_VERSION));
+        addPlatformValue(*queryResultString, "GLSL Version", (const char *)gl.glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+        addSectionHeader(*queryResultString, "OpenCL");
 
         unsigned int platform_idx;
 
@@ -38,18 +84,22 @@ void SystemInfoDialog::showEvent(QShowEvent *event)
 
         for (platform_idx = 0; platform_idx < num_platforms; ++platform_idx)
         {
-            char platform_name[1024];
-            clGetPlatformInfo (platforms[platform_idx], CL_PLATFORM_NAME, sizeof(platform_name), platform_name, NULL);
+            char platform_str[1024];
+            clGetPlatformInfo (platforms[platform_idx], CL_PLATFORM_NAME, sizeof(platform_str), platform_str, NULL);
+            addPlatformHeader(*queryResultString, platform_str);
 
-            QString formatted_platform_id;
-            formatted_platform_id.sprintf("%p", platforms[platform_idx]);
-
-            QString platform_desc = QString("%2 %3\n").arg(formatted_platform_id).arg(platform_name);
-
-            queryResultString->append(platform_desc);
+            clGetPlatformInfo (platforms[platform_idx], CL_PLATFORM_VERSION, sizeof(platform_str), platform_str, NULL);
+            addPlatformValue(*queryResultString, NULL, platform_str);
+#if 0
+            clGetPlatformInfo (platforms[platform_idx], CL_PLATFORM_EXTENSIONS, sizeof(platform_str), platform_str, NULL);
+            addPlatformValue(*queryResultString, NULL, platform_str);
+#endif
         }
 
         delete[] platforms;
+
+        queryResultString->append("</div>\n");
+        queryResultString->append("</body>\n");
     }
 
     outputLabel->setText(*queryResultString);
