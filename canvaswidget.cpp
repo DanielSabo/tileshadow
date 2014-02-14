@@ -45,13 +45,27 @@ static inline GLint getProgramInt(GLuint program, GLenum pname)
     return value;
 }
 
+static inline void setBufferData(GLuint bufferObj, GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage)
+{
+
+    glFuncs->glBindBuffer(target, bufferObj);
+    glFuncs->glBufferData(target, size, data, usage);
+    glFuncs->glBindBuffer(target, 0);
+}
+
+static const int TILE_PIXEL_WIDTH  = 64;
+static const int TILE_PIXEL_HEIGHT = 64;
+
 class CanvasWidget::CanvasContext
 {
 public:
     CanvasContext() : vertexShader(0),
                       fragmentShader(0),
                       program(0),
-                      vertexBuffer(0) {}
+                      vertexBuffer(0),
+                      tileWidth(0),
+                      tileHeight(0),
+                      testPatternTex(0) {}
 
     GLuint vertexShader;
     GLuint fragmentShader;
@@ -60,6 +74,12 @@ public:
 
     GLuint vertexBuffer;
     GLuint vertexArray;
+
+    int tileWidth;
+    int tileHeight;
+
+    GLuint testPatternBuffer;
+    GLuint testPatternTex;
 };
 
 static GLuint compileFile (QOpenGLFunctions_3_2_Core &gl,
@@ -171,9 +191,40 @@ void CanvasWidget::initializeGL()
     glFuncs->glBindBuffer(GL_ARRAY_BUFFER, ctx->vertexBuffer);
 
     glFuncs->glEnableVertexAttribArray(0);
-    glFuncs->glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL);
+    glFuncs->glVertexAttribPointer( 0, 2, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL);
+    glFuncs->glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glFuncs->glBindVertexArray(0);
 
-    glFuncs->glClearColor(0.2, 0.2, 0.4, 1.0);
+    QImage tileDataImg = QImage(QString(":/TestPatternTile.png"));
+
+    if (tileDataImg.isNull())
+        qWarning() << "Failed to load test pattern.";
+    else if (QImage::Format_RGB32 != tileDataImg.format())
+        qWarning() << "Test pattern image has the wrong format.";
+    else
+    {
+        cout << "Test Image:" << tileDataImg.width() << "x" << tileDataImg.height() << " " << tileDataImg.byteCount() << endl;
+
+        glFuncs->glGenBuffers(1, &ctx->testPatternBuffer);
+        glFuncs->glGenTextures(1, &ctx->testPatternTex);
+        glFuncs->glBindTexture(GL_TEXTURE_2D, ctx->testPatternTex);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, ctx->testPatternBuffer);
+        glFuncs->glBufferData(GL_PIXEL_UNPACK_BUFFER,
+                              tileDataImg.byteCount(),
+                              (const uchar *)tileDataImg.bits(),
+                              GL_DYNAMIC_DRAW);
+        check_gl_error();
+        glFuncs->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tileDataImg.width(), tileDataImg.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+        check_gl_error();
+        glFuncs->glBindTexture(GL_TEXTURE_2D, 0);
+        glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+    }
 }
 
 void CanvasWidget::resizeGL(int w, int h)
@@ -181,10 +232,9 @@ void CanvasWidget::resizeGL(int w, int h)
     glFuncs->glViewport( 0, 0, qMax(w, 1), qMax(h, 1));
 }
 
+
 void CanvasWidget::paintGL()
 {
-    const int TILE_PIXEL_WIDTH  = 64;
-    const int TILE_PIXEL_HEIGHT = 64;
     int ix, iy;
 
     int widgetWidth  = width();
@@ -194,29 +244,29 @@ void CanvasWidget::paintGL()
     float tileHeight = (2.0f * TILE_PIXEL_HEIGHT) / (widgetHeight);
 
     float positionData[] = {
-        0.0f,      0.0f,       0.0f,
-        tileWidth, 0.0f,       0.0f,
-        tileWidth, tileHeight, 0.0f,
-        0.0f,      tileHeight, 0.0f,
-    };
-
-    float texData[] = {
         0.0f, 0.0f,
         1.0f, 0.0f,
         1.0f, 1.0f,
         0.0f, 1.0f,
     };
 
+    setBufferData(ctx->vertexBuffer, GL_ARRAY_BUFFER, sizeof(positionData), positionData, GL_STATIC_DRAW);
+
     GLuint locationTileOrigin = glFuncs->glGetUniformLocation(ctx->program, "tileOrigin");
     GLuint locationTileSize   = glFuncs->glGetUniformLocation(ctx->program, "tileSize");
+    GLuint locationTileImage  = glFuncs->glGetUniformLocation(ctx->program, "tileImage");
 
+    glFuncs->glClearColor(0.2, 0.2, 0.4, 1.0);
     glFuncs->glClear(GL_COLOR_BUFFER_BIT);
-    glFuncs->glUseProgram(ctx->program);
-    glFuncs->glUniform2f(locationTileSize, tileWidth, tileHeight);
 
-    glFuncs->glBindBuffer(GL_ARRAY_BUFFER, ctx->vertexBuffer);
+    glFuncs->glUseProgram(ctx->program);
+
+    glFuncs->glActiveTexture(GL_TEXTURE0);
+    glFuncs->glBindTexture(GL_TEXTURE_2D, ctx->testPatternTex);
+    glFuncs->glUniform1i(locationTileImage, 0);
+
+    glFuncs->glUniform2f(locationTileSize, tileWidth, tileHeight);
     glFuncs->glBindVertexArray(ctx->vertexArray);
-    glFuncs->glBufferData(GL_ARRAY_BUFFER, sizeof(positionData), positionData, GL_DYNAMIC_DRAW);
 
     for (ix = 0; ix < widgetWidth; ix += TILE_PIXEL_WIDTH)
         for (iy = 0; iy < widgetHeight; iy += TILE_PIXEL_HEIGHT)
@@ -229,4 +279,7 @@ void CanvasWidget::paintGL()
         }
 
     glFuncs->glUseProgram(0);
+
+    glFuncs->glBindTexture(GL_TEXTURE_2D, 0);
+    glFuncs->glBindVertexArray(0);
 }
