@@ -8,5 +8,5 @@ uniform vec2 tileSize;
 void main( void )
 {
     gl_Position = vec4(vertex.xy + tileOrigin, 1.0, 1.0);
-    vertCoord = vec2(vertex.xy);
+    vertCoord = vec2(vertex.xy / tileSize.xy);
 }

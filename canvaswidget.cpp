@@ -165,22 +165,12 @@ void CanvasWidget::initializeGL()
         ctx->program = program;
     }
 
-    float positionData[] = {
-            0.0f, 0.0f, 0.0f,
-            1.0f, 0.0f, 0.0f,
-            1.0f, 1.0f, 0.0f,
-            0.0f, 1.0f, 0.0f,
-    };
-
     glFuncs->glGenBuffers(1, &ctx->vertexBuffer);
-
-    glFuncs->glBindBuffer(GL_ARRAY_BUFFER, ctx->vertexBuffer);
-    glFuncs->glBufferData(GL_ARRAY_BUFFER, sizeof(positionData), positionData, GL_STATIC_DRAW);
-
     glFuncs->glGenVertexArrays(1, &ctx->vertexArray);
     glFuncs->glBindVertexArray(ctx->vertexArray);
-    glFuncs->glEnableVertexAttribArray(0);
     glFuncs->glBindBuffer(GL_ARRAY_BUFFER, ctx->vertexBuffer);
+
+    glFuncs->glEnableVertexAttribArray(0);
     glFuncs->glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL);
 
     glFuncs->glClearColor(0.2, 0.2, 0.4, 1.0);
@@ -193,23 +183,50 @@ void CanvasWidget::resizeGL(int w, int h)
 
 void CanvasWidget::paintGL()
 {
+    const int TILE_PIXEL_WIDTH  = 64;
+    const int TILE_PIXEL_HEIGHT = 64;
+    int ix, iy;
+
+    int widgetWidth  = width();
+    int widgetHeight = height();
+
+    float tileWidth  = (2.0f * TILE_PIXEL_WIDTH) / (widgetWidth);
+    float tileHeight = (2.0f * TILE_PIXEL_HEIGHT) / (widgetHeight);
+
+    float positionData[] = {
+        0.0f,      0.0f,       0.0f,
+        tileWidth, 0.0f,       0.0f,
+        tileWidth, tileHeight, 0.0f,
+        0.0f,      tileHeight, 0.0f,
+    };
+
+    float texData[] = {
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+        1.0f, 1.0f,
+        0.0f, 1.0f,
+    };
+
     GLuint locationTileOrigin = glFuncs->glGetUniformLocation(ctx->program, "tileOrigin");
+    GLuint locationTileSize   = glFuncs->glGetUniformLocation(ctx->program, "tileSize");
 
     glFuncs->glClear(GL_COLOR_BUFFER_BIT);
     glFuncs->glUseProgram(ctx->program);
+    glFuncs->glUniform2f(locationTileSize, tileWidth, tileHeight);
+
+    glFuncs->glBindBuffer(GL_ARRAY_BUFFER, ctx->vertexBuffer);
     glFuncs->glBindVertexArray(ctx->vertexArray);
+    glFuncs->glBufferData(GL_ARRAY_BUFFER, sizeof(positionData), positionData, GL_DYNAMIC_DRAW);
 
-    glFuncs->glUniform2f(locationTileOrigin, -1, -1);
-    glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    for (ix = 0; ix < widgetWidth; ix += TILE_PIXEL_WIDTH)
+        for (iy = 0; iy < widgetHeight; iy += TILE_PIXEL_HEIGHT)
+        {
+            float offsetX = (ix / TILE_PIXEL_WIDTH) * tileWidth - 1.0f;
+            float offsetY = (iy / TILE_PIXEL_HEIGHT) * tileHeight - 1.0f;
 
-    glFuncs->glUniform2f(locationTileOrigin, 0, -1);
-    glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-    glFuncs->glUniform2f(locationTileOrigin, -1, 0);
-    glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-    glFuncs->glUniform2f(locationTileOrigin, 0, 0);
-    glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+            glFuncs->glUniform2f(locationTileOrigin, offsetX, offsetY);
+            glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        }
 
     glFuncs->glUseProgram(0);
 }
