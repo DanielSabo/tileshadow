@@ -190,6 +190,15 @@ void CanvasWidget::initializeGL()
     glFuncs->glBindVertexArray(ctx->vertexArray);
     glFuncs->glBindBuffer(GL_ARRAY_BUFFER, ctx->vertexBuffer);
 
+    float positionData[] = {
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+        1.0f, 1.0f,
+        0.0f, 1.0f,
+    };
+
+    glFuncs->glBufferData(GL_ARRAY_BUFFER, sizeof(positionData), positionData, GL_STATIC_DRAW);
+
     glFuncs->glEnableVertexAttribArray(0);
     glFuncs->glVertexAttribPointer( 0, 2, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL);
     glFuncs->glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -242,15 +251,6 @@ void CanvasWidget::paintGL()
 
     float tileWidth  = (2.0f * TILE_PIXEL_WIDTH) / (widgetWidth);
     float tileHeight = (2.0f * TILE_PIXEL_HEIGHT) / (widgetHeight);
-
-    float positionData[] = {
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f,
-    };
-
-    setBufferData(ctx->vertexBuffer, GL_ARRAY_BUFFER, sizeof(positionData), positionData, GL_STATIC_DRAW);
 
     GLuint locationTileOrigin = glFuncs->glGetUniformLocation(ctx->program, "tileOrigin");
     GLuint locationTileSize   = glFuncs->glGetUniformLocation(ctx->program, "tileSize");
