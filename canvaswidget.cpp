@@ -268,11 +268,11 @@ void CanvasWidget::paintGL()
     glFuncs->glUniform2f(locationTileSize, tileWidth, tileHeight);
     glFuncs->glBindVertexArray(ctx->vertexArray);
 
-    for (ix = 0; ix < widgetWidth; ix += TILE_PIXEL_WIDTH)
-        for (iy = 0; iy < widgetHeight; iy += TILE_PIXEL_HEIGHT)
+    for (ix = 0; ix * TILE_PIXEL_WIDTH < widgetWidth; ++ix)
+        for (iy = 0; iy * TILE_PIXEL_HEIGHT < widgetHeight; ++iy)
         {
-            float offsetX = (ix / TILE_PIXEL_WIDTH) * tileWidth - 1.0f;
-            float offsetY = (iy / TILE_PIXEL_HEIGHT) * tileHeight - 1.0f;
+            float offsetX = (ix * tileWidth) - 1.0f;
+            float offsetY = 1.0f - ((iy + 1) * tileHeight);
 
             glFuncs->glUniform2f(locationTileOrigin, offsetX, offsetY);
             glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
