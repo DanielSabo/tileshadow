@@ -68,6 +68,16 @@ public:
     GLuint  tileTex;
 };
 
+class StrokeContext
+{
+public:
+    StrokeContext() : inStroke(false) {}
+
+    bool    inStroke;
+    QPointF start;
+    QPointF lastDab;
+};
+
 class CanvasWidget::CanvasContext
 {
 public:
@@ -92,6 +102,8 @@ public:
 
     GLuint testPatternBuffer;
     GLuint testPatternTex;
+
+    StrokeContext stroke;
 
     std::map<uint64_t, CanvasTile *> tiles;
 
@@ -350,27 +362,28 @@ void CanvasWidget::paintGL()
     glFuncs->glBindVertexArray(0);
 }
 
-
-void CanvasWidget::mousePressEvent(QMouseEvent *event)
+static void drawDab(CanvasWidget::CanvasContext *ctx, QMouseEvent *event)
 {
     static const int TILE_COMP_COUNT = TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT * 4;
-    int i;
     int ix = event->x() / TILE_PIXEL_WIDTH;
     int iy = event->y() / TILE_PIXEL_HEIGHT;
-    // cout << "Click! " << ix << ", " << iy << endl;
     CanvasTile *tile = ctx->getTile(ix, iy);
+
+    int offsetX = event->x() - (ix * TILE_PIXEL_WIDTH);
+    int offsetY = event->y() - (iy * TILE_PIXEL_HEIGHT);
 
     float pixel[4] = {1.0f, 1.0f, 1.0f, 1.0f, };
 
     pixel[(ix + iy) % 3] = 0.0f;
 
-    for (i = 0; i < TILE_COMP_COUNT; i += 4)
-    {
-        tile->tileData[i + 0] = pixel[0];
-        tile->tileData[i + 1] = pixel[1];
-        tile->tileData[i + 2] = pixel[2];
-        tile->tileData[i + 3] = pixel[3];
-    }
+    float *writePixel = tile->tileData + (TILE_PIXEL_WIDTH * offsetY + offsetX) * 4;
+
+    writePixel[0] = pixel[0];
+    writePixel[1] = pixel[1];
+    writePixel[2] = pixel[2];
+    writePixel[3] = pixel[3];
+
+    ctx->stroke.lastDab = event->localPos();
 
     glFuncs->glBindTexture(GL_TEXTURE_2D, tile->tileTex);
     glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, tile->tileBuffer);
@@ -381,7 +394,15 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
     glFuncs->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT, 0, GL_BGRA, GL_FLOAT, 0);
     glFuncs->glBindTexture(GL_TEXTURE_2D, 0);
     glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+}
 
+void CanvasWidget::mousePressEvent(QMouseEvent *event)
+{
+    // cout << "Click! " << ix << ", " << iy << endl;
+    ctx->stroke.inStroke = true;
+    ctx->stroke.start = event->localPos();
+
+    drawDab(ctx, event);
     update();
 
     QGLWidget::mousePressEvent(event);
@@ -389,9 +410,15 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
 void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
 {
     // cout << "Un-Click!" << endl;
+    ctx->stroke.inStroke = false;
     QGLWidget::mouseReleaseEvent(event);
 }
 void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
 {
+    if (ctx->stroke.lastDab != event->localPos())
+    {
+        drawDab(ctx, event);
+        update();
+    }
     QGLWidget::mouseMoveEvent(event);
 }

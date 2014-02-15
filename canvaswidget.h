@@ -10,6 +10,7 @@ public:
     explicit CanvasWidget(QWidget *parent = 0);
     virtual  ~CanvasWidget();
 
+    class CanvasContext;
 protected:
     void initializeGL();
     void resizeGL(int w, int h);
@@ -20,7 +21,6 @@ protected:
     void mouseMoveEvent(QMouseEvent * event);
 
 private:
-    class CanvasContext;
     CanvasContext *ctx;
 
 signals:
