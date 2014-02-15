@@ -1,5 +1,7 @@
 #include "canvaswidget.h"
 #include <iostream>
+#include <map>
+#include <QMouseEvent>
 #include <QFile>
 #include <QDebug>
 #include <QOpenGLFunctions_3_2_Core>
@@ -56,6 +58,16 @@ static inline void setBufferData(GLuint bufferObj, GLenum target, GLsizeiptr siz
 static const int TILE_PIXEL_WIDTH  = 64;
 static const int TILE_PIXEL_HEIGHT = 64;
 
+class CanvasTile
+{
+public:
+    CanvasTile() {}
+
+    float  *tileData;
+    GLuint  tileBuffer;
+    GLuint  tileTex;
+};
+
 class CanvasWidget::CanvasContext
 {
 public:
@@ -80,7 +92,59 @@ public:
 
     GLuint testPatternBuffer;
     GLuint testPatternTex;
+
+    std::map<uint64_t, CanvasTile *> tiles;
+
+    CanvasTile *getTile(int x, int y);
 };
+
+CanvasTile *
+CanvasWidget::CanvasContext::getTile(int x, int y)
+{
+    static const int TILE_COMP_COUNT = TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT * 4;
+    int i;
+    uint64_t key = (uint64_t)(x & 0xFFFFFFFF) | (uint64_t)(y & 0xFFFFFFFF) << 32;
+
+    std::map<uint64_t, CanvasTile *>::iterator found = tiles.find(key);
+
+    if (found != tiles.end())
+        return found->second;
+
+    CanvasTile *tile = new CanvasTile();
+
+    tile->tileData = new float[TILE_COMP_COUNT];
+
+    for (i = 0; i < TILE_COMP_COUNT; i += 4)
+    {
+        tile->tileData[i + 0] = 1.0f;
+        tile->tileData[i + 1] = 1.0f;
+        tile->tileData[i + 2] = 1.0f;
+        tile->tileData[i + 3] = 1.0f;
+    }
+
+    glFuncs->glGenBuffers(1, &tile->tileBuffer);
+    glFuncs->glGenTextures(1, &tile->tileTex);
+    glFuncs->glBindTexture(GL_TEXTURE_2D, tile->tileTex);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, tile->tileBuffer);
+    glFuncs->glBufferData(GL_PIXEL_UNPACK_BUFFER,
+                          sizeof(float) * TILE_COMP_COUNT,
+                          tile->tileData,
+                          GL_DYNAMIC_DRAW);
+    glFuncs->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT, 0, GL_BGRA, GL_FLOAT, 0);
+    glFuncs->glBindTexture(GL_TEXTURE_2D, 0);
+    glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+    cout << "Added tile at " << x << "," << y << endl;
+    tiles[key] = tile;
+
+    return tile;
+}
 
 static GLuint compileFile (QOpenGLFunctions_3_2_Core &gl,
                            const QString &path,
@@ -241,7 +305,6 @@ void CanvasWidget::resizeGL(int w, int h)
     glFuncs->glViewport( 0, 0, qMax(w, 1), qMax(h, 1));
 }
 
-
 void CanvasWidget::paintGL()
 {
     int ix, iy;
@@ -274,6 +337,9 @@ void CanvasWidget::paintGL()
             float offsetX = (ix * tileWidth) - 1.0f;
             float offsetY = 1.0f - ((iy + 1) * tileHeight);
 
+            CanvasTile *tile = ctx->getTile(ix, iy);
+            glFuncs->glBindTexture(GL_TEXTURE_2D, tile->tileTex);
+
             glFuncs->glUniform2f(locationTileOrigin, offsetX, offsetY);
             glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
@@ -282,4 +348,50 @@ void CanvasWidget::paintGL()
 
     glFuncs->glBindTexture(GL_TEXTURE_2D, 0);
     glFuncs->glBindVertexArray(0);
+}
+
+
+void CanvasWidget::mousePressEvent(QMouseEvent *event)
+{
+    static const int TILE_COMP_COUNT = TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT * 4;
+    int i;
+    int ix = event->x() / TILE_PIXEL_WIDTH;
+    int iy = event->y() / TILE_PIXEL_HEIGHT;
+    // cout << "Click! " << ix << ", " << iy << endl;
+    CanvasTile *tile = ctx->getTile(ix, iy);
+
+    float pixel[4] = {1.0f, 1.0f, 1.0f, 1.0f, };
+
+    pixel[(ix + iy) % 3] = 0.0f;
+
+    for (i = 0; i < TILE_COMP_COUNT; i += 4)
+    {
+        tile->tileData[i + 0] = pixel[0];
+        tile->tileData[i + 1] = pixel[1];
+        tile->tileData[i + 2] = pixel[2];
+        tile->tileData[i + 3] = pixel[3];
+    }
+
+    glFuncs->glBindTexture(GL_TEXTURE_2D, tile->tileTex);
+    glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, tile->tileBuffer);
+    glFuncs->glBufferData(GL_PIXEL_UNPACK_BUFFER,
+                          sizeof(float) * TILE_COMP_COUNT,
+                          tile->tileData,
+                          GL_DYNAMIC_DRAW);
+    glFuncs->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT, 0, GL_BGRA, GL_FLOAT, 0);
+    glFuncs->glBindTexture(GL_TEXTURE_2D, 0);
+    glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+    update();
+
+    QGLWidget::mousePressEvent(event);
+}
+void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
+{
+    // cout << "Un-Click!" << endl;
+    QGLWidget::mouseReleaseEvent(event);
+}
+void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
+{
+    QGLWidget::mouseMoveEvent(event);
 }

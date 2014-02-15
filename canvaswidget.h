@@ -15,6 +15,10 @@ protected:
     void resizeGL(int w, int h);
     void paintGL();
 
+    void mousePressEvent(QMouseEvent * event);
+    void mouseReleaseEvent(QMouseEvent * event);
+    void mouseMoveEvent(QMouseEvent * event);
+
 private:
     class CanvasContext;
     CanvasContext *ctx;
