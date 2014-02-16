@@ -20,11 +20,13 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     systeminfodialog.cpp \
-    canvaswidget.cpp
+    canvaswidget.cpp \
+    canvaswidget-opencl.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
-    canvaswidget.h
+    canvaswidget.h \
+    canvaswidget-opencl.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui
@@ -42,6 +44,7 @@ win32 {
 OTHER_FILES += \
     CanvasShader.frag \
     CanvasShader.vert \
+    BaseKernels.cl
 
 RESOURCES += \
     Resources.qrc

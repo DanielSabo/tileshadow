@@ -1,4 +1,5 @@
 #include "canvaswidget.h"
+#include "canvaswidget-opencl.h"
 #include <iostream>
 #include <map>
 #include <list>
@@ -59,12 +60,16 @@ static inline void setBufferData(GLuint bufferObj, GLenum target, GLsizeiptr siz
 
 static const int TILE_PIXEL_WIDTH  = 64;
 static const int TILE_PIXEL_HEIGHT = 64;
+static const int TILE_COMP_TOTAL = TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT * 4;
 
 class CanvasTile
 {
 public:
-    CanvasTile() {}
+    CanvasTile();
+    ~CanvasTile();
 
+    bool    isOpen;
+    cl_mem  tileMem;
     float  *tileData;
     GLuint  tileBuffer;
     GLuint  tileTex;
@@ -104,14 +109,29 @@ public:
     StrokeContext stroke;
 
     std::map<uint64_t, CanvasTile *> tiles;
+    std::list<CanvasTile *> openTiles;
 
     CanvasTile *getTile(int x, int y);
+    cl_mem clOpenTile(CanvasTile *tile);
+    float *openTile(CanvasTile *tile);
+    void closeTile(CanvasTile *tile);
+    void closeTiles(void);
 };
+
+CanvasTile::CanvasTile()
+{
+    isOpen = false;
+    tileMem = 0;
+    tileData = new float[TILE_COMP_TOTAL];
+}
+
+CanvasTile::~CanvasTile()
+{
+    delete[] tileData;
+}
 
 CanvasTile *CanvasWidget::CanvasContext::getTile(int x, int y)
 {
-    static const int TILE_COMP_COUNT = TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT * 4;
-    int i;
     uint64_t key = (uint64_t)(x & 0xFFFFFFFF) | (uint64_t)(y & 0xFFFFFFFF) << 32;
 
     std::map<uint64_t, CanvasTile *>::iterator found = tiles.find(key);
@@ -121,15 +141,20 @@ CanvasTile *CanvasWidget::CanvasContext::getTile(int x, int y)
 
     CanvasTile *tile = new CanvasTile();
 
-    tile->tileData = new float[TILE_COMP_COUNT];
+    cl_int err = CL_SUCCESS;
+    cl_mem data = clOpenTile(tile);
+    cl_kernel kernel = SharedOpenCL::getSharedOpenCL()->fillKernel;
+    const size_t global_work_size[2] = {TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT};
+    float pixel[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+    cl_int stride = TILE_PIXEL_WIDTH;
 
-    for (i = 0; i < TILE_COMP_COUNT; i += 4)
-    {
-        tile->tileData[i + 0] = 1.0f;
-        tile->tileData[i + 1] = 1.0f;
-        tile->tileData[i + 2] = 1.0f;
-        tile->tileData[i + 3] = 1.0f;
-    }
+    err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&data);
+    err = clSetKernelArg(kernel, 1, sizeof(cl_int), (void *)&stride);
+    err = clSetKernelArg(kernel, 2, sizeof(cl_float4), (void *)&pixel);
+    err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
+                                 kernel, 2,
+                                 NULL, global_work_size, NULL,
+                                 0, NULL, NULL);
 
     glFuncs->glGenBuffers(1, &tile->tileBuffer);
     glFuncs->glGenTextures(1, &tile->tileTex);
@@ -139,20 +164,84 @@ CanvasTile *CanvasWidget::CanvasContext::getTile(int x, int y)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, tile->tileBuffer);
-    glFuncs->glBufferData(GL_PIXEL_UNPACK_BUFFER,
-                          sizeof(float) * TILE_COMP_COUNT,
-                          tile->tileData,
-                          GL_DYNAMIC_DRAW);
-    glFuncs->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT, 0, GL_BGRA, GL_FLOAT, 0);
     glFuncs->glBindTexture(GL_TEXTURE_2D, 0);
     glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+    closeTile(tile);
 
     // cout << "Added tile at " << x << "," << y << endl;
     tiles[key] = tile;
 
     return tile;
+}
+
+cl_mem CanvasWidget::CanvasContext::clOpenTile(CanvasTile *tile)
+{
+    if (!tile->tileMem)
+    {
+        tile->tileMem = clCreateBuffer (SharedOpenCL::getSharedOpenCL()->ctx, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
+                                        TILE_COMP_TOTAL * sizeof(float), tile->tileData, NULL);
+    }
+
+    if (!tile->isOpen)
+    {
+        openTiles.push_front(tile);
+    }
+
+    tile->isOpen = true;
+
+    return tile->tileMem;
+}
+
+float *CanvasWidget::CanvasContext::openTile(CanvasTile *tile)
+{
+    if (!tile->isOpen)
+    {
+        openTiles.push_front(tile);
+    }
+
+    tile->isOpen = true;
+
+    return tile->tileData;
+}
+
+void CanvasWidget::CanvasContext::closeTile(CanvasTile *tile)
+{
+    if (!tile->isOpen)
+        return;
+
+    if (tile->tileMem)
+    {
+        clEnqueueReadBuffer(SharedOpenCL::getSharedOpenCL()->cmdQueue, tile->tileMem, CL_TRUE, 0,
+                            TILE_COMP_TOTAL * sizeof(float), tile->tileData, 0, NULL, NULL);
+        clReleaseMemObject(tile->tileMem);
+        tile->tileMem = 0;
+    }
+
+    /* Push the new data to OpenGL */
+    glFuncs->glBindTexture(GL_TEXTURE_2D, tile->tileTex);
+    glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, tile->tileBuffer);
+    glFuncs->glBufferData(GL_PIXEL_UNPACK_BUFFER,
+                          sizeof(float) * TILE_COMP_TOTAL,
+                          tile->tileData,
+                          GL_DYNAMIC_DRAW);
+    glFuncs->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT, 0, GL_RGBA, GL_FLOAT, 0);
+    glFuncs->glBindTexture(GL_TEXTURE_2D, 0);
+    glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+    tile->isOpen = false;
+}
+
+void CanvasWidget::CanvasContext::closeTiles(void)
+{
+    while(!openTiles.empty())
+    {
+        CanvasTile *tile = openTiles.front();
+
+        closeTile(tile);
+
+        openTiles.pop_front();
+    }
 }
 
 static GLuint compileFile (QOpenGLFunctions_3_2_Core &gl,
@@ -277,6 +366,7 @@ void CanvasWidget::initializeGL()
     glFuncs->glBindBuffer(GL_ARRAY_BUFFER, 0);
     glFuncs->glBindVertexArray(0);
 
+    SharedOpenCL::getSharedOpenCL();
 }
 
 void CanvasWidget::resizeGL(int w, int h)
@@ -286,6 +376,8 @@ void CanvasWidget::resizeGL(int w, int h)
 
 void CanvasWidget::paintGL()
 {
+    ctx->closeTiles();
+
     int ix, iy;
 
     int widgetWidth  = width();
@@ -329,10 +421,11 @@ void CanvasWidget::paintGL()
 
 static void drawDab(CanvasWidget::CanvasContext *ctx, QPointF point)
 {
-    static const int TILE_COMP_COUNT = TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT * 4;
     int ix = point.x() / TILE_PIXEL_WIDTH;
     int iy = point.y() / TILE_PIXEL_HEIGHT;
     CanvasTile *tile = ctx->getTile(ix, iy);
+
+    ctx->openTile(tile);
 
     int offsetX = point.x() - (ix * TILE_PIXEL_WIDTH);
     int offsetY = point.y() - (iy * TILE_PIXEL_HEIGHT);
@@ -347,16 +440,6 @@ static void drawDab(CanvasWidget::CanvasContext *ctx, QPointF point)
     writePixel[1] = pixel[1];
     writePixel[2] = pixel[2];
     writePixel[3] = pixel[3];
-
-    glFuncs->glBindTexture(GL_TEXTURE_2D, tile->tileTex);
-    glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, tile->tileBuffer);
-    glFuncs->glBufferData(GL_PIXEL_UNPACK_BUFFER,
-                          sizeof(float) * TILE_COMP_COUNT,
-                          tile->tileData,
-                          GL_DYNAMIC_DRAW);
-    glFuncs->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT, 0, GL_BGRA, GL_FLOAT, 0);
-    glFuncs->glBindTexture(GL_TEXTURE_2D, 0);
-    glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
     ctx->stroke.lastDab = point;
 }
