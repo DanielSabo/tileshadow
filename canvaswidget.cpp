@@ -452,25 +452,45 @@ void CanvasWidget::paintGL()
 
 static void drawDab(CanvasWidget::CanvasContext *ctx, QPointF point)
 {
-    int ix = point.x() / TILE_PIXEL_WIDTH;
-    int iy = point.y() / TILE_PIXEL_HEIGHT;
-    CanvasTile *tile = ctx->getTile(ix, iy);
+    cl_int radius = 10;
+    int ix_start = (point.x() - radius) / TILE_PIXEL_WIDTH;
+    int iy_start = (point.y() - radius) / TILE_PIXEL_HEIGHT;
 
-    ctx->openTile(tile);
+    int ix_end   = (point.x() + radius) / TILE_PIXEL_WIDTH;
+    int iy_end   = (point.y() + radius) / TILE_PIXEL_HEIGHT;
 
-    int offsetX = point.x() - (ix * TILE_PIXEL_WIDTH);
-    int offsetY = point.y() - (iy * TILE_PIXEL_HEIGHT);
+    const size_t global_work_size[2] = {TILE_PIXEL_HEIGHT, TILE_PIXEL_WIDTH};
+    cl_kernel kernel = SharedOpenCL::getSharedOpenCL()->circleKernel;
 
-    float pixel[4] = {1.0f, 1.0f, 1.0f, 1.0f, };
+    cl_int err = CL_SUCCESS;
+    cl_int stride = TILE_PIXEL_WIDTH;
 
-    pixel[(ix + iy) % 3] = 0.0f;
+    err = clSetKernelArg(kernel, 1, sizeof(cl_int), (void *)&stride);
+    err = clSetKernelArg(kernel, 4, sizeof(cl_int), (void *)&radius);
 
-    float *writePixel = tile->tileData + (TILE_PIXEL_WIDTH * offsetY + offsetX) * 4;
+    for (int iy = iy_start; iy <= iy_end; ++iy)
+    {
+        for (int ix = ix_start; ix <= ix_end; ++ix)
+        {
+            CanvasTile *tile = ctx->getTile(ix, iy);
 
-    writePixel[0] = pixel[0];
-    writePixel[1] = pixel[1];
-    writePixel[2] = pixel[2];
-    writePixel[3] = pixel[3];
+            float pixel[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+            pixel[(ix + iy) % 3] = 0.0f;
+
+            cl_int offsetX = point.x() - (ix * TILE_PIXEL_WIDTH);
+            cl_int offsetY = point.y() - (iy * TILE_PIXEL_HEIGHT);
+            cl_mem data = ctx->clOpenTile(tile);
+
+            err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&data);
+            err = clSetKernelArg(kernel, 2, sizeof(cl_int), (void *)&offsetX);
+            err = clSetKernelArg(kernel, 3, sizeof(cl_int), (void *)&offsetY);
+            err = clSetKernelArg(kernel, 5, sizeof(cl_float4), (void *)&pixel);
+            err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
+                                         kernel, 2,
+                                         NULL, global_work_size, NULL,
+                                         0, NULL, NULL);
+        }
+    }
 
     ctx->stroke.lastDab = point;
 }
