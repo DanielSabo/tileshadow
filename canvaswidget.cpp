@@ -1,6 +1,8 @@
 #include "canvaswidget.h"
 #include <iostream>
 #include <map>
+#include <list>
+#include <algorithm>
 #include <QMouseEvent>
 #include <QFile>
 #include <QDebug>
@@ -110,8 +112,7 @@ public:
     CanvasTile *getTile(int x, int y);
 };
 
-CanvasTile *
-CanvasWidget::CanvasContext::getTile(int x, int y)
+CanvasTile *CanvasWidget::CanvasContext::getTile(int x, int y)
 {
     static const int TILE_COMP_COUNT = TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT * 4;
     int i;
@@ -152,7 +153,7 @@ CanvasWidget::CanvasContext::getTile(int x, int y)
     glFuncs->glBindTexture(GL_TEXTURE_2D, 0);
     glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-    cout << "Added tile at " << x << "," << y << endl;
+    // cout << "Added tile at " << x << "," << y << endl;
     tiles[key] = tile;
 
     return tile;
@@ -362,15 +363,15 @@ void CanvasWidget::paintGL()
     glFuncs->glBindVertexArray(0);
 }
 
-static void drawDab(CanvasWidget::CanvasContext *ctx, QMouseEvent *event)
+static void drawDab(CanvasWidget::CanvasContext *ctx, QPointF point)
 {
     static const int TILE_COMP_COUNT = TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT * 4;
-    int ix = event->x() / TILE_PIXEL_WIDTH;
-    int iy = event->y() / TILE_PIXEL_HEIGHT;
+    int ix = point.x() / TILE_PIXEL_WIDTH;
+    int iy = point.y() / TILE_PIXEL_HEIGHT;
     CanvasTile *tile = ctx->getTile(ix, iy);
 
-    int offsetX = event->x() - (ix * TILE_PIXEL_WIDTH);
-    int offsetY = event->y() - (iy * TILE_PIXEL_HEIGHT);
+    int offsetX = point.x() - (ix * TILE_PIXEL_WIDTH);
+    int offsetY = point.y() - (iy * TILE_PIXEL_HEIGHT);
 
     float pixel[4] = {1.0f, 1.0f, 1.0f, 1.0f, };
 
@@ -383,8 +384,6 @@ static void drawDab(CanvasWidget::CanvasContext *ctx, QMouseEvent *event)
     writePixel[2] = pixel[2];
     writePixel[3] = pixel[3];
 
-    ctx->stroke.lastDab = event->localPos();
-
     glFuncs->glBindTexture(GL_TEXTURE_2D, tile->tileTex);
     glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, tile->tileBuffer);
     glFuncs->glBufferData(GL_PIXEL_UNPACK_BUFFER,
@@ -394,6 +393,8 @@ static void drawDab(CanvasWidget::CanvasContext *ctx, QMouseEvent *event)
     glFuncs->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT, 0, GL_BGRA, GL_FLOAT, 0);
     glFuncs->glBindTexture(GL_TEXTURE_2D, 0);
     glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+    ctx->stroke.lastDab = point;
 }
 
 void CanvasWidget::mousePressEvent(QMouseEvent *event)
@@ -402,23 +403,73 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
     ctx->stroke.inStroke = true;
     ctx->stroke.start = event->localPos();
 
-    drawDab(ctx, event);
+    drawDab(ctx, event->localPos());
     update();
 
     QGLWidget::mousePressEvent(event);
 }
+
 void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
 {
     // cout << "Un-Click!" << endl;
     ctx->stroke.inStroke = false;
     QGLWidget::mouseReleaseEvent(event);
 }
+
 void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
 {
     if (ctx->stroke.lastDab != event->localPos())
     {
-        drawDab(ctx, event);
+        int x0 = ctx->stroke.lastDab.x();
+        int y0 = ctx->stroke.lastDab.y();
+        int x1 = event->localPos().x();
+        int y1 = event->localPos().y();
+        int x = x0;
+        int y = y0;
+
+        bool steep = false;
+        int sx, sy;
+        int dx = abs(x1 - x0);
+        if ((x1 - x0) > 0)
+          sx = 1;
+        else
+          sx = -1;
+
+        int dy = abs(y1 - y0);
+        if ((y1 - y0) > 0)
+          sy = 1;
+        else
+          sy = -1;
+
+        if (dy > dx)
+        {
+          steep = true;
+          std::swap(x, y);
+          std::swap(dy, dx);
+          std::swap(sy, sx);
+        }
+
+        int d = (2 * dy) - dx;
+
+        for (int i = 0; i < dx; ++i)
+        {
+            if (steep)
+                drawDab(ctx, QPointF(y, x));
+            else
+                drawDab(ctx, QPointF(x, y));
+
+            while (d >= 0)
+            {
+                y = y + sy;
+                d = d - (2 * dx);
+            }
+
+            x = x + sx;
+            d = d + (2 * dy);
+        }
+        drawDab(ctx, QPointF(x1, y1));
         update();
     }
+
     QGLWidget::mouseMoveEvent(event);
 }
