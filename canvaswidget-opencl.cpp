@@ -86,9 +86,20 @@ SharedOpenCL::SharedOpenCL()
     cl_command_queue_properties command_queue_flags = 0;
 
     err = clGetPlatformIDs(1, &platform, 0);
-    // FIXME: Change this back to default
+    if (err != CL_SUCCESS)
+    {
+        qWarning() << "No OpenCL platforms found";
+        exit(1);
+    }
+
+    // FIXME: Use the default device
     // err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_DEFAULT, 1, &device, NULL);
     err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_CPU, 1, &device, NULL);
+    if (err != CL_SUCCESS)
+    {
+        qWarning() << "No OpenCL devices found";
+        exit(1);
+    }
 
     clGetPlatformInfo(platform, CL_PLATFORM_NAME, sizeof(result_buffer), result_buffer, NULL);
     cout << "CL Platform: " << result_buffer << endl;
