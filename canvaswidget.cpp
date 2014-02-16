@@ -88,8 +88,7 @@ public:
                       program(0),
                       vertexBuffer(0),
                       tileWidth(0),
-                      tileHeight(0),
-                      testPatternTex(0) {}
+                      tileHeight(0) {}
 
     GLuint vertexShader;
     GLuint fragmentShader;
@@ -101,9 +100,6 @@ public:
 
     int tileWidth;
     int tileHeight;
-
-    GLuint testPatternBuffer;
-    GLuint testPatternTex;
 
     StrokeContext stroke;
 
@@ -281,36 +277,6 @@ void CanvasWidget::initializeGL()
     glFuncs->glBindBuffer(GL_ARRAY_BUFFER, 0);
     glFuncs->glBindVertexArray(0);
 
-    QImage tileDataImg = QImage(QString(":/TestPatternTile.png"));
-
-    if (tileDataImg.isNull())
-        qWarning() << "Failed to load test pattern.";
-    else if (QImage::Format_RGB32 != tileDataImg.format())
-        qWarning() << "Test pattern image has the wrong format.";
-    else
-    {
-        cout << "Test Image:" << tileDataImg.width() << "x" << tileDataImg.height() << " " << tileDataImg.byteCount() << endl;
-
-        glFuncs->glGenBuffers(1, &ctx->testPatternBuffer);
-        glFuncs->glGenTextures(1, &ctx->testPatternTex);
-        glFuncs->glBindTexture(GL_TEXTURE_2D, ctx->testPatternTex);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-        glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, ctx->testPatternBuffer);
-        glFuncs->glBufferData(GL_PIXEL_UNPACK_BUFFER,
-                              tileDataImg.byteCount(),
-                              (const uchar *)tileDataImg.bits(),
-                              GL_DYNAMIC_DRAW);
-        check_gl_error();
-        glFuncs->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tileDataImg.width(), tileDataImg.height(), 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
-        check_gl_error();
-        glFuncs->glBindTexture(GL_TEXTURE_2D, 0);
-        glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-    }
 }
 
 void CanvasWidget::resizeGL(int w, int h)
@@ -338,9 +304,7 @@ void CanvasWidget::paintGL()
     glFuncs->glUseProgram(ctx->program);
 
     glFuncs->glActiveTexture(GL_TEXTURE0);
-    glFuncs->glBindTexture(GL_TEXTURE_2D, ctx->testPatternTex);
     glFuncs->glUniform1i(locationTileImage, 0);
-
     glFuncs->glUniform2f(locationTileSize, tileWidth, tileHeight);
     glFuncs->glBindVertexArray(ctx->vertexArray);
 

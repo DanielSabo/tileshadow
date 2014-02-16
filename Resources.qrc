@@ -2,6 +2,5 @@
     <qresource prefix="/">
         <file>CanvasShader.vert</file>
         <file>CanvasShader.frag</file>
-        <file>TestPatternTile.png</file>
     </qresource>
 </RCC>

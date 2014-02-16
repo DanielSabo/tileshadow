@@ -42,7 +42,6 @@ win32 {
 OTHER_FILES += \
     CanvasShader.frag \
     CanvasShader.vert \
-    TestPatternTile.png
 
 RESOURCES += \
     Resources.qrc
