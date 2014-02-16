@@ -73,6 +73,9 @@ public:
     float  *tileData;
     GLuint  tileBuffer;
     GLuint  tileTex;
+
+    void mapHost(void);
+    void unmapHost(void);
 };
 
 class StrokeContext
@@ -122,12 +125,36 @@ CanvasTile::CanvasTile()
 {
     isOpen = false;
     tileMem = 0;
-    tileData = new float[TILE_COMP_TOTAL];
+    tileData = NULL;
+    tileMem = clCreateBuffer (SharedOpenCL::getSharedOpenCL()->ctx, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                              TILE_COMP_TOTAL * sizeof(float), tileData, NULL);
 }
 
-CanvasTile::~CanvasTile()
+CanvasTile::~CanvasTile(void)
 {
-    delete[] tileData;
+    unmapHost();
+    clReleaseMemObject(tileMem);
+}
+
+void CanvasTile::mapHost(void)
+{
+    if (!tileData)
+    {
+        cl_int err = CL_SUCCESS;
+        tileData = (float *)clEnqueueMapBuffer (SharedOpenCL::getSharedOpenCL()->cmdQueue, tileMem,
+                                                      CL_TRUE, CL_MAP_READ | CL_MAP_WRITE,
+                                                      0, TILE_COMP_TOTAL * sizeof(float),
+                                                      0, NULL, NULL, &err);
+    }
+}
+
+void CanvasTile::unmapHost()
+{
+    if (tileData)
+    {
+        clEnqueueUnmapMemObject(SharedOpenCL::getSharedOpenCL()->cmdQueue, tileMem, tileData, 0, NULL, NULL);
+        tileData = NULL;
+    }
 }
 
 CanvasTile *CanvasWidget::CanvasContext::getTile(int x, int y)
@@ -167,6 +194,8 @@ CanvasTile *CanvasWidget::CanvasContext::getTile(int x, int y)
     glFuncs->glBindTexture(GL_TEXTURE_2D, 0);
     glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
+    clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
+
     closeTile(tile);
 
     // cout << "Added tile at " << x << "," << y << endl;
@@ -177,16 +206,12 @@ CanvasTile *CanvasWidget::CanvasContext::getTile(int x, int y)
 
 cl_mem CanvasWidget::CanvasContext::clOpenTile(CanvasTile *tile)
 {
-    if (!tile->tileMem)
-    {
-        tile->tileMem = clCreateBuffer (SharedOpenCL::getSharedOpenCL()->ctx, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR,
-                                        TILE_COMP_TOTAL * sizeof(float), tile->tileData, NULL);
-    }
-
     if (!tile->isOpen)
     {
         openTiles.push_front(tile);
     }
+
+    tile->unmapHost();
 
     tile->isOpen = true;
 
@@ -200,6 +225,8 @@ float *CanvasWidget::CanvasContext::openTile(CanvasTile *tile)
         openTiles.push_front(tile);
     }
 
+    tile->mapHost();
+
     tile->isOpen = true;
 
     return tile->tileData;
@@ -210,13 +237,7 @@ void CanvasWidget::CanvasContext::closeTile(CanvasTile *tile)
     if (!tile->isOpen)
         return;
 
-    if (tile->tileMem)
-    {
-        clEnqueueReadBuffer(SharedOpenCL::getSharedOpenCL()->cmdQueue, tile->tileMem, CL_TRUE, 0,
-                            TILE_COMP_TOTAL * sizeof(float), tile->tileData, 0, NULL, NULL);
-        clReleaseMemObject(tile->tileMem);
-        tile->tileMem = 0;
-    }
+    tile->mapHost();
 
     /* Push the new data to OpenGL */
     glFuncs->glBindTexture(GL_TEXTURE_2D, tile->tileTex);
