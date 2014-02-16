@@ -34,6 +34,16 @@ void _check_gl_error(const char *file, int line) {
         }
 }
 
+void _check_cl_error(const char *file, int line, cl_int err);
+#define check_cl_error(err) _check_cl_error(__FILE__,__LINE__,err)
+
+void _check_cl_error(const char *file, int line, cl_int err) {
+    if (err != CL_SUCCESS)
+    {
+        qWarning() << "OpenCL Error:" << err << " - " << file << ":" << line;
+    }
+}
+
 static QOpenGLFunctions_3_2_Core *glFuncs = NULL;
 
 static inline GLint getShaderInt(GLuint program, GLenum pname)
