@@ -81,7 +81,6 @@ public:
     bool    isOpen;
     cl_mem  tileMem;
     float  *tileData;
-    GLuint  tileBuffer;
     GLuint  tileTex;
 
     void mapHost(void);
@@ -115,6 +114,8 @@ public:
 
     GLuint vertexBuffer;
     GLuint vertexArray;
+
+    GLuint tileBuffer;
 
     int tileWidth;
     int tileHeight;
@@ -193,7 +194,6 @@ CanvasTile *CanvasWidget::CanvasContext::getTile(int x, int y)
                                  NULL, global_work_size, NULL,
                                  0, NULL, NULL);
 
-    glFuncs->glGenBuffers(1, &tile->tileBuffer);
     glFuncs->glGenTextures(1, &tile->tileTex);
     glFuncs->glBindTexture(GL_TEXTURE_2D, tile->tileTex);
 
@@ -202,7 +202,6 @@ CanvasTile *CanvasWidget::CanvasContext::getTile(int x, int y)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glFuncs->glBindTexture(GL_TEXTURE_2D, 0);
-    glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
     clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
 
@@ -251,11 +250,11 @@ void CanvasWidget::CanvasContext::closeTile(CanvasTile *tile)
 
     /* Push the new data to OpenGL */
     glFuncs->glBindTexture(GL_TEXTURE_2D, tile->tileTex);
-    glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, tile->tileBuffer);
+    glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, tileBuffer);
     glFuncs->glBufferData(GL_PIXEL_UNPACK_BUFFER,
                           sizeof(float) * TILE_COMP_TOTAL,
                           tile->tileData,
-                          GL_DYNAMIC_DRAW);
+                          GL_STREAM_DRAW);
     glFuncs->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT, 0, GL_RGBA, GL_FLOAT, 0);
     glFuncs->glBindTexture(GL_TEXTURE_2D, 0);
     glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
@@ -378,6 +377,7 @@ void CanvasWidget::initializeGL()
         ctx->program = program;
     }
 
+    glFuncs->glGenBuffers(1, &ctx->tileBuffer);
     glFuncs->glGenBuffers(1, &ctx->vertexBuffer);
     glFuncs->glGenVertexArrays(1, &ctx->vertexArray);
     glFuncs->glBindVertexArray(ctx->vertexArray);
