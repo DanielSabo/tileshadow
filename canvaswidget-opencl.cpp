@@ -72,6 +72,14 @@ const char *OpenCLDeviceInfo::getPlatformName()
     return platformName;
 }
 
+cl_device_type OpenCLDeviceInfo::getType()
+{
+    cl_device_type devType;
+    clGetDeviceInfo(device, CL_DEVICE_TYPE, sizeof(devType), &devType, NULL);
+
+    return devType;
+}
+
 std::list<OpenCLDeviceInfo> enumerateOpenCLDevices()
 {
     std::list<OpenCLDeviceInfo> deviceList;
@@ -174,23 +182,26 @@ SharedOpenCL::SharedOpenCL()
 
     cl_command_queue_properties command_queue_flags = 0;
 
-    err = clGetPlatformIDs(1, &platform, 0);
-    if (err != CL_SUCCESS)
+    std::list<OpenCLDeviceInfo> deviceInfoList = enumerateOpenCLDevices();
+    std::list<OpenCLDeviceInfo>::iterator deviceInfoIter;
+
+    for (deviceInfoIter = deviceInfoList.begin(); deviceInfoIter != deviceInfoList.end(); ++deviceInfoIter)
     {
-        qWarning() << "No OpenCL platforms found";
-        exit(1);
+        if (deviceInfoIter->getType() == CL_DEVICE_TYPE_CPU)
+        {
+            break;
+        }
     }
 
-    // FIXME: Use the default device
-    // err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_DEFAULT, 1, &device, NULL);
-    err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_CPU, 1, &device, NULL);
-    if (err != CL_SUCCESS)
+    if (deviceInfoIter == deviceInfoList.end())
     {
         qWarning() << "No OpenCL devices found";
         exit(1);
     }
 
-    OpenCLDeviceInfo deviceInfo = OpenCLDeviceInfo(device);
+    OpenCLDeviceInfo deviceInfo = *deviceInfoIter;
+    device = deviceInfo.device;
+    platform = deviceInfo.platform;
 
     cout << "CL Platform: " << deviceInfo.getPlatformName() << endl;
     cout << "CL Device: " << deviceInfo.getDeviceName() << endl;

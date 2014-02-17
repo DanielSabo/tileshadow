@@ -19,9 +19,10 @@ public:
   cl_platform_id platform;
   cl_device_id   device;
 
-  const char *getDeviceName();
-  const char *getPlatformName();
-  bool        getSharing();
+  const char     *getDeviceName();
+  const char     *getPlatformName();
+  cl_device_type  getType();
+  bool            getSharing();
 
 private:
   char *deviceName;
