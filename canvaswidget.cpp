@@ -263,15 +263,13 @@ CanvasTile *CanvasWidget::CanvasContext::getTile(int x, int y)
     cl_int err = CL_SUCCESS;
     cl_mem data = clOpenTile(tile);
     cl_kernel kernel = SharedOpenCL::getSharedOpenCL()->fillKernel;
-    const size_t global_work_size[2] = {TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT};
+    const size_t global_work_size[1] = {TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT};
     float pixel[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-    cl_int stride = TILE_PIXEL_WIDTH;
 
     err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&data);
-    err = clSetKernelArg(kernel, 1, sizeof(cl_int), (void *)&stride);
-    err = clSetKernelArg(kernel, 2, sizeof(cl_float4), (void *)&pixel);
+    err = clSetKernelArg(kernel, 1, sizeof(cl_float4), (void *)&pixel);
     err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
-                                 kernel, 2,
+                                 kernel, 1,
                                  NULL, global_work_size, NULL,
                                  0, NULL, NULL);
 

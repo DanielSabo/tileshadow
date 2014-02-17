@@ -41,11 +41,9 @@ __kernel void circle(__global float4 *buf,
 }
 
 __kernel void fill(__global float4 *buf,
-                            int     stride,
                             float4  color)
 {
   int gidx = get_global_id(0);
-  int gidy = get_global_id(1);
 
-  buf[gidx + gidy * stride] = color;
+  buf[get_global_id(0)] = color;
 }
