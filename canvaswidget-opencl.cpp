@@ -8,6 +8,90 @@ using namespace std;
 
 static SharedOpenCL* singleton = NULL;
 
+void _check_cl_error(const char *file, int line, cl_int err) {
+    if (err != CL_SUCCESS)
+    {
+        static const char* strings[] =
+        {
+            /* Error Codes */
+              "success"                         /*  0  */
+            , "device not found"                /* -1  */
+            , "device not available"            /* -2  */
+            , "compiler not available"          /* -3  */
+            , "mem object allocation failure"   /* -4  */
+            , "out of resources"                /* -5  */
+            , "out of host memory"              /* -6  */
+            , "profiling info not available"    /* -7  */
+            , "mem copy overlap"                /* -8  */
+            , "image format mismatch"           /* -9  */
+            , "image format not supported"      /* -10 */
+            , "build program failure"           /* -11 */
+            , "map failure"                     /* -12 */
+            , "unknown error"                   /* -13 */
+            , "unknown error"                   /* -14 */
+            , "unknown error"                   /* -15 */
+            , "unknown error"                   /* -16 */
+            , "unknown error"                   /* -17 */
+            , "unknown error"                   /* -18 */
+            , "unknown error"                   /* -19 */
+            , "unknown error"                   /* -20 */
+            , "unknown error"                   /* -21 */
+            , "unknown error"                   /* -22 */
+            , "unknown error"                   /* -23 */
+            , "unknown error"                   /* -24 */
+            , "unknown error"                   /* -25 */
+            , "unknown error"                   /* -26 */
+            , "unknown error"                   /* -27 */
+            , "unknown error"                   /* -28 */
+            , "unknown error"                   /* -29 */
+            , "invalid value"                   /* -30 */
+            , "invalid device type"             /* -31 */
+            , "invalid platform"                /* -32 */
+            , "invalid device"                  /* -33 */
+            , "invalid context"                 /* -34 */
+            , "invalid queue properties"        /* -35 */
+            , "invalid command queue"           /* -36 */
+            , "invalid host ptr"                /* -37 */
+            , "invalid mem object"              /* -38 */
+            , "invalid image format descriptor" /* -39 */
+            , "invalid image size"              /* -40 */
+            , "invalid sampler"                 /* -41 */
+            , "invalid binary"                  /* -42 */
+            , "invalid build options"           /* -43 */
+            , "invalid program"                 /* -44 */
+            , "invalid program executable"      /* -45 */
+            , "invalid kernel name"             /* -46 */
+            , "invalid kernel definition"       /* -47 */
+            , "invalid kernel"                  /* -48 */
+            , "invalid arg index"               /* -49 */
+            , "invalid arg value"               /* -50 */
+            , "invalid arg size"                /* -51 */
+            , "invalid kernel args"             /* -52 */
+            , "invalid work dimension"          /* -53 */
+            , "invalid work group size"         /* -54 */
+            , "invalid work item size"          /* -55 */
+            , "invalid global offset"           /* -56 */
+            , "invalid event wait list"         /* -57 */
+            , "invalid event"                   /* -58 */
+            , "invalid operation"               /* -59 */
+            , "invalid gl object"               /* -60 */
+            , "invalid buffer size"             /* -61 */
+            , "invalid mip level"               /* -62 */
+            , "invalid global work size"        /* -63 */
+        };
+        static const int strings_len = sizeof(strings) / sizeof(strings[0]);
+
+        const char *error_str;
+
+        if (-err < 0 || -err >= strings_len)
+            error_str = "unknown error";
+        else
+            error_str = strings[-err];
+
+        qWarning() << "OpenCL Error (" << err << "): " << error_str << " - " << file << ":" << line;
+    }
+}
+
 OpenCLDeviceInfo::OpenCLDeviceInfo(cl_device_id d) :
     platform(0),
     device(d),

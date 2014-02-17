@@ -9,6 +9,9 @@
 #include <CL/cl.h>
 #endif
 
+void _check_cl_error(const char *file, int line, cl_int err);
+#define check_cl_error(err) _check_cl_error(__FILE__,__LINE__,err)
+
 class OpenCLDeviceInfo
 {
 public:

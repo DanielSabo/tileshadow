@@ -21,12 +21,16 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     systeminfodialog.cpp \
     canvaswidget.cpp \
-    canvaswidget-opencl.cpp
+    canvaswidget-opencl.cpp \
+    canvascontext.cpp \
+    basicstrokecontext.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
     canvaswidget.h \
-    canvaswidget-opencl.h
+    canvaswidget-opencl.h \
+    canvascontext.h \
+    basicstrokecontext.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui
