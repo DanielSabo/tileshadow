@@ -4,6 +4,7 @@
 #include <map>
 #include <list>
 #include <algorithm>
+#include <cmath>
 #include <QMouseEvent>
 #include <QFile>
 #include <QDebug>
@@ -163,12 +164,29 @@ public:
     void unmapHost(void);
 };
 
+class CanvasWidget::CanvasContext;
+
 class StrokeContext
 {
 public:
-    StrokeContext() : inStroke(false) {}
+    StrokeContext(CanvasWidget::CanvasContext *ctx) : ctx(ctx) {}
+    virtual ~StrokeContext() {}
 
-    bool    inStroke;
+    virtual bool startStroke(QPointF point) = 0;
+    virtual bool strokeTo(QPointF point) = 0;
+
+    CanvasWidget::CanvasContext *ctx;
+};
+
+class BasicStrokeContext : public StrokeContext
+{
+public:
+    BasicStrokeContext(CanvasWidget::CanvasContext *ctx) : StrokeContext(ctx) {}
+
+    bool startStroke(QPointF point);
+    bool strokeTo(QPointF point);
+    void drawDab(QPointF point);
+
     QPointF start;
     QPointF lastDab;
 };
@@ -200,7 +218,7 @@ public:
     int tileWidth;
     int tileHeight;
 
-    StrokeContext stroke;
+    QScopedPointer<StrokeContext> stroke;
 
     std::map<uint64_t, CanvasTile *> tiles;
     std::list<CanvasTile *> openTiles;
@@ -518,7 +536,7 @@ void CanvasWidget::paintGL()
         }
 }
 
-static void drawDab(CanvasWidget::CanvasContext *ctx, QPointF point)
+void BasicStrokeContext::drawDab(QPointF point)
 {
     cl_int radius = 10;
     int ix_start = (point.x() - radius) / TILE_PIXEL_WIDTH;
@@ -560,36 +578,26 @@ static void drawDab(CanvasWidget::CanvasContext *ctx, QPointF point)
         }
     }
 
-    ctx->stroke.lastDab = point;
+    lastDab = point;
 }
 
-void CanvasWidget::mousePressEvent(QMouseEvent *event)
+bool BasicStrokeContext::startStroke(QPointF point)
 {
-    // cout << "Click! " << ix << ", " << iy << endl;
-    ctx->stroke.inStroke = true;
-    ctx->stroke.start = event->localPos();
-
-    drawDab(ctx, event->localPos());
-    update();
-
-    QGLWidget::mousePressEvent(event);
+    start = point;
+    drawDab(point);
+    return true;
 }
 
-void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
+bool BasicStrokeContext::strokeTo(QPointF point)
 {
-    // cout << "Un-Click!" << endl;
-    ctx->stroke.inStroke = false;
-    QGLWidget::mouseReleaseEvent(event);
-}
+    float dist = sqrtf(powf(lastDab.x() - point.x(), 2.0f) + powf(lastDab.y() - point.y(), 2.0f));
 
-void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
-{
-    if (ctx->stroke.lastDab != event->localPos())
+    if (dist >= 1.0f)
     {
-        int x0 = ctx->stroke.lastDab.x();
-        int y0 = ctx->stroke.lastDab.y();
-        int x1 = event->localPos().x();
-        int y1 = event->localPos().y();
+        int x0 = lastDab.x();
+        int y0 = lastDab.y();
+        int x1 = point.x();
+        int y1 = point.y();
         int x = x0;
         int y = y0;
 
@@ -620,9 +628,9 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
         for (int i = 0; i < dx; ++i)
         {
             if (steep)
-                drawDab(ctx, QPointF(y, x));
+                drawDab(QPointF(y, x));
             else
-                drawDab(ctx, QPointF(x, y));
+                drawDab(QPointF(x, y));
 
             while (d >= 0)
             {
@@ -633,9 +641,35 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
             x = x + sx;
             d = d + (2 * dy);
         }
-        drawDab(ctx, QPointF(x1, y1));
-        update();
+        drawDab(QPointF(x1, y1));
+        return true;
     }
+    return false;
+}
+
+void CanvasWidget::mousePressEvent(QMouseEvent *event)
+{
+    // cout << "Click! " << ix << ", " << iy << endl;
+    ctx->stroke.reset(new BasicStrokeContext(ctx));
+
+    if(ctx->stroke->startStroke(event->localPos()))
+        update();
+
+    QGLWidget::mousePressEvent(event);
+}
+
+void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
+{
+    // cout << "Un-Click!" << endl;
+    ctx->stroke.reset();
+    QGLWidget::mouseReleaseEvent(event);
+}
+
+void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
+{
+    if (!ctx->stroke.isNull())
+        if (ctx->stroke->strokeTo(event->localPos()))
+            update();
 
     QGLWidget::mouseMoveEvent(event);
 }
