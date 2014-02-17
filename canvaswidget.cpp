@@ -102,10 +102,8 @@ static const QGLFormat &getFormatSingleton()
     if (!single)
     {
         single = new QGLFormat();
-
-        single->setVersion( 3, 2 );
-        single->setProfile( QGLFormat::CoreProfile );
-        single->setSampleBuffers( true );
+        single->setVersion(3, 2);
+        single->setProfile(QGLFormat::CoreProfile);
     }
 
     return *single;
