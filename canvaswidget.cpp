@@ -188,6 +188,10 @@ public:
     GLuint fragmentShader;
 
     GLuint program;
+    GLuint locationTileOrigin;
+    GLuint locationTileSize;
+    GLuint locationTileImage;
+
 
     GLuint vertexBuffer;
     GLuint vertexArray;
@@ -452,6 +456,10 @@ void CanvasWidget::initializeGL()
         }
 
         ctx->program = program;
+        ctx->locationTileOrigin = glFuncs->glGetUniformLocation(ctx->program, "tileOrigin");
+        ctx->locationTileSize   = glFuncs->glGetUniformLocation(ctx->program, "tileSize");
+        ctx->locationTileImage  = glFuncs->glGetUniformLocation(ctx->program, "tileImage");
+
     }
 
     glFuncs->glGenBuffers(1, &ctx->tileBuffer);
@@ -494,18 +502,14 @@ void CanvasWidget::paintGL()
     float tileWidth  = (2.0f * TILE_PIXEL_WIDTH) / (widgetWidth);
     float tileHeight = (2.0f * TILE_PIXEL_HEIGHT) / (widgetHeight);
 
-    GLuint locationTileOrigin = glFuncs->glGetUniformLocation(ctx->program, "tileOrigin");
-    GLuint locationTileSize   = glFuncs->glGetUniformLocation(ctx->program, "tileSize");
-    GLuint locationTileImage  = glFuncs->glGetUniformLocation(ctx->program, "tileImage");
-
     glFuncs->glClearColor(0.2, 0.2, 0.4, 1.0);
     glFuncs->glClear(GL_COLOR_BUFFER_BIT);
 
     glFuncs->glUseProgram(ctx->program);
 
     glFuncs->glActiveTexture(GL_TEXTURE0);
-    glFuncs->glUniform1i(locationTileImage, 0);
-    glFuncs->glUniform2f(locationTileSize, tileWidth, tileHeight);
+    glFuncs->glUniform1i(ctx->locationTileImage, 0);
+    glFuncs->glUniform2f(ctx->locationTileSize, tileWidth, tileHeight);
     glFuncs->glBindVertexArray(ctx->vertexArray);
 
     for (ix = 0; ix * TILE_PIXEL_WIDTH < widgetWidth; ++ix)
@@ -517,7 +521,7 @@ void CanvasWidget::paintGL()
             CanvasTile *tile = ctx->getTile(ix, iy);
             glFuncs->glBindTexture(GL_TEXTURE_2D, tile->tileTex);
 
-            glFuncs->glUniform2f(locationTileOrigin, offsetX, offsetY);
+            glFuncs->glUniform2f(ctx->locationTileOrigin, offsetX, offsetY);
             glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
 
