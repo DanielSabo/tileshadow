@@ -1,4 +1,5 @@
 #include "canvaswidget-opencl.h"
+#include <string.h>
 #include <iostream>
 #include <QFile>
 #include <QDebug>
@@ -6,6 +7,95 @@
 using namespace std;
 
 static SharedOpenCL* singleton = NULL;
+
+OpenCLDeviceInfo::OpenCLDeviceInfo(cl_device_id d) :
+    platform(0),
+    device(d),
+    deviceName(0),
+    platformName(0),
+    sharing(false)
+{
+    clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform), &platform, NULL);
+}
+
+OpenCLDeviceInfo::OpenCLDeviceInfo(OpenCLDeviceInfo const &other)
+{
+    if (other.deviceName)
+        deviceName = strdup(other.deviceName);
+    else
+        deviceName = 0;
+
+    if (other.platformName)
+        platformName = strdup(other.platformName);
+    else
+        platformName = 0;
+
+    platform = other.platform;
+    device = other.device;
+    sharing = other.sharing;
+}
+
+OpenCLDeviceInfo::~OpenCLDeviceInfo()
+{
+    if (deviceName)
+        delete[] deviceName;
+
+    if (platformName)
+        delete[] platformName;
+}
+
+const char *OpenCLDeviceInfo::getDeviceName()
+{
+    if (!deviceName)
+    {
+        size_t deviceNameSize = 0;
+        clGetDeviceInfo(device, CL_DEVICE_NAME, 0, NULL, &deviceNameSize);
+
+        deviceName = new char[deviceNameSize];
+        clGetDeviceInfo(device, CL_DEVICE_NAME, deviceNameSize, deviceName, NULL);
+    }
+
+    return deviceName;
+}
+
+const char *OpenCLDeviceInfo::getPlatformName()
+{
+    if (!platformName)
+    {
+        size_t platformNameSize = 0;
+        clGetPlatformInfo(platform, CL_PLATFORM_NAME, 0, NULL, &platformNameSize);
+
+        platformName = new char[platformNameSize];
+        clGetPlatformInfo(platform, CL_PLATFORM_NAME, platformNameSize, platformName, NULL);
+    }
+
+    return platformName;
+}
+
+std::list<OpenCLDeviceInfo> enumerateOpenCLDevices()
+{
+    std::list<OpenCLDeviceInfo> deviceList;
+
+    cl_uint i, j;
+
+    cl_uint numPlatforms;
+    clGetPlatformIDs (0, NULL, &numPlatforms);
+    cl_platform_id platforms[numPlatforms];
+    clGetPlatformIDs (numPlatforms, platforms, NULL);
+
+    for (i = 0; i < numPlatforms; ++i)
+    {
+        cl_uint numDevices;
+        clGetDeviceIDs (platforms[i], CL_DEVICE_TYPE_ALL, 0, NULL, &numDevices);
+        cl_device_id devices[numDevices];
+        clGetDeviceIDs (platforms[i], CL_DEVICE_TYPE_ALL, numDevices, devices, NULL);
+
+        for (j = 0; j < numDevices; ++j)
+            deviceList.push_back(OpenCLDeviceInfo(devices[j]));
+    }
+
+    return deviceList;
+}
 
 SharedOpenCL *SharedOpenCL::getSharedOpenCL()
 {
@@ -75,7 +165,6 @@ static cl_program compileFile (SharedOpenCL *cl, const QString &path)
 
 SharedOpenCL::SharedOpenCL()
 {
-    char result_buffer[1024];
     cl_int err = CL_SUCCESS;
 
     platform = 0;
@@ -101,10 +190,10 @@ SharedOpenCL::SharedOpenCL()
         exit(1);
     }
 
-    clGetPlatformInfo(platform, CL_PLATFORM_NAME, sizeof(result_buffer), result_buffer, NULL);
-    cout << "CL Platform: " << result_buffer << endl;
-    clGetDeviceInfo(device, CL_DEVICE_NAME, sizeof(result_buffer), result_buffer, NULL);
-    cout << "CL Device: " << result_buffer << endl;
+    OpenCLDeviceInfo deviceInfo = OpenCLDeviceInfo(device);
+
+    cout << "CL Platform: " << deviceInfo.getPlatformName() << endl;
+    cout << "CL Device: " << deviceInfo.getDeviceName() << endl;
 
     ctx = clCreateContext (NULL, 1, &device, NULL, NULL, &err);
     cmdQueue = clCreateCommandQueue (ctx, device, command_queue_flags, &err);

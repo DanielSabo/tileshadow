@@ -8,6 +8,8 @@
 #include <CL/cl.h>
 #endif
 
+#include "canvaswidget-opencl.h"
+
 SystemInfoDialog::SystemInfoDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::SystemInfoDialog)
@@ -77,26 +79,22 @@ void SystemInfoDialog::showEvent(QShowEvent *event)
 
         addSectionHeader(*queryResultString, "OpenCL");
 
-        unsigned int platform_idx;
+        std::list<OpenCLDeviceInfo> deviceInfoList = enumerateOpenCLDevices();
+        std::list<OpenCLDeviceInfo>::iterator deviceInfoIter;
 
-        cl_platform_id *platforms = new cl_platform_id[num_platforms];
-        clGetPlatformIDs (num_platforms, platforms, NULL);
-
-        for (platform_idx = 0; platform_idx < num_platforms; ++platform_idx)
+        for (deviceInfoIter = deviceInfoList.begin(); deviceInfoIter != deviceInfoList.end(); ++deviceInfoIter)
         {
-            char platform_str[1024];
-            clGetPlatformInfo (platforms[platform_idx], CL_PLATFORM_NAME, sizeof(platform_str), platform_str, NULL);
-            addPlatformHeader(*queryResultString, platform_str);
+            QString devStr;
 
-            clGetPlatformInfo (platforms[platform_idx], CL_PLATFORM_VERSION, sizeof(platform_str), platform_str, NULL);
-            addPlatformValue(*queryResultString, NULL, platform_str);
-#if 0
-            clGetPlatformInfo (platforms[platform_idx], CL_PLATFORM_EXTENSIONS, sizeof(platform_str), platform_str, NULL);
-            addPlatformValue(*queryResultString, NULL, platform_str);
-#endif
+            devStr.append(deviceInfoIter->getPlatformName());
+            devStr.append(" - ");
+            devStr.append(deviceInfoIter->getDeviceName());
+            addPlatformHeader(*queryResultString, devStr.toUtf8().data());
+
+            char infoReturnStr[1024];
+            clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_VERSION, sizeof(infoReturnStr), infoReturnStr, NULL);
+            addPlatformValue(*queryResultString, NULL, infoReturnStr);
         }
-
-        delete[] platforms;
 
         queryResultString->append("</div>\n");
         queryResultString->append("</body>\n");
