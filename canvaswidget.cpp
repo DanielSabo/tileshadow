@@ -142,7 +142,6 @@ static inline void setBufferData(GLuint bufferObj, GLenum target, GLsizeiptr siz
 
     glFuncs->glBindBuffer(target, bufferObj);
     glFuncs->glBufferData(target, size, data, usage);
-    glFuncs->glBindBuffer(target, 0);
 }
 
 static const int TILE_PIXEL_WIDTH  = 64;
@@ -280,7 +279,6 @@ CanvasTile *CanvasWidget::CanvasContext::getTile(int x, int y)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFuncs->glBindTexture(GL_TEXTURE_2D, 0);
 
     clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
 
@@ -335,8 +333,6 @@ void CanvasWidget::CanvasContext::closeTile(CanvasTile *tile)
                           tile->tileData,
                           GL_STREAM_DRAW);
     glFuncs->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT, 0, GL_RGBA, GL_FLOAT, 0);
-    glFuncs->glBindTexture(GL_TEXTURE_2D, 0);
-    glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
     tile->isOpen = false;
 }
@@ -477,8 +473,6 @@ void CanvasWidget::initializeGL()
 
     glFuncs->glEnableVertexAttribArray(0);
     glFuncs->glVertexAttribPointer( 0, 2, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL);
-    glFuncs->glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glFuncs->glBindVertexArray(0);
 
     SharedOpenCL::getSharedOpenCL();
 }
@@ -522,11 +516,6 @@ void CanvasWidget::paintGL()
             glFuncs->glUniform2f(ctx->locationTileOrigin, offsetX, offsetY);
             glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
-
-    glFuncs->glUseProgram(0);
-
-    glFuncs->glBindTexture(GL_TEXTURE_2D, 0);
-    glFuncs->glBindVertexArray(0);
 }
 
 static void drawDab(CanvasWidget::CanvasContext *ctx, QPointF point)
