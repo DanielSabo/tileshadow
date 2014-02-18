@@ -25,12 +25,10 @@ public:
   const char     *getDeviceName();
   const char     *getPlatformName();
   cl_device_type  getType();
-  bool            getSharing();
 
 private:
   char *deviceName;
   char *platformName;
-  bool sharing;
 };
 
 std::list<OpenCLDeviceInfo> enumerateOpenCLDevices();
@@ -48,6 +46,8 @@ public:
 
     cl_kernel circleKernel;
     cl_kernel fillKernel;
+
+    bool gl_sharing;
 private:
     SharedOpenCL();
 };

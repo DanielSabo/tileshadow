@@ -4,6 +4,10 @@
 #include <QFile>
 #include <QDebug>
 
+#ifdef Q_OS_WIN32
+#include <Windows.h>
+#endif
+
 using namespace std;
 
 static SharedOpenCL* singleton = NULL;
@@ -96,8 +100,7 @@ OpenCLDeviceInfo::OpenCLDeviceInfo(cl_device_id d) :
     platform(0),
     device(d),
     deviceName(0),
-    platformName(0),
-    sharing(false)
+    platformName(0)
 {
     clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform), &platform, NULL);
 }
@@ -116,7 +119,6 @@ OpenCLDeviceInfo::OpenCLDeviceInfo(OpenCLDeviceInfo const &other)
 
     platform = other.platform;
     device = other.device;
-    sharing = other.sharing;
 }
 
 OpenCLDeviceInfo::~OpenCLDeviceInfo()
@@ -255,6 +257,93 @@ static cl_program compileFile (SharedOpenCL *cl, const QString &path)
     return prog;
 }
 
+#ifndef cl_khr_gl_sharing
+#define cl_khr_gl_sharing 1
+typedef cl_uint cl_gl_context_info;
+
+#define CL_INVALID_GL_SHAREGROUP_REFERENCE_KHR -1000
+#define CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR 0x2006
+#define CL_DEVICES_FOR_GL_CONTEXT_KHR 0x2007
+#define CL_GL_CONTEXT_KHR 0x2008
+#define CL_EGL_DISPLAY_KHR 0x2009
+#define CL_GLX_DISPLAY_KHR 0x200A
+#define CL_WGL_HDC_KHR 0x200B
+#define CL_CGL_SHAREGROUP_KHR 0x200C
+
+typedef CL_API_ENTRY cl_int
+    (CL_API_CALL *clGetGLContextInfoKHR_fn)(
+        const cl_context_properties *,
+        cl_gl_context_info,
+        size_t,
+        void *,
+        size_t *);
+#endif /* cl_khr_gl_sharing */
+
+static cl_context createSharedContext()
+{
+#ifdef Q_OS_WIN32
+    cl_context result;
+    cl_uint i;
+
+    cl_uint numPlatforms;
+    clGetPlatformIDs (0, NULL, &numPlatforms);
+    cl_platform_id platforms[numPlatforms];
+    clGetPlatformIDs (numPlatforms, platforms, NULL);
+
+    clGetGLContextInfoKHR_fn clGetGLContextInfoKHR = (clGetGLContextInfoKHR_fn)clGetExtensionFunctionAddress ("clGetGLContextInfoKHR");
+
+    if (!clGetGLContextInfoKHR)
+    {
+        qWarning() << "Could not find shared devices becuase clGetGLContextInfoKHR is unavailable.";
+        return 0;
+    }
+
+    for (i = 0; i < numPlatforms; ++i)
+    {
+        size_t resultSize;
+        clGetPlatformInfo(platforms[i], CL_PLATFORM_EXTENSIONS, 0, NULL, &resultSize);
+        char resultStr[resultSize];
+        clGetPlatformInfo(platforms[i], CL_PLATFORM_EXTENSIONS, resultSize, resultStr, NULL);
+        QStringList platform_extensions = QString(resultStr).split(' ');
+
+        if (platform_extensions.indexOf(QString("cl_khr_gl_sharing")) != -1)
+        {
+            cl_int err = CL_SUCCESS;
+            cl_device_id device = 0;
+            size_t resultSize = 0;
+
+            cl_context_properties properties[] = {
+                CL_GL_CONTEXT_KHR, (cl_context_properties)wglGetCurrentContext(),
+                CL_WGL_HDC_KHR, (cl_context_properties)wglGetCurrentDC(),
+                CL_CONTEXT_PLATFORM, (cl_context_properties)platforms[i],
+                0, 0,
+            };
+
+            err = clGetGLContextInfoKHR (properties, CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR, sizeof(device), &device, &resultSize);
+            check_cl_error(err);
+
+            if (err == CL_SUCCESS && resultSize > 0 && device)
+            {
+                OpenCLDeviceInfo deviceInfo(device);
+                if (deviceInfo.getType() == CL_DEVICE_TYPE_GPU)
+                {
+                    result = clCreateContext(properties, 1, &device, NULL, NULL, &err);
+                    if (err == CL_SUCCESS)
+                        return result;
+                    else
+                        check_cl_error(err);
+                }
+            }
+            else
+            {
+                check_cl_error(err);
+            }
+        }
+    }
+#endif
+    return 0;
+}
+
 SharedOpenCL::SharedOpenCL()
 {
     cl_int err = CL_SUCCESS;
@@ -263,36 +352,57 @@ SharedOpenCL::SharedOpenCL()
     device = 0;
     ctx = NULL;
     cmdQueue = NULL;
+    gl_sharing = false;
 
     cl_command_queue_properties command_queue_flags = 0;
 
-    std::list<OpenCLDeviceInfo> deviceInfoList = enumerateOpenCLDevices();
-    std::list<OpenCLDeviceInfo>::iterator deviceInfoIter;
+    /* First look for a shared device */
+    ctx = createSharedContext();
 
-    for (deviceInfoIter = deviceInfoList.begin(); deviceInfoIter != deviceInfoList.end(); ++deviceInfoIter)
+    if (ctx)
     {
-        if (deviceInfoIter->getType() == CL_DEVICE_TYPE_CPU)
+        clGetContextInfo(ctx, CL_CONTEXT_DEVICES, sizeof(device), &device, NULL);
+        gl_sharing = true;
+    }
+    else
+    {
+        std::list<OpenCLDeviceInfo> deviceInfoList = enumerateOpenCLDevices();
+        std::list<OpenCLDeviceInfo>::iterator deviceInfoIter;
+
+        /* Then for a CPU device */
+        for (deviceInfoIter = deviceInfoList.begin(); deviceInfoIter != deviceInfoList.end(); ++deviceInfoIter)
         {
-            break;
+            if (deviceInfoIter->getType() == CL_DEVICE_TYPE_CPU)
+            {
+                break;
+            }
         }
+
+        /* Finally fall back to whatever non-shared device is left */
+        if (deviceInfoIter == deviceInfoList.end())
+            deviceInfoIter = deviceInfoList.begin();
+
+        if (deviceInfoIter == deviceInfoList.end())
+        {
+            qWarning() << "No OpenCL devices found";
+            exit(1);
+        }
+
+        /* FIXME: Scope issues */
+        device = deviceInfoIter->device;
+
+        ctx = clCreateContext (NULL, 1, &device, NULL, NULL, &err);
     }
 
-    if (deviceInfoIter == deviceInfoList.end())
-    {
-        qWarning() << "No OpenCL devices found";
-        exit(1);
-    }
-
-    OpenCLDeviceInfo deviceInfo = *deviceInfoIter;
+    OpenCLDeviceInfo deviceInfo(device);
     device = deviceInfo.device;
     platform = deviceInfo.platform;
 
     cout << "CL Platform: " << deviceInfo.getPlatformName() << endl;
     cout << "CL Device: " << deviceInfo.getDeviceName() << endl;
+    cout << "CL Sharing: " << (gl_sharing ? "yes" : "no") << endl;
 
-    ctx = clCreateContext (NULL, 1, &device, NULL, NULL, &err);
     cmdQueue = clCreateCommandQueue (ctx, device, command_queue_flags, &err);
-
 
     /* Compile base kernels */
 

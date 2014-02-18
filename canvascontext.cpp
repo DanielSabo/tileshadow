@@ -1,5 +1,11 @@
 #include "canvascontext.h"
 
+#ifdef __APPLE__
+#include <OpenCL/cl_gl.h>
+#else
+#include <CL/cl_gl.h>
+#endif
+
 CanvasTile::CanvasTile()
 {
     isOpen = false;
@@ -112,20 +118,50 @@ void CanvasContext::closeTile(CanvasTile *tile)
     if (!tile->isOpen)
         return;
 
-    tile->mapHost();
+    if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
+    {
+        /* This function assumes cl_khr_gl_event is present; which allows
+         * the Acquire and Release calls to be used without explicitly syncing.
+         */
+        tile->unmapHost();
 
-    /* Push the new data to OpenGL */
-    glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, tile->tileBuffer);
-    glFuncs->glBufferData(GL_TEXTURE_BUFFER,
-                          sizeof(float) * TILE_COMP_TOTAL,
-                          tile->tileData,
-                          GL_STREAM_DRAW);
+        cl_int err = CL_SUCCESS;
+        cl_command_queue cmdQueue = SharedOpenCL::getSharedOpenCL()->cmdQueue;
+        cl_context context = SharedOpenCL::getSharedOpenCL()->ctx;
+
+        cl_mem output = clCreateFromGLBuffer(context,
+                                             CL_MEM_WRITE_ONLY,
+                                             tile->tileBuffer,
+                                             &err);
+
+        err = clEnqueueAcquireGLObjects(cmdQueue, 1, &output, 0, NULL, NULL);
+
+        err = clEnqueueCopyBuffer(cmdQueue, tile->tileMem, output,
+                                  0, 0, sizeof(float) * TILE_COMP_TOTAL,
+                                  0, NULL, NULL);
+
+        err = clEnqueueReleaseGLObjects(cmdQueue, 1, &output, 0, NULL, NULL);
+    }
+    else
+    {
+        tile->mapHost();
+
+        /* Push the new data to OpenGL */
+        glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, tile->tileBuffer);
+        glFuncs->glBufferData(GL_TEXTURE_BUFFER,
+                              sizeof(float) * TILE_COMP_TOTAL,
+                              tile->tileData,
+                              GL_STREAM_DRAW);
+    }
 
     tile->isOpen = false;
 }
 
 void CanvasContext::closeTiles(void)
 {
+    if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
+        glFinish();
+
     while(!openTiles.empty())
     {
         CanvasTile *tile = openTiles.front();
@@ -134,4 +170,7 @@ void CanvasContext::closeTiles(void)
 
         openTiles.pop_front();
     }
+
+    if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
+        clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
 }
