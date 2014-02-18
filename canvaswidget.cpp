@@ -123,7 +123,11 @@ void CanvasWidget::initializeGL()
 {
     if (!glFuncs)
         glFuncs = new QOpenGLFunctions_3_2_Core();
-    glFuncs->initializeOpenGLFunctions();
+    if (!glFuncs->initializeOpenGLFunctions())
+    {
+        qWarning() << "Could not initialize OpenGL Core Profile 3.2";
+        exit(1);
+    }
 
     ctx = new CanvasContext(glFuncs);
 
