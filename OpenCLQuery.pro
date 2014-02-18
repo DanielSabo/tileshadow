@@ -22,6 +22,7 @@ SOURCES += main.cpp\
     systeminfodialog.cpp \
     canvaswidget.cpp \
     canvaswidget-opencl.cpp \
+    mypaintstrokecontext.cpp \
     canvascontext.cpp \
     basicstrokecontext.cpp
 
@@ -29,6 +30,7 @@ HEADERS  += mainwindow.h \
     systeminfodialog.h \
     canvaswidget.h \
     canvaswidget-opencl.h \
+    mypaintstrokecontext.h \
     canvascontext.h \
     basicstrokecontext.h
 
@@ -53,3 +55,4 @@ OTHER_FILES += \
 RESOURCES += \
     Resources.qrc
 
+include(brushlib/brushlib.pri)
