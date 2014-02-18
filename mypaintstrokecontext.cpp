@@ -116,37 +116,56 @@ static int drawDabFunction (MyPaintSurface *base_surface,
 {
     CanvasMyPaintSurface *surface = (CanvasMyPaintSurface *)base_surface;
 
-    (void)opaque;
-    (void)hardness;
-    (void)aspect_ratio;
-    (void)angle;
+
+    if (hardness < 0.0f)
+        hardness = 0.0f;
+    else if (hardness > 1.0f)
+        hardness = 1.0f;
+
+    if (aspect_ratio < 1.0f)
+        aspect_ratio = 1.0f;
+
     (void)lock_alpha;
     (void)colorize;
 
-    cout << "Invoked drawDabFunction at " << x << ", " << y << endl;
+    // cout << "Invoked drawDabFunction at " << x << ", " << y << endl;
 
     if (radius >= 1.0f)
     {
         CanvasContext *ctx = surface->strokeContext->ctx;
 
+        /* FIXME: Use mypaint fringe calculation instead of raw radius */
         int ix_start = (x - radius) / TILE_PIXEL_WIDTH;
         int iy_start = (y - radius) / TILE_PIXEL_HEIGHT;
 
         int ix_end   = (x + radius) / TILE_PIXEL_WIDTH;
         int iy_end   = (y + radius) / TILE_PIXEL_HEIGHT;
 
-
         const size_t global_work_size[2] = {TILE_PIXEL_HEIGHT, TILE_PIXEL_WIDTH};
-        cl_kernel kernel = SharedOpenCL::getSharedOpenCL()->circleKernel;
+        cl_kernel kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabKernel;
 
         cl_int err = CL_SUCCESS;
         cl_int stride = TILE_PIXEL_WIDTH;
-        cl_int cl_radius = radius;
-        float pixel[4] = {color_r, color_g, color_b, color_a};
+        float segments[4] =
+            {
+                1.0f, -(1.0f / hardness - 1.0f),
+                hardness / (1.0f - hardness), -hardness / (1.0f - hardness),
+            };
+        float color[4] = {color_r, color_g, color_b, color_a};
+
+        float angle_rad = angle / 360 * 2 * M_PI;
+        float cs = cosf(angle_rad);
+        float sn = sinf(angle_rad);
 
         err = clSetKernelArg(kernel, 1, sizeof(cl_int), (void *)&stride);
-        err = clSetKernelArg(kernel, 4, sizeof(cl_int), (void *)&cl_radius);
-        err = clSetKernelArg(kernel, 5, sizeof(cl_float4), (void *)&pixel);
+        err = clSetKernelArg(kernel, 4, sizeof(float), (void *)&radius);
+        err = clSetKernelArg(kernel, 5, sizeof(float), (void *)&hardness);
+        err = clSetKernelArg(kernel, 6, sizeof(float), (void *)&aspect_ratio);
+        err = clSetKernelArg(kernel, 7, sizeof(float), (void *)&angle);
+        err = clSetKernelArg(kernel, 8, sizeof(float), (void *)&sn);
+        err = clSetKernelArg(kernel, 9, sizeof(float), (void *)&cs);
+        err = clSetKernelArg(kernel, 10, sizeof(cl_float4), (void *)&segments);
+        err = clSetKernelArg(kernel, 11, sizeof(cl_float4), (void *)&color);
 
         for (int iy = iy_start; iy <= iy_end; ++iy)
         {
@@ -154,19 +173,22 @@ static int drawDabFunction (MyPaintSurface *base_surface,
             {
                 CanvasTile *tile = ctx->getTile(ix, iy);
 
-                cl_int offsetX = x - (ix * TILE_PIXEL_WIDTH);
-                cl_int offsetY = y - (iy * TILE_PIXEL_HEIGHT);
+                float offsetX = x - (ix * TILE_PIXEL_WIDTH);
+                float offsetY = y - (iy * TILE_PIXEL_HEIGHT);
                 cl_mem data = ctx->clOpenTile(tile);
 
                 err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&data);
-                err = clSetKernelArg(kernel, 2, sizeof(cl_int), (void *)&offsetX);
-                err = clSetKernelArg(kernel, 3, sizeof(cl_int), (void *)&offsetY);
+                err = clSetKernelArg(kernel, 2, sizeof(float), (void *)&offsetX);
+                err = clSetKernelArg(kernel, 3, sizeof(float), (void *)&offsetY);
                 err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                              kernel, 2,
                                              NULL, global_work_size, NULL,
                                              0, NULL, NULL);
             }
         }
+
+        return 1;
     }
-    return 1; /* Returns non-zero if the surface was modified */
+
+    return 0; /* Returns non-zero if the surface was modified */
 }

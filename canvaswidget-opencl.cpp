@@ -444,4 +444,17 @@ SharedOpenCL::SharedOpenCL()
 
         clReleaseProgram (baseKernelProg);
     }
+
+    cl_program myPaintKernelsProg = compileFile(this, ":/MyPaintKernels.cl");
+    if (myPaintKernelsProg)
+    {
+        mypaintDabKernel = clCreateKernel (myPaintKernelsProg, "mypaint_dab", &err);
+
+        if (err != CL_SUCCESS)
+        {
+            qWarning() << "Could not find MyPaint kernel \"" << "mypaint_dab" << "\" (" << err << ")";
+        }
+
+        clReleaseProgram (baseKernelProg);
+    }
 }

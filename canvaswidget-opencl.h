@@ -46,6 +46,7 @@ public:
 
     cl_kernel circleKernel;
     cl_kernel fillKernel;
+    cl_kernel mypaintDabKernel;
 
     bool gl_sharing;
 private:

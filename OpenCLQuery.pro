@@ -50,7 +50,8 @@ win32 {
 OTHER_FILES += \
     CanvasShader.frag \
     CanvasShader.vert \
-    BaseKernels.cl
+    BaseKernels.cl \
+    MyPaintKernels.cl
 
 RESOURCES += \
     Resources.qrc

@@ -3,5 +3,6 @@
         <file>CanvasShader.vert</file>
         <file>CanvasShader.frag</file>
         <file>BaseKernels.cl</file>
+        <file>MyPaintKernels.cl</file>
     </qresource>
 </RCC>
