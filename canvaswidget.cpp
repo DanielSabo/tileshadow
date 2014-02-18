@@ -12,6 +12,7 @@
 
 using namespace std;
 
+#include "mypaintstrokecontext.h"
 
 void _check_gl_error(const char *file, int line);
 #define check_gl_error() _check_gl_error(__FILE__,__LINE__)
@@ -228,6 +229,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
 {
     // cout << "Click! " << ix << ", " << iy << endl;
     ctx->stroke.reset(new BasicStrokeContext(ctx));
+    // ctx->stroke.reset(new MyPaintStrokeContext(ctx));
 
     if(ctx->stroke->startStroke(event->localPos()))
         update();
