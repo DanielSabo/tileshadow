@@ -4,8 +4,11 @@
 #include <QFile>
 #include <QDebug>
 
-#ifdef Q_OS_WIN32
-#include <Windows.h>
+#if defined(Q_OS_WIN32)
+#include <windows.h>
+#elif defined(Q_OS_MAC)
+#include <OpenGL/OpenGL.h>
+#include <OpenCL/cl_gl_ext.h>
 #endif
 
 using namespace std;
@@ -281,7 +284,7 @@ typedef CL_API_ENTRY cl_int
 
 static cl_context createSharedContext()
 {
-#ifdef Q_OS_WIN32
+#if defined(Q_OS_WIN32)
     cl_context result;
     cl_uint i;
 
@@ -340,6 +343,24 @@ static cl_context createSharedContext()
             }
         }
     }
+#elif defined(Q_OS_MAC)
+    /* FIXME: This assumes there will only be the Apple platform and that it will
+     * inherently support sharing.
+     */
+    cl_context result;
+    cl_int err = CL_SUCCESS;
+
+    cl_context_properties properties[] = {
+        CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE,
+        (cl_context_properties)CGLGetShareGroup(CGLGetCurrentContext()),
+        0, 0,
+    };
+
+    result = clCreateContext(properties, 0, 0, NULL, 0, &err);
+    if (err == CL_SUCCESS && result)
+        return result;
+    else
+        check_cl_error(err);
 #endif
     return 0;
 }
