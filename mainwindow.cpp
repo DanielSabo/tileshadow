@@ -31,3 +31,8 @@ void MainWindow::showOpenCLInfo()
     else
         infoWindow->show();
 }
+
+void MainWindow::actionQuit()
+{
+    QApplication::quit();
+}

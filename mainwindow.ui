@@ -134,7 +134,7 @@
    <sender>actionQuit</sender>
    <signal>triggered()</signal>
    <receiver>MainWindow</receiver>
-   <slot>close()</slot>
+   <slot>actionQuit()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>-1</x>
@@ -165,5 +165,6 @@
  </connections>
  <slots>
   <slot>showOpenCLInfo()</slot>
+  <slot>actionQuit()</slot>
  </slots>
 </ui>
