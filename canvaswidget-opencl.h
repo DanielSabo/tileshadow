@@ -2,6 +2,7 @@
 #define CANVASWIDGETOPENCL_H
 
 #include <list>
+#include <QString>
 
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
@@ -16,19 +17,18 @@ class OpenCLDeviceInfo
 {
 public:
   OpenCLDeviceInfo(cl_device_id device);
-  OpenCLDeviceInfo(OpenCLDeviceInfo const &other);
   ~OpenCLDeviceInfo();
 
   cl_platform_id platform;
   cl_device_id   device;
 
-  const char     *getDeviceName();
-  const char     *getPlatformName();
+  const QString  &getDeviceName();
+  const QString  &getPlatformName();
   cl_device_type  getType();
 
 private:
-  char *deviceName;
-  char *platformName;
+  QString deviceName;
+  QString platformName;
 };
 
 std::list<OpenCLDeviceInfo> enumerateOpenCLDevices();

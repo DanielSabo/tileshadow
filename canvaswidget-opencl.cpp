@@ -102,60 +102,43 @@ void _check_cl_error(const char *file, int line, cl_int err) {
 OpenCLDeviceInfo::OpenCLDeviceInfo(cl_device_id d) :
     platform(0),
     device(d),
-    deviceName(0),
-    platformName(0)
+    deviceName(),
+    platformName()
 {
     clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform), &platform, NULL);
 }
 
-OpenCLDeviceInfo::OpenCLDeviceInfo(OpenCLDeviceInfo const &other)
-{
-    if (other.deviceName)
-        deviceName = strdup(other.deviceName);
-    else
-        deviceName = 0;
-
-    if (other.platformName)
-        platformName = strdup(other.platformName);
-    else
-        platformName = 0;
-
-    platform = other.platform;
-    device = other.device;
-}
-
 OpenCLDeviceInfo::~OpenCLDeviceInfo()
 {
-    if (deviceName)
-        delete[] deviceName;
-
-    if (platformName)
-        delete[] platformName;
 }
 
-const char *OpenCLDeviceInfo::getDeviceName()
+const QString &OpenCLDeviceInfo::getDeviceName()
 {
-    if (!deviceName)
+    if (deviceName.isEmpty())
     {
         size_t deviceNameSize = 0;
         clGetDeviceInfo(device, CL_DEVICE_NAME, 0, NULL, &deviceNameSize);
 
-        deviceName = new char[deviceNameSize];
-        clGetDeviceInfo(device, CL_DEVICE_NAME, deviceNameSize, deviceName, NULL);
+        char deviceNameBuffer[deviceNameSize];
+        clGetDeviceInfo(device, CL_DEVICE_NAME, deviceNameSize, deviceNameBuffer, NULL);
+
+        deviceName = QString(deviceNameBuffer);
     }
 
     return deviceName;
 }
 
-const char *OpenCLDeviceInfo::getPlatformName()
+const QString &OpenCLDeviceInfo::getPlatformName()
 {
-    if (!platformName)
+    if (platformName.isEmpty())
     {
         size_t platformNameSize = 0;
         clGetPlatformInfo(platform, CL_PLATFORM_NAME, 0, NULL, &platformNameSize);
 
-        platformName = new char[platformNameSize];
-        clGetPlatformInfo(platform, CL_PLATFORM_NAME, platformNameSize, platformName, NULL);
+        char platformNameBuffer[platformNameSize];
+        clGetPlatformInfo(platform, CL_PLATFORM_NAME, platformNameSize, platformNameBuffer, NULL);
+
+        platformName = QString(platformNameBuffer);
     }
 
     return platformName;
@@ -419,8 +402,8 @@ SharedOpenCL::SharedOpenCL()
     device = deviceInfo.device;
     platform = deviceInfo.platform;
 
-    cout << "CL Platform: " << deviceInfo.getPlatformName() << endl;
-    cout << "CL Device: " << deviceInfo.getDeviceName() << endl;
+    cout << "CL Platform: " << deviceInfo.getPlatformName().toUtf8().constData() << endl;
+    cout << "CL Device: " << deviceInfo.getDeviceName().toUtf8().constData() << endl;
     cout << "CL Sharing: " << (gl_sharing ? "yes" : "no") << endl;
 
     cmdQueue = clCreateCommandQueue (ctx, device, command_queue_flags, &err);

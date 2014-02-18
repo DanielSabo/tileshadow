@@ -89,7 +89,7 @@ void SystemInfoDialog::showEvent(QShowEvent *event)
             devStr.append(deviceInfoIter->getPlatformName());
             devStr.append(" - ");
             devStr.append(deviceInfoIter->getDeviceName());
-            addPlatformHeader(*queryResultString, devStr.toUtf8().data());
+            addPlatformHeader(*queryResultString, devStr.toUtf8().constData());
 
             char infoReturnStr[1024];
             clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_VERSION, sizeof(infoReturnStr), infoReturnStr, NULL);
