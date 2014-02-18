@@ -159,10 +159,10 @@ void CanvasWidget::initializeGL()
         ctx->locationTileOrigin = glFuncs->glGetUniformLocation(ctx->program, "tileOrigin");
         ctx->locationTileSize   = glFuncs->glGetUniformLocation(ctx->program, "tileSize");
         ctx->locationTileImage  = glFuncs->glGetUniformLocation(ctx->program, "tileImage");
+        ctx->locationTilePixels = glFuncs->glGetUniformLocation(ctx->program, "tilePixels");
 
     }
 
-    glFuncs->glGenBuffers(1, &ctx->tileBuffer);
     glFuncs->glGenBuffers(1, &ctx->vertexBuffer);
     glFuncs->glGenVertexArrays(1, &ctx->vertexArray);
     glFuncs->glBindVertexArray(ctx->vertexArray);
@@ -208,6 +208,7 @@ void CanvasWidget::paintGL()
     glFuncs->glActiveTexture(GL_TEXTURE0);
     glFuncs->glUniform1i(ctx->locationTileImage, 0);
     glFuncs->glUniform2f(ctx->locationTileSize, tileWidth, tileHeight);
+    glFuncs->glUniform2f(ctx->locationTilePixels, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT);
     glFuncs->glBindVertexArray(ctx->vertexArray);
 
     for (ix = 0; ix * TILE_PIXEL_WIDTH < widgetWidth; ++ix)
@@ -217,8 +218,7 @@ void CanvasWidget::paintGL()
             float offsetY = 1.0f - ((iy + 1) * tileHeight);
 
             CanvasTile *tile = ctx->getTile(ix, iy);
-            glFuncs->glBindTexture(GL_TEXTURE_2D, tile->tileTex);
-
+            glFuncs->glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, tile->tileBuffer);
             glFuncs->glUniform2f(ctx->locationTileOrigin, offsetX, offsetY);
             glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }

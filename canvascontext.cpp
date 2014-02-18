@@ -4,6 +4,7 @@ CanvasTile::CanvasTile()
 {
     isOpen = false;
     tileMem = 0;
+    tileBuffer = 0;
     tileData = NULL;
     tileMem = clCreateBuffer (SharedOpenCL::getSharedOpenCL()->ctx, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
                               TILE_COMP_TOTAL * sizeof(float), tileData, NULL);
@@ -60,13 +61,13 @@ CanvasTile *CanvasContext::getTile(int x, int y)
                                  NULL, global_work_size, NULL,
                                  0, NULL, NULL);
 
-    glFuncs->glGenTextures(1, &tile->tileTex);
-    glFuncs->glBindTexture(GL_TEXTURE_2D, tile->tileTex);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFuncs->glGenBuffers(1, &tile->tileBuffer);
+    glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, tile->tileBuffer);
+    glFuncs->glBufferData(GL_TEXTURE_BUFFER,
+                          sizeof(float) * TILE_COMP_TOTAL,
+                          NULL,
+                          GL_DYNAMIC_DRAW);
 
     clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
 
@@ -114,13 +115,11 @@ void CanvasContext::closeTile(CanvasTile *tile)
     tile->mapHost();
 
     /* Push the new data to OpenGL */
-    glFuncs->glBindTexture(GL_TEXTURE_2D, tile->tileTex);
-    glFuncs->glBindBuffer(GL_PIXEL_UNPACK_BUFFER, tileBuffer);
-    glFuncs->glBufferData(GL_PIXEL_UNPACK_BUFFER,
+    glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, tile->tileBuffer);
+    glFuncs->glBufferData(GL_TEXTURE_BUFFER,
                           sizeof(float) * TILE_COMP_TOTAL,
                           tile->tileData,
                           GL_STREAM_DRAW);
-    glFuncs->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT, 0, GL_RGBA, GL_FLOAT, 0);
 
     tile->isOpen = false;
 }

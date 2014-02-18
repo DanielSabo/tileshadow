@@ -1,12 +1,14 @@
 #version 150
 
 in vec2 texCoord;
-uniform sampler2D tileImage;
+uniform vec2 tilePixels;
+uniform samplerBuffer tileImage;
 out vec4 fragColor;
 
 void main( void )
 {
-//    float grey = (texCoord.x + texCoord.y) / 2.0f;
-//    fragColor = vec4(grey, grey, grey, 1.0);
-    fragColor = texture(tileImage, texCoord);
+    int x = int(texCoord.x);
+    int y = int(texCoord.y);
+    int stride = int(tilePixels.x);
+    fragColor = texelFetch(tileImage, x + y * stride);
 }

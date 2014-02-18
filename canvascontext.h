@@ -33,7 +33,7 @@ public:
     bool    isOpen;
     cl_mem  tileMem;
     float  *tileData;
-    GLuint  tileTex;
+    GLuint  tileBuffer;
 
     void mapHost(void);
     void unmapHost(void);
@@ -60,11 +60,10 @@ public:
     GLuint locationTileOrigin;
     GLuint locationTileSize;
     GLuint locationTileImage;
+    GLuint locationTilePixels;
 
     GLuint vertexBuffer;
     GLuint vertexArray;
-
-    GLuint tileBuffer;
 
     int tileWidth;
     int tileHeight;
