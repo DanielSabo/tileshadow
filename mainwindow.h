@@ -27,6 +27,7 @@ private:
 private slots:
     void showOpenCLInfo();
     void actionQuit();
+    void setActiveTool();
 };
 
 #endif // MAINWINDOW_H

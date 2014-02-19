@@ -15,6 +15,9 @@
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
+    <property name="spacing">
+     <number>0</number>
+    </property>
     <property name="leftMargin">
      <number>0</number>
     </property>
@@ -38,8 +41,52 @@
      </widget>
     </item>
     <item>
-     <widget class="QWidget" name="widget" native="true">
-      <layout class="QHBoxLayout" name="horizontalLayout">
+     <widget class="QGroupBox" name="toolbox">
+      <property name="title">
+       <string>Tools</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+      <property name="flat">
+       <bool>true</bool>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <property name="spacing">
+        <number>3</number>
+       </property>
+       <property name="leftMargin">
+        <number>3</number>
+       </property>
+       <property name="topMargin">
+        <number>3</number>
+       </property>
+       <property name="rightMargin">
+        <number>3</number>
+       </property>
+       <property name="bottomMargin">
+        <number>3</number>
+       </property>
+       <item>
+        <widget class="QPushButton" name="button_setToolDebug">
+         <property name="text">
+          <string>Debug</string>
+         </property>
+         <property name="toolName" stdset="0">
+          <string>debug</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="button_setToolDefault">
+         <property name="text">
+          <string>Default</string>
+         </property>
+         <property name="toolName" stdset="0">
+          <string>default</string>
+         </property>
+        </widget>
+       </item>
        <item>
         <spacer name="horizontalSpacer">
          <property name="orientation">
@@ -52,13 +99,6 @@
           </size>
          </property>
         </spacer>
-       </item>
-       <item>
-        <widget class="QPushButton" name="queryButton">
-         <property name="text">
-          <string>Query</string>
-         </property>
-        </widget>
        </item>
       </layout>
      </widget>
@@ -91,7 +131,7 @@
   </widget>
   <action name="actionShow_OpenCL_Information">
    <property name="text">
-    <string>OpenCL Report</string>
+    <string>OpenCL Info</string>
    </property>
   </action>
   <action name="actionQuit">
@@ -146,25 +186,10 @@
     </hint>
    </hints>
   </connection>
-  <connection>
-   <sender>queryButton</sender>
-   <signal>clicked()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>showOpenCLInfo()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>353</x>
-     <y>279</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>199</x>
-     <y>149</y>
-    </hint>
-   </hints>
-  </connection>
  </connections>
  <slots>
   <slot>showOpenCLInfo()</slot>
   <slot>actionQuit()</slot>
+  <slot>setActiveTool()</slot>
  </slots>
 </ui>

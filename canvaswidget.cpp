@@ -111,7 +111,9 @@ static const QGLFormat &getFormatSingleton()
 }
 
 CanvasWidget::CanvasWidget(QWidget *parent) :
-    QGLWidget(getFormatSingleton(), parent), ctx(NULL)
+    QGLWidget(getFormatSingleton(), parent),
+    ctx(NULL),
+    activeBrush("default")
 {
 }
 
@@ -228,8 +230,15 @@ void CanvasWidget::paintGL()
 void CanvasWidget::mousePressEvent(QMouseEvent *event)
 {
     // cout << "Click! " << ix << ", " << iy << endl;
-    ctx->stroke.reset(new BasicStrokeContext(ctx));
-    // ctx->stroke.reset(new MyPaintStrokeContext(ctx));
+    if (activeBrush == QString("debug"))
+        ctx->stroke.reset(new BasicStrokeContext(ctx));
+    else if (activeBrush == QString("default"))
+        ctx->stroke.reset(new MyPaintStrokeContext(ctx));
+    else
+    {
+        qWarning() << "Unknown tool set \'" << activeBrush << "\', using debug";
+        ctx->stroke.reset(new BasicStrokeContext(ctx));
+    }
 
     if(ctx->stroke->startStroke(event->localPos()))
         update();
@@ -251,4 +260,9 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
             update();
 
     QGLWidget::mouseMoveEvent(event);
+}
+
+void CanvasWidget::setActiveTool(const QString &toolName)
+{
+    activeBrush = toolName;
 }

@@ -1,11 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include <stdio.h>
-#ifdef __APPLE__
-#include <OpenCL/cl.h>
-#else
-#include <CL/cl.h>
-#endif
+#include <QDebug>
+
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -15,6 +11,13 @@ MainWindow::MainWindow(QWidget *parent) :
 
     canvas = findChild<CanvasWidget*>("mainCanvas");
     setWindowTitle(QApplication::applicationDisplayName());
+
+    QWidget *toolbox = findChild<QWidget *>("toolbox");
+    QList<QWidget *>toolButtons = toolbox->findChildren<QWidget *>();
+
+    for (int i = 0; i < toolButtons.size(); ++i) {
+        connect(toolButtons[i], SIGNAL(clicked()), this, SLOT(setActiveTool()));
+    }
 }
 
 MainWindow::~MainWindow()
@@ -38,4 +41,15 @@ void MainWindow::showOpenCLInfo()
 void MainWindow::actionQuit()
 {
     QApplication::quit();
+}
+
+void MainWindow::setActiveTool()
+{
+    QVariant toolNameProp = sender()->property("toolName");
+    if (toolNameProp.type() == QVariant::String)
+    {
+        canvas->setActiveTool(toolNameProp.toString());
+    }
+    else
+        qWarning() << sender()->objectName() << " has no toolName property.";
 }

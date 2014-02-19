@@ -11,6 +11,8 @@ public:
     explicit CanvasWidget(QWidget *parent = 0);
     virtual  ~CanvasWidget();
 
+    void setActiveTool(const QString &toolName);
+
 protected:
     void initializeGL();
     void resizeGL(int w, int h);
@@ -22,6 +24,8 @@ protected:
 
 private:
     CanvasContext *ctx;
+
+    QString activeBrush;
 
 signals:
 
