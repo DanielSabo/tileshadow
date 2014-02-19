@@ -16,6 +16,7 @@ TEMPLATE = app
 
 # For unique_ptr
 #QMAKE_CXXFLAGS += -std=gnu++0x
+QMAKE_CFLAGS += -std=gnu99
 
 SOURCES += main.cpp\
         mainwindow.cpp \
