@@ -9,6 +9,8 @@
 #elif defined(Q_OS_MAC)
 #include <OpenGL/OpenGL.h>
 #include <OpenCL/cl_gl_ext.h>
+#elif defined(Q_OS_UNIX)
+#include <GL/glx.h>
 #endif
 
 using namespace std;
@@ -267,7 +269,7 @@ typedef CL_API_ENTRY cl_int
 
 static cl_context createSharedContext()
 {
-#if defined(Q_OS_WIN32)
+#if defined(Q_OS_WIN32) || defined(Q_OS_UNIX)
     cl_context result;
     cl_uint i;
 
@@ -298,12 +300,23 @@ static cl_context createSharedContext()
             cl_device_id device = 0;
             size_t resultSize = 0;
 
+#if defined(Q_OS_WIN32)
             cl_context_properties properties[] = {
                 CL_GL_CONTEXT_KHR, (cl_context_properties)wglGetCurrentContext(),
                 CL_WGL_HDC_KHR, (cl_context_properties)wglGetCurrentDC(),
                 CL_CONTEXT_PLATFORM, (cl_context_properties)platforms[i],
                 0, 0,
             };
+#elif defined(Q_OS_UNIX)
+            cl_context_properties properties[] = {
+                CL_GL_CONTEXT_KHR, (cl_context_properties)glXGetCurrentContext(),
+                CL_GLX_DISPLAY_KHR, (cl_context_properties)glXGetCurrentDisplay(),
+                CL_CONTEXT_PLATFORM, (cl_context_properties)platforms[i],
+                0, 0,
+            };
+#else
+            #error Missing properties
+#endif
 
             err = clGetGLContextInfoKHR (properties, CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR, sizeof(device), &device, &resultSize);
             check_cl_error(err);
