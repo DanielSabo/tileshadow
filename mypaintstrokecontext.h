@@ -13,6 +13,9 @@ public:
     bool startStroke(QPointF point);
     bool strokeTo(QPointF point);
 
+    bool fromJsonFile(const QString &path);
+    void fromDefaults();
+
     MyPaintStrokeContextPrivate *priv;
 };
 

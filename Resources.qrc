@@ -4,5 +4,8 @@
         <file>CanvasShader.frag</file>
         <file>BaseKernels.cl</file>
         <file>MyPaintKernels.cl</file>
+        <file>mypaint-tools/2B_pencil.myb</file>
+        <file>mypaint-tools/charcoal-04.myb</file>
+        <file>mypaint-tools/default.myb</file>
     </qresource>
 </RCC>

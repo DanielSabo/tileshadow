@@ -232,12 +232,19 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
     // cout << "Click! " << ix << ", " << iy << endl;
     if (activeBrush == QString("debug"))
         ctx->stroke.reset(new BasicStrokeContext(ctx));
-    else if (activeBrush == QString("default"))
-        ctx->stroke.reset(new MyPaintStrokeContext(ctx));
     else
     {
-        qWarning() << "Unknown tool set \'" << activeBrush << "\', using debug";
-        ctx->stroke.reset(new BasicStrokeContext(ctx));
+        MyPaintStrokeContext *mypaint = new MyPaintStrokeContext(ctx);
+        if (mypaint->fromJsonFile(QString(":/mypaint-tools/") + activeBrush + ".myb"))
+        {
+            ctx->stroke.reset(mypaint);
+        }
+        else
+        {
+            delete mypaint;
+            qWarning() << "Unknown tool set \'" << activeBrush << "\', using debug";
+            ctx->stroke.reset(new BasicStrokeContext(ctx));
+        }
     }
 
     if(ctx->stroke->startStroke(event->localPos()))

@@ -88,6 +88,26 @@
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="button_setToolPencil">
+         <property name="text">
+          <string>Pencil</string>
+         </property>
+         <property name="toolName" stdset="0">
+          <string>2B_pencil</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="button_setToolCharcoal">
+         <property name="text">
+          <string>Charcoal</string>
+         </property>
+         <property name="toolName" stdset="0">
+          <string>charcoal-04</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <spacer name="horizontalSpacer">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
