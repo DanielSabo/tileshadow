@@ -1,6 +1,6 @@
 TileShadow
 ==========
-A proof of concept OpenGL+OpenGL painting application.
+A proof of concept OpenGL+OpenCL painting application.
 
 Requirements
 ===========
