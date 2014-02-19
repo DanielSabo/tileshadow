@@ -3,6 +3,7 @@
 #include <iostream>
 #include <QFile>
 #include <QDebug>
+#include <QStringList>
 
 #if defined(Q_OS_WIN32)
 #include <windows.h>
