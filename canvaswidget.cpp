@@ -227,9 +227,8 @@ void CanvasWidget::paintGL()
         }
 }
 
-void CanvasWidget::mousePressEvent(QMouseEvent *event)
+void CanvasWidget::startStroke(QPointF pos, float pressure)
 {
-    // cout << "Click! " << ix << ", " << iy << endl;
     if (activeBrush == QString("debug"))
         ctx->stroke.reset(new BasicStrokeContext(ctx));
     else
@@ -247,26 +246,65 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
         }
     }
 
-    if(ctx->stroke->startStroke(event->localPos()))
+    if(ctx->stroke->startStroke(pos, pressure))
         update();
+}
 
-    QGLWidget::mousePressEvent(event);
+void CanvasWidget::strokeTo(QPointF pos, float pressure)
+{
+    if (!ctx->stroke.isNull())
+        if (ctx->stroke->strokeTo(pos, pressure))
+            update();
+}
+
+void CanvasWidget::endStroke()
+{
+    ctx->stroke.reset();
+}
+
+void CanvasWidget::mousePressEvent(QMouseEvent *event)
+{
+    QPointF pos = event->localPos();
+
+    startStroke(pos, 1.0f);
+
+    event->accept();
 }
 
 void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
 {
-    // cout << "Un-Click!" << endl;
-    ctx->stroke.reset();
-    QGLWidget::mouseReleaseEvent(event);
+    endStroke();
+
+    event->accept();
 }
 
 void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
 {
-    if (!ctx->stroke.isNull())
-        if (ctx->stroke->strokeTo(event->localPos()))
-            update();
+    QPointF pos = event->localPos();
 
-    QGLWidget::mouseMoveEvent(event);
+    strokeTo(pos, 1.0f);
+
+    event->accept();
+}
+
+void CanvasWidget::tabletEvent(QTabletEvent *event)
+{
+    QEvent::Type eventType = event->type();
+
+    float xshift = event->hiResGlobalX() - event->globalX();
+    float yshift = event->hiResGlobalY() - event->globalY();
+    QPointF point = QPointF(event->x() + xshift, event->y() + yshift);
+
+    if (eventType == QEvent::TabletPress)
+        startStroke(point, event->pressure());
+    else if (eventType == QEvent::TabletRelease)
+        endStroke();
+    else if (eventType == QEvent::TabletMove)
+        strokeTo(point, event->pressure());
+    else
+        return;
+
+    event->accept();
 }
 
 void CanvasWidget::setActiveTool(const QString &toolName)

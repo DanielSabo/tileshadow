@@ -18,8 +18,8 @@ public:
     StrokeContext(CanvasContext *ctx) : ctx(ctx) {}
     virtual ~StrokeContext() {}
 
-    virtual bool startStroke(QPointF point) = 0;
-    virtual bool strokeTo(QPointF point) = 0;
+    virtual bool startStroke(QPointF point, float pressure) = 0;
+    virtual bool strokeTo(QPointF point, float pressure) = 0;
 
     CanvasContext *ctx;
 };

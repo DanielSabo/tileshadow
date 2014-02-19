@@ -10,8 +10,8 @@ public:
     MyPaintStrokeContext(CanvasContext *ctx);
     ~MyPaintStrokeContext();
 
-    bool startStroke(QPointF point);
-    bool strokeTo(QPointF point);
+    bool startStroke(QPointF point, float pressure);
+    bool strokeTo(QPointF point, float pressure);
 
     bool fromJsonFile(const QString &path);
     void fromDefaults();

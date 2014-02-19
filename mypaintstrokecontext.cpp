@@ -151,8 +151,10 @@ MyPaintStrokeContext::~MyPaintStrokeContext()
     delete priv;
 }
 
-bool MyPaintStrokeContext::startStroke(QPointF point)
+bool MyPaintStrokeContext::startStroke(QPointF point, float pressure)
 {
+    (void)point; (void)pressure;
+
     mypaint_brush_reset (priv->brush);
     mypaint_brush_new_stroke(priv->brush);
 
@@ -160,7 +162,7 @@ bool MyPaintStrokeContext::startStroke(QPointF point)
     #if 0
     mypaint_brush_stroke_to(priv->brush, (MyPaintSurface *)priv->surface,
                             point.x(), point.y(),
-                            1.0f /* pressure */, 0.0f /* xtilt */, 0.0f /* ytilt */,
+                            pressure /* pressure */, 0.0f /* xtilt */, 0.0f /* ytilt */,
                             0.0 /* deltaTime in ms*/);
     #endif
     priv->timer.start();
@@ -168,12 +170,12 @@ bool MyPaintStrokeContext::startStroke(QPointF point)
 }
 
 
-bool MyPaintStrokeContext::strokeTo(QPointF point)
+bool MyPaintStrokeContext::strokeTo(QPointF point, float pressure)
 {
     double dt = priv->timer.restart() / 1000.0;
     mypaint_brush_stroke_to(priv->brush, (MyPaintSurface *)priv->surface,
                             point.x(), point.y(),
-                            1.0f /* pressure */, 0.0f /* xtilt */, 0.0f /* ytilt */,
+                            pressure /* pressure */, 0.0f /* xtilt */, 0.0f /* ytilt */,
                             dt /* deltaTime in ms*/);
     return true;
 }

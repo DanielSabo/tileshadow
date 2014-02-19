@@ -47,15 +47,19 @@ void BasicStrokeContext::drawDab(QPointF point)
     lastDab = point;
 }
 
-bool BasicStrokeContext::startStroke(QPointF point)
+bool BasicStrokeContext::startStroke(QPointF point, float pressure)
 {
+    (void)pressure;
+
     start = point;
     drawDab(point);
     return true;
 }
 
-bool BasicStrokeContext::strokeTo(QPointF point)
+bool BasicStrokeContext::strokeTo(QPointF point, float pressure)
 {
+    (void)pressure;
+
     float dist = sqrtf(powf(lastDab.x() - point.x(), 2.0f) + powf(lastDab.y() - point.y(), 2.0f));
 
     if (dist >= 1.0f)

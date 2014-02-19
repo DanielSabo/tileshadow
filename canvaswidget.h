@@ -12,6 +12,10 @@ public:
     virtual  ~CanvasWidget();
 
     void setActiveTool(const QString &toolName);
+    void startStroke(QPointF pos, float pressure);
+    void strokeTo(QPointF pos, float pressure);
+    void endStroke();
+
 
 protected:
     void initializeGL();
@@ -21,6 +25,7 @@ protected:
     void mousePressEvent(QMouseEvent * event);
     void mouseReleaseEvent(QMouseEvent * event);
     void mouseMoveEvent(QMouseEvent * event);
+    void tabletEvent(QTabletEvent *event);
 
 private:
     CanvasContext *ctx;
