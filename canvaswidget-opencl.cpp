@@ -269,7 +269,7 @@ typedef CL_API_ENTRY cl_int
 
 static cl_context createSharedContext()
 {
-#if defined(Q_OS_WIN32) || defined(Q_OS_UNIX)
+#if defined(Q_OS_WIN32) || (defined(Q_OS_UNIX) && !defined(Q_OS_MAC))
     cl_context result;
     cl_uint i;
 
