@@ -14,6 +14,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     canvas = findChild<CanvasWidget*>("mainCanvas");
+    setWindowTitle(QApplication::applicationDisplayName());
 }
 
 MainWindow::~MainWindow()
@@ -25,6 +26,8 @@ void MainWindow::showOpenCLInfo()
 {
     if (infoWindow.isNull())
         infoWindow.reset(new SystemInfoDialog ());
+
+    infoWindow->setWindowTitle(QApplication::applicationDisplayName() + " - System Information");
 
     if (infoWindow->isVisible())
         infoWindow->raise();
