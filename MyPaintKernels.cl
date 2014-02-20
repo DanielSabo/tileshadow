@@ -35,6 +35,7 @@ float calculate_alpha (float rr, float hardness, float segment1_offset, float se
 
 /* FIXME: OpenCL may not support more than 8 args, need to combine some things */
 __kernel void mypaint_dab(__global float4 *buf,
+                                   int     offset,
                                    int     stride,
                                    float   x,
                                    float   y,
@@ -50,8 +51,8 @@ __kernel void mypaint_dab(__global float4 *buf,
   int gidx = get_global_id(0);
   int gidy = get_global_id(1);
 
-  float yy = (gidy + y);
-  float xx = (gidx + x);
+  float yy = (gidy - y);
+  float xx = (gidx - x);
 
   float segment1_offset = 1.0f;
   float segment1_slope  = slope1;
@@ -63,7 +64,8 @@ __kernel void mypaint_dab(__global float4 *buf,
 
   if (alpha > 0.0f)
     {
-      float4 pixel = buf[gidx + gidy * stride];
+      const int idx = gidx + gidy * stride + offset;
+      float4 pixel = buf[idx];
       
       alpha = alpha * color.s3;
       float dst_alpha = pixel.s3;
@@ -74,6 +76,6 @@ __kernel void mypaint_dab(__global float4 *buf,
       pixel.s012 = (color.s012 * alpha + pixel.s012 * a_term) / a;
       pixel.s3   = a;
 
-      buf[gidx + gidy * stride] = pixel;
+      buf[idx] = pixel;
     }
 }

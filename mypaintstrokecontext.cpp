@@ -209,7 +209,6 @@ static int drawDabFunction (MyPaintSurface *base_surface,
 {
     CanvasMyPaintSurface *surface = (CanvasMyPaintSurface *)base_surface;
 
-
     if (hardness < 0.0f)
         hardness = 0.0f;
     else if (hardness > 1.0f)
@@ -235,14 +234,14 @@ static int drawDabFunction (MyPaintSurface *base_surface,
     {
         CanvasContext *ctx = surface->strokeContext->ctx;
 
-        /* FIXME: Use mypaint fringe calculation instead of raw radius */
-        int ix_start = (x - radius) / TILE_PIXEL_WIDTH;
-        int iy_start = (y - radius) / TILE_PIXEL_HEIGHT;
+        int fringe_radius = radius + 1.5f;
 
-        int ix_end   = (x + radius) / TILE_PIXEL_WIDTH;
-        int iy_end   = (y + radius) / TILE_PIXEL_HEIGHT;
+        int ix_start = (x - fringe_radius) / TILE_PIXEL_WIDTH;
+        int iy_start = (y - fringe_radius) / TILE_PIXEL_HEIGHT;
 
-        const size_t global_work_size[2] = {TILE_PIXEL_HEIGHT, TILE_PIXEL_WIDTH};
+        int ix_end   = (x + fringe_radius) / TILE_PIXEL_WIDTH;
+        int iy_end   = (y + fringe_radius) / TILE_PIXEL_HEIGHT;
+
         cl_kernel kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabKernel;
 
         cl_int err = CL_SUCCESS;
@@ -263,15 +262,15 @@ static int drawDabFunction (MyPaintSurface *base_surface,
         float slope1 = -(1.0f / hardness - 1.0f);
         float slope2 = -(hardness / (1.0f - hardness));
 
-        err = clSetKernelArg(kernel, 1, sizeof(cl_int), (void *)&stride);
-        err = clSetKernelArg(kernel, 4, sizeof(float), (void *)&radius);
-        err = clSetKernelArg(kernel, 5, sizeof(float), (void *)&hardness);
-        err = clSetKernelArg(kernel, 6, sizeof(float), (void *)&aspect_ratio);
-        err = clSetKernelArg(kernel, 7, sizeof(float), (void *)&sn);
-        err = clSetKernelArg(kernel, 8, sizeof(float), (void *)&cs);
-        err = clSetKernelArg(kernel, 9, sizeof(float), (void *)&slope1);
-        err = clSetKernelArg(kernel, 10, sizeof(float), (void *)&slope2);
-        err = clSetKernelArg(kernel, 11, sizeof(cl_float4), (void *)&color);
+        err = clSetKernelArg(kernel, 2, sizeof(cl_int), (void *)&stride);
+        err = clSetKernelArg(kernel, 5, sizeof(float), (void *)&radius);
+        err = clSetKernelArg(kernel, 6, sizeof(float), (void *)&hardness);
+        err = clSetKernelArg(kernel, 7, sizeof(float), (void *)&aspect_ratio);
+        err = clSetKernelArg(kernel, 8, sizeof(float), (void *)&sn);
+        err = clSetKernelArg(kernel, 9, sizeof(float), (void *)&cs);
+        err = clSetKernelArg(kernel, 10, sizeof(float), (void *)&slope1);
+        err = clSetKernelArg(kernel, 11, sizeof(float), (void *)&slope2);
+        err = clSetKernelArg(kernel, 12, sizeof(cl_float4), (void *)&color);
 
         for (int iy = iy_start; iy <= iy_end; ++iy)
         {
@@ -279,13 +278,44 @@ static int drawDabFunction (MyPaintSurface *base_surface,
             {
                 CanvasTile *tile = ctx->getTile(ix, iy);
 
-                float offsetX = (ix * TILE_PIXEL_WIDTH) + 0.5f - x;
-                float offsetY = (iy * TILE_PIXEL_HEIGHT) + 0.5f - y;
+                float tileX = (x + 0.5f) - (ix * TILE_PIXEL_WIDTH);
+                float tileY = (y + 0.5f) - (iy * TILE_PIXEL_HEIGHT);
+
+                /* 2 is probably excessive padding */
+                int firstX = tileX - 2.0f - radius;
+                int firstY = tileY - 2.0f - radius;
+
+                int lastX = tileX + 2.0f + radius;
+                int lastY = tileY + 2.0f + radius;
+
+                cl_int offset = 0;
+                size_t global_work_size[2] = {TILE_PIXEL_HEIGHT, TILE_PIXEL_WIDTH};
+
+                if (firstX > 0)
+                    {
+                        tileX  -= firstX;
+                        offset += firstX;
+                        global_work_size[0] -= firstX;
+                    }
+                if (firstY > 0)
+                    {
+                        tileY  -= firstY;
+                        offset += firstY * stride;
+                        global_work_size[1] -= firstY;
+                    }
+
+                if (lastX < TILE_PIXEL_WIDTH)
+                    global_work_size[0] -= (TILE_PIXEL_WIDTH - lastX);
+
+                if (lastY < TILE_PIXEL_HEIGHT)
+                    global_work_size[1] -= (TILE_PIXEL_HEIGHT - lastY);
+
                 cl_mem data = ctx->clOpenTile(tile);
 
                 err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&data);
-                err = clSetKernelArg(kernel, 2, sizeof(float), (void *)&offsetX);
-                err = clSetKernelArg(kernel, 3, sizeof(float), (void *)&offsetY);
+                err = clSetKernelArg(kernel, 1, sizeof(cl_int), (void *)&offset);
+                err = clSetKernelArg(kernel, 3, sizeof(float), (void *)&tileX);
+                err = clSetKernelArg(kernel, 4, sizeof(float), (void *)&tileY);
                 err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                              kernel, 2,
                                              NULL, global_work_size, NULL,
