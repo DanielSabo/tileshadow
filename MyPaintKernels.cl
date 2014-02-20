@@ -9,6 +9,7 @@
 
 float calculate_rr (float xx, float yy, float radius, float aspect_ratio, float sn, float cs);
 float calculate_alpha (float rr, float hardness, float segment1_offset, float segment1_slope, float segment2_offset, float segment2_slope);
+float color_query_weight (float xx, float yy, float radius);
 
 float calculate_rr (float xx, float yy, float radius, float aspect_ratio, float sn, float cs)
 {
@@ -31,6 +32,80 @@ float calculate_alpha (float rr, float hardness, float segment1_offset, float se
     }
 
   return 0.0f;
+}
+
+
+float color_query_weight (float xx, float yy, float radius)
+{
+
+/*
+  float rr = calculate_rr (xx, yy, radius, 1.0f, 0.0f, 1.0f);
+  float pixel_weight = calculate_alpha(rr, 0.5f, 1.0f, -1.0f, 1.0f, -1.0f);
+*/
+
+  float rr  = (yy * yy + xx * xx) / (radius * radius);
+
+  if (rr <= 1.0f)
+    return 1.0f - rr;
+
+  return 0.0f;
+}
+
+__kernel void mypaint_color_query_part1(__global float4 *buf,
+                                                  float   x,
+                                                  float   y,
+                                                  int     offset,
+                                                  int     width,
+                                                  int     height,
+                                         __global float4 *accum,
+                                                  int     stride,
+                                                  float   radius)
+{
+  /* The real mypaint function renders a dab with these constants
+    const float hardness = 0.5f;
+    const float aspect_ratio = 1.0f;
+    const float angle = 0.0f;
+
+    Therefor:
+    float slope1 = -(1.0f / 0.5f - 1.0f);
+    float slope2 = -(0.5f / (1.0f - 0.5f));
+
+    float slope1 = -1.0f;
+    float slope2 = -1.0f);
+  */
+  int gidy = get_global_id(0);
+
+  float4 total_accum  = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
+  float  total_weight = 0.0f;
+
+  for (int ix = 0; ix < width; ++ix)
+    {
+      float xx = (ix - x);
+      float yy = (gidy - y);
+      float pixel_weight = color_query_weight (xx, yy, radius);
+
+      total_accum  += buf[ix + gidy * stride] * pixel_weight;
+      total_weight += pixel_weight;
+    }
+
+  accum[gidy] = total_accum;
+  accum[gidy + get_global_size(0)] = (float4)(total_weight);
+}
+
+__kernel void mypaint_color_query_part2(__global float4 *accum,
+                                                 int     count)
+{
+  float4 total_accum  = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
+  float  total_weight = 0.0f;
+
+  for (int i = 0; i < count; ++i)
+    {
+      total_accum  += accum[i];
+      total_weight += accum[i + count].s0;
+    }
+
+  accum[0] = total_accum;
+  accum[1] = (float4)(total_weight);
 }
 
 /* FIXME: OpenCL may not support more than 8 args, need to combine some things */

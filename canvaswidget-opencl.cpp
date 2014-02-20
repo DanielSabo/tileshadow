@@ -450,6 +450,20 @@ SharedOpenCL::SharedOpenCL()
             qWarning() << "Could not find MyPaint kernel \"" << "mypaint_dab" << "\" (" << err << ")";
         }
 
+        mypaintGetColorKernelPart1 = clCreateKernel (myPaintKernelsProg, "mypaint_color_query_part1", &err);
+
+        if (err != CL_SUCCESS)
+        {
+            qWarning() << "Could not find MyPaint kernel \"" << "mypaint_color_query_part1" << "\" (" << err << ")";
+        }
+
+        mypaintGetColorKernelPart2 = clCreateKernel (myPaintKernelsProg, "mypaint_color_query_part2", &err);
+
+        if (err != CL_SUCCESS)
+        {
+            qWarning() << "Could not find MyPaint kernel \"" << "mypaint_color_query_part2" << "\" (" << err << ")";
+        }
+
         clReleaseProgram (myPaintKernelsProg);
     }
 }

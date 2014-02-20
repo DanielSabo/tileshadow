@@ -186,15 +186,138 @@ static void getColorFunction (MyPaintSurface *base_surface,
                               float * color_r, float * color_g, float * color_b, float * color_a)
 {
     CanvasMyPaintSurface *surface = (CanvasMyPaintSurface *)base_surface;
+    CanvasContext *ctx = surface->strokeContext->ctx;
 
-    (void)surface; (void)x; (void)y; (void)radius;
+    if (radius < 1.0f)
+        radius = 1.0f;
 
-    *color_r = 1.0f;
-    *color_g = 1.0f;
-    *color_b = 1.0f;
-    *color_a = 1.0f;
+    int fringe_radius = radius + 1.5f;
 
-    cout << "Invoked getColorFunction at " << x << ", " << y << endl;
+    int firstPixelX = floorf(x - fringe_radius);
+    int firstPixelY = floorf(y - fringe_radius);
+    int lastPixelX = ceilf(x + fringe_radius);
+    int lastPixelY = ceilf(y + fringe_radius);
+
+    int ix_start = tile_indice(firstPixelX, TILE_PIXEL_WIDTH);
+    int iy_start = tile_indice(firstPixelY, TILE_PIXEL_HEIGHT);
+
+    int ix_end   = tile_indice(lastPixelX, TILE_PIXEL_WIDTH);
+    int iy_end   = tile_indice(lastPixelY, TILE_PIXEL_HEIGHT);
+
+    cl_kernel kernel1 = SharedOpenCL::getSharedOpenCL()->mypaintGetColorKernelPart1;
+    cl_kernel kernel2 = SharedOpenCL::getSharedOpenCL()->mypaintGetColorKernelPart2;
+
+    cl_mem colorAccumulatorMem;
+
+    colorAccumulatorMem = clCreateBuffer (SharedOpenCL::getSharedOpenCL()->ctx, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                                          2 * TILE_PIXEL_HEIGHT * sizeof(cl_float4), NULL, NULL);
+
+    cl_int err = CL_SUCCESS;
+    cl_int stride = TILE_PIXEL_WIDTH;
+
+/*
+__kernel void mypaint_color_query_part1(__global float4 *buf,
+                                                  float   x,
+                                                  float   y,
+                                                  int     offset,
+                                                  int     width,
+                                                  int     height,
+                                         __global float4 *accum,
+                                                  int     stride,
+                                                  float   radius)
+
+__kernel void mypaint_color_query_part2(__global float4 *accum,
+                                                 int     count)
+{
+*/
+
+    /* Part 1 */
+    err = clSetKernelArg(kernel1, 6, sizeof(cl_mem), (void *)&colorAccumulatorMem);
+    err = clSetKernelArg(kernel1, 7, sizeof(cl_int), (void *)&stride);
+    err = clSetKernelArg(kernel1, 8, sizeof(float),  (void *)&radius);
+
+    /* Part 2 */
+    err = clSetKernelArg(kernel2, 0, sizeof(cl_mem), (void *)&colorAccumulatorMem);
+
+    float totalValues[5] = {0, 0, 0, 0, 0};
+
+    for (int iy = iy_start; iy <= iy_end; ++iy)
+    {
+        const int tileOriginY = iy * TILE_PIXEL_HEIGHT;
+        const int offsetY = std::max(firstPixelY - tileOriginY, 0);
+        const int extraY = std::max(tileOriginY + TILE_PIXEL_HEIGHT - lastPixelY - 1, 0);
+
+        for (int ix = ix_start; ix <= ix_end; ++ix)
+        {
+            CanvasTile *tile = ctx->getTile(ix, iy);
+
+            const int tileOriginX = ix * TILE_PIXEL_WIDTH;
+            const int offsetX = std::max(firstPixelX - tileOriginX, 0);
+            const int extraX = std::max(tileOriginX + TILE_PIXEL_WIDTH - lastPixelX - 1, 0);
+
+            float tileY = (y + 0.5f) - tileOriginY - offsetY;
+            float tileX = (x + 0.5f) - tileOriginX - offsetX;
+
+            cl_int width = TILE_PIXEL_WIDTH - offsetX - extraX;
+            cl_int height = TILE_PIXEL_HEIGHT - offsetY - extraY;
+            cl_int offset = offsetX + offsetY * stride;
+
+            size_t global_work_size[1] = {height};
+
+            cl_mem data = ctx->clOpenTile(tile);
+
+            err = clSetKernelArg(kernel1, 0, sizeof(cl_mem), (void *)&data);
+            check_cl_error(err);
+            err = clSetKernelArg(kernel1, 1, sizeof(float), (void *)&tileX);
+            check_cl_error(err);
+            err = clSetKernelArg(kernel1, 2, sizeof(float), (void *)&tileY);
+            check_cl_error(err);
+            err = clSetKernelArg(kernel1, 3, sizeof(cl_int), (void *)&offset);
+            check_cl_error(err);
+            err = clSetKernelArg(kernel1, 4, sizeof(cl_int), (void *)&width);
+            check_cl_error(err);
+            err = clSetKernelArg(kernel1, 5, sizeof(cl_int), (void *)&height);
+            check_cl_error(err);
+            err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
+                                         kernel1, 1,
+                                         NULL, global_work_size, NULL,
+                                         0, NULL, NULL);
+            check_cl_error(err);
+
+            global_work_size[0] = 1;
+            err = clSetKernelArg(kernel2, 1, sizeof(cl_int), (void *)&height);
+            check_cl_error(err);
+            err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
+                                         kernel2, 1,
+                                         NULL, global_work_size, NULL,
+                                         0, NULL, NULL);
+            check_cl_error(err);
+
+            float outputBuffer[5];
+
+            clEnqueueReadBuffer(SharedOpenCL::getSharedOpenCL()->cmdQueue, colorAccumulatorMem, CL_TRUE,
+                                0, sizeof(float) * 5, outputBuffer,
+                                0, NULL, NULL);
+
+            // clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
+
+            totalValues[0] += outputBuffer[0];
+            totalValues[1] += outputBuffer[1];
+            totalValues[2] += outputBuffer[2];
+            totalValues[3] += outputBuffer[3];
+            totalValues[4] += outputBuffer[4];
+        }
+    }
+
+    if (totalValues[4] > 0.0f)
+    {
+        *color_r = totalValues[0] / totalValues[4];
+        *color_g = totalValues[1] / totalValues[4];
+        *color_b = totalValues[2] / totalValues[4];
+        *color_a = totalValues[3] / totalValues[4];
+    }
+
+    clReleaseMemObject(colorAccumulatorMem);
 }
 
 static int drawDabFunction (MyPaintSurface *base_surface,
