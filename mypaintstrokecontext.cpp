@@ -247,26 +247,30 @@ static int drawDabFunction (MyPaintSurface *base_surface,
 
         cl_int err = CL_SUCCESS;
         cl_int stride = TILE_PIXEL_WIDTH;
+        /*
         float segments[4] =
             {
                 1.0f, -(1.0f / hardness - 1.0f),
                 hardness / (1.0f - hardness), -hardness / (1.0f - hardness),
             };
+        */
         // float color[4] = {color_r, color_g, color_b, color_a};
         float color[4] = {color_r, color_g, color_b, opaque};
 
         float angle_rad = angle / 360 * 2 * M_PI;
-        float cs = cosf(angle_rad);
         float sn = sinf(angle_rad);
+        float cs = cosf(angle_rad);
+        float slope1 = -(1.0f / hardness - 1.0f);
+        float slope2 = -(hardness / (1.0f - hardness));
 
         err = clSetKernelArg(kernel, 1, sizeof(cl_int), (void *)&stride);
         err = clSetKernelArg(kernel, 4, sizeof(float), (void *)&radius);
         err = clSetKernelArg(kernel, 5, sizeof(float), (void *)&hardness);
         err = clSetKernelArg(kernel, 6, sizeof(float), (void *)&aspect_ratio);
-        err = clSetKernelArg(kernel, 7, sizeof(float), (void *)&angle);
-        err = clSetKernelArg(kernel, 8, sizeof(float), (void *)&sn);
-        err = clSetKernelArg(kernel, 9, sizeof(float), (void *)&cs);
-        err = clSetKernelArg(kernel, 10, sizeof(cl_float4), (void *)&segments);
+        err = clSetKernelArg(kernel, 7, sizeof(float), (void *)&sn);
+        err = clSetKernelArg(kernel, 8, sizeof(float), (void *)&cs);
+        err = clSetKernelArg(kernel, 9, sizeof(float), (void *)&slope1);
+        err = clSetKernelArg(kernel, 10, sizeof(float), (void *)&slope2);
         err = clSetKernelArg(kernel, 11, sizeof(cl_float4), (void *)&color);
 
         for (int iy = iy_start; iy <= iy_end; ++iy)
@@ -275,8 +279,8 @@ static int drawDabFunction (MyPaintSurface *base_surface,
             {
                 CanvasTile *tile = ctx->getTile(ix, iy);
 
-                float offsetX = x - (ix * TILE_PIXEL_WIDTH);
-                float offsetY = y - (iy * TILE_PIXEL_HEIGHT);
+                float offsetX = (ix * TILE_PIXEL_WIDTH) + 0.5f - x;
+                float offsetY = (iy * TILE_PIXEL_HEIGHT) + 0.5f - y;
                 cl_mem data = ctx->clOpenTile(tile);
 
                 err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&data);
