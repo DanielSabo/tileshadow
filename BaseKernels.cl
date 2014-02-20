@@ -26,8 +26,8 @@ __kernel void circle(__global float4 *buf,
           float alpha = (r - dist) * color.s3;
           float dst_alpha = pixel.s3;
 
-          float a = alpha + dst_alpha * (1.0 - alpha);
-          float a_term = dst_alpha * (1.0 - alpha);
+          float a = alpha + dst_alpha * (1.0f - alpha);
+          float a_term = dst_alpha * (1.0f - alpha);
 
           pixel.s012 = (color.s012 * alpha + pixel.s012 * a_term);
           pixel.s012 = pixel.s012 / a;
@@ -43,7 +43,5 @@ __kernel void circle(__global float4 *buf,
 __kernel void fill(__global float4 *buf,
                             float4  color)
 {
-  int gidx = get_global_id(0);
-
   buf[get_global_id(0)] = color;
 }
