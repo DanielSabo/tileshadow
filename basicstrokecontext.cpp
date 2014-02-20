@@ -5,11 +5,11 @@
 void BasicStrokeContext::drawDab(QPointF point)
 {
     cl_int radius = 10;
-    int ix_start = (point.x() - radius) / TILE_PIXEL_WIDTH;
-    int iy_start = (point.y() - radius) / TILE_PIXEL_HEIGHT;
+    int ix_start = tile_indice(point.x() - radius, TILE_PIXEL_WIDTH);
+    int iy_start = tile_indice(point.y() - radius, TILE_PIXEL_HEIGHT);
 
-    int ix_end   = (point.x() + radius) / TILE_PIXEL_WIDTH;
-    int iy_end   = (point.y() + radius) / TILE_PIXEL_HEIGHT;
+    int ix_end   = tile_indice(point.x() + radius, TILE_PIXEL_WIDTH);
+    int iy_end   = tile_indice(point.y() + radius, TILE_PIXEL_HEIGHT);
 
     const size_t global_work_size[2] = {TILE_PIXEL_HEIGHT, TILE_PIXEL_WIDTH};
     cl_kernel kernel = SharedOpenCL::getSharedOpenCL()->circleKernel;

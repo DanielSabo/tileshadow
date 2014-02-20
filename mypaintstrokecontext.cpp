@@ -236,11 +236,16 @@ static int drawDabFunction (MyPaintSurface *base_surface,
 
         int fringe_radius = radius + 1.5f;
 
-        int ix_start = (x - fringe_radius) / TILE_PIXEL_WIDTH;
-        int iy_start = (y - fringe_radius) / TILE_PIXEL_HEIGHT;
+        int firstPixelX = floorf(x - fringe_radius);
+        int firstPixelY = floorf(y - fringe_radius);
+        int lastPixelX = ceilf(x + fringe_radius);
+        int lastPixelY = ceilf(y + fringe_radius);
 
-        int ix_end   = (x + fringe_radius) / TILE_PIXEL_WIDTH;
-        int iy_end   = (y + fringe_radius) / TILE_PIXEL_HEIGHT;
+        int ix_start = tile_indice(firstPixelX, TILE_PIXEL_WIDTH);
+        int iy_start = tile_indice(firstPixelY, TILE_PIXEL_HEIGHT);
+
+        int ix_end   = tile_indice(lastPixelX, TILE_PIXEL_WIDTH);
+        int iy_end   = tile_indice(lastPixelY, TILE_PIXEL_HEIGHT);
 
         cl_kernel kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabKernel;
 
@@ -274,41 +279,26 @@ static int drawDabFunction (MyPaintSurface *base_surface,
 
         for (int iy = iy_start; iy <= iy_end; ++iy)
         {
+            const int tileOriginY = iy * TILE_PIXEL_HEIGHT;
+            const int offsetY = std::max(firstPixelY - tileOriginY, 0);
+            const int extraY = std::max(tileOriginY + TILE_PIXEL_HEIGHT - lastPixelY - 1, 0);
+
             for (int ix = ix_start; ix <= ix_end; ++ix)
             {
                 CanvasTile *tile = ctx->getTile(ix, iy);
 
-                float tileX = (x + 0.5f) - (ix * TILE_PIXEL_WIDTH);
-                float tileY = (y + 0.5f) - (iy * TILE_PIXEL_HEIGHT);
+                const int tileOriginX = ix * TILE_PIXEL_WIDTH;
+                const int offsetX = std::max(firstPixelX - tileOriginX, 0);
+                const int extraX = std::max(tileOriginX + TILE_PIXEL_WIDTH - lastPixelX - 1, 0);
 
-                /* 2 is probably excessive padding */
-                int firstX = tileX - 2.0f - radius;
-                int firstY = tileY - 2.0f - radius;
+                float tileY = (y + 0.5f) - tileOriginY - offsetY;
+                float tileX = (x + 0.5f) - tileOriginX - offsetX;
 
-                int lastX = tileX + 2.0f + radius;
-                int lastY = tileY + 2.0f + radius;
+                int width = TILE_PIXEL_WIDTH - offsetX - extraX;
+                int height = TILE_PIXEL_HEIGHT - offsetY - extraY;
+                cl_int offset = offsetX + offsetY * stride;
 
-                cl_int offset = 0;
-                size_t global_work_size[2] = {TILE_PIXEL_HEIGHT, TILE_PIXEL_WIDTH};
-
-                if (firstX > 0)
-                    {
-                        tileX  -= firstX;
-                        offset += firstX;
-                        global_work_size[0] -= firstX;
-                    }
-                if (firstY > 0)
-                    {
-                        tileY  -= firstY;
-                        offset += firstY * stride;
-                        global_work_size[1] -= firstY;
-                    }
-
-                if (lastX < TILE_PIXEL_WIDTH)
-                    global_work_size[0] -= (TILE_PIXEL_WIDTH - lastX);
-
-                if (lastY < TILE_PIXEL_HEIGHT)
-                    global_work_size[1] -= (TILE_PIXEL_HEIGHT - lastY);
+                size_t global_work_size[2] = {width, height};
 
                 cl_mem data = ctx->clOpenTile(tile);
 

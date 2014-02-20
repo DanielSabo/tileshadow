@@ -10,6 +10,15 @@ static const int TILE_PIXEL_WIDTH  = 64;
 static const int TILE_PIXEL_HEIGHT = 64;
 static const int TILE_COMP_TOTAL = TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT * 4;
 
+/* From GEGL */
+static inline int tile_indice (int coordinate, int stride)
+{
+    if (coordinate >= 0)
+        return coordinate / stride;
+    else
+        return ((coordinate + 1) / stride) - 1;
+}
+
 class CanvasContext;
 
 class StrokeContext
