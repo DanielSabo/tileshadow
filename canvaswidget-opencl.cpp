@@ -450,6 +450,6 @@ SharedOpenCL::SharedOpenCL()
             qWarning() << "Could not find MyPaint kernel \"" << "mypaint_dab" << "\" (" << err << ")";
         }
 
-        clReleaseProgram (baseKernelProg);
+        clReleaseProgram (myPaintKernelsProg);
     }
 }
