@@ -219,27 +219,22 @@ static cl_program compileFile (SharedOpenCL *cl, const QString &path)
     err = clBuildProgram (prog, 0, NULL, NULL, NULL, NULL);
 
     if (err != CL_SUCCESS)
-    {
-        size_t error_len = 0;
         qWarning() << "CL Program compile failed, build error " << err;
 
-        clGetProgramBuildInfo (prog, cl->device, CL_PROGRAM_BUILD_LOG, 0, NULL, &error_len);
-        if (error_len)
-        {
-            char *error_buf = new char[error_len];
-            error_buf[0] = '\0';
+    size_t error_len = 0;
+    clGetProgramBuildInfo (prog, cl->device, CL_PROGRAM_BUILD_LOG, 0, NULL, &error_len);
+    if (error_len)
+    {
+        char *error_buf = new char[error_len];
+        error_buf[0] = '\0';
 
-            clGetProgramBuildInfo (prog, cl->device, CL_PROGRAM_BUILD_LOG, error_len, error_buf, NULL);
-            qWarning() << error_buf;
-        }
-        else
-        {
+        clGetProgramBuildInfo (prog, cl->device, CL_PROGRAM_BUILD_LOG, error_len, error_buf, NULL);
+        QString errorStr = QString(error_buf).trimmed();
+        if (errorStr.size() > 0)
+            qWarning() << errorStr;
+        else if (err != CL_SUCCESS)
             qWarning() << "No log data";
-        }
-        return 0;
     }
-
-    // errcode = gegl_clGetProgramBuildInfo (prog, cl->device, CL_PROGRAM_BUILD_LOG, 0, NULL, &s);
 
     cout << "Compiled " << path.toUtf8().constData() << endl;
 
