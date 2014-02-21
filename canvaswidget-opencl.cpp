@@ -4,6 +4,7 @@
 #include <QFile>
 #include <QDebug>
 #include <QStringList>
+#include <QCoreApplication>
 
 #if defined(Q_OS_WIN32)
 #include <windows.h>
@@ -265,6 +266,8 @@ typedef CL_API_ENTRY cl_int
 
 static cl_context createSharedContext()
 {
+    if (QCoreApplication::arguments().contains("--disable-sharing"))
+        return 0;
 #if defined(Q_OS_WIN32) || (defined(Q_OS_UNIX) && !defined(Q_OS_MAC))
     cl_context result;
     cl_uint i;
