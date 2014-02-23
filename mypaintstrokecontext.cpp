@@ -209,8 +209,10 @@ static void getColorFunction (MyPaintSurface *base_surface,
 
     cl_mem colorAccumulatorMem;
 
-    colorAccumulatorMem = clCreateBuffer (SharedOpenCL::getSharedOpenCL()->ctx, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
-                                          2 * TILE_PIXEL_HEIGHT * sizeof(cl_float4), NULL, NULL);
+    int tile_count = (iy_end - iy_start + 1) * (ix_end - ix_start + 1);
+
+    colorAccumulatorMem = clCreateBuffer (SharedOpenCL::getSharedOpenCL()->ctx, CL_MEM_READ_WRITE,
+                                          2 * TILE_PIXEL_HEIGHT * sizeof(cl_float4) * tile_count, NULL, NULL);
 
     cl_int err = CL_SUCCESS;
     cl_int stride = TILE_PIXEL_WIDTH;
@@ -236,10 +238,7 @@ __kernel void mypaint_color_query_part2(__global float4 *accum,
     err = clSetKernelArg(kernel1, 7, sizeof(cl_int), (void *)&stride);
     err = clSetKernelArg(kernel1, 8, sizeof(float),  (void *)&radius);
 
-    /* Part 2 */
-    err = clSetKernelArg(kernel2, 0, sizeof(cl_mem), (void *)&colorAccumulatorMem);
-
-    float totalValues[5] = {0, 0, 0, 0, 0};
+    cl_int row_count = 0;
 
     for (int iy = iy_start; iy <= iy_end; ++iy)
     {
@@ -267,47 +266,35 @@ __kernel void mypaint_color_query_part2(__global float4 *accum,
             cl_mem data = ctx->clOpenTile(tile);
 
             err = clSetKernelArg(kernel1, 0, sizeof(cl_mem), (void *)&data);
-            check_cl_error(err);
             err = clSetKernelArg(kernel1, 1, sizeof(float), (void *)&tileX);
-            check_cl_error(err);
             err = clSetKernelArg(kernel1, 2, sizeof(float), (void *)&tileY);
-            check_cl_error(err);
             err = clSetKernelArg(kernel1, 3, sizeof(cl_int), (void *)&offset);
-            check_cl_error(err);
             err = clSetKernelArg(kernel1, 4, sizeof(cl_int), (void *)&width);
-            check_cl_error(err);
-            err = clSetKernelArg(kernel1, 5, sizeof(cl_int), (void *)&height);
-            check_cl_error(err);
+            err = clSetKernelArg(kernel1, 5, sizeof(cl_int), (void *)&row_count);
             err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                          kernel1, 1,
                                          NULL, global_work_size, NULL,
                                          0, NULL, NULL);
             check_cl_error(err);
 
-            global_work_size[0] = 1;
-            err = clSetKernelArg(kernel2, 1, sizeof(cl_int), (void *)&height);
-            check_cl_error(err);
-            err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
-                                         kernel2, 1,
-                                         NULL, global_work_size, NULL,
-                                         0, NULL, NULL);
-            check_cl_error(err);
-
-            float outputBuffer[5];
-
-            clEnqueueReadBuffer(SharedOpenCL::getSharedOpenCL()->cmdQueue, colorAccumulatorMem, CL_TRUE,
-                                0, sizeof(float) * 5, outputBuffer,
-                                0, NULL, NULL);
-
-            // clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
-
-            totalValues[0] += outputBuffer[0];
-            totalValues[1] += outputBuffer[1];
-            totalValues[2] += outputBuffer[2];
-            totalValues[3] += outputBuffer[3];
-            totalValues[4] += outputBuffer[4];
+            row_count += height;
         }
     }
+
+    size_t global_work_size[1] = {1};
+    err = clSetKernelArg(kernel2, 0, sizeof(cl_mem), (void *)&colorAccumulatorMem);
+    err = clSetKernelArg(kernel2, 1, sizeof(cl_int), (void *)&row_count);
+    err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
+                                 kernel2, 1,
+                                 NULL, global_work_size, NULL,
+                                 0, NULL, NULL);
+    check_cl_error(err);
+
+
+    float totalValues[5] = {0, 0, 0, 0, 0};
+    clEnqueueReadBuffer(SharedOpenCL::getSharedOpenCL()->cmdQueue, colorAccumulatorMem, CL_TRUE,
+                        0, sizeof(float) * 5, totalValues,
+                        0, NULL, NULL);
 
     if (totalValues[4] > 0.0f)
     {

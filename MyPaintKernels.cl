@@ -52,14 +52,14 @@ float color_query_weight (float xx, float yy, float radius)
 }
 
 __kernel void mypaint_color_query_part1(__global float4 *buf,
-                                                  float   x,
-                                                  float   y,
-                                                  int     offset,
-                                                  int     width,
-                                                  int     height,
-                                         __global float4 *accum,
-                                                  int     stride,
-                                                  float   radius)
+                                                 float   x,
+                                                 float   y,
+                                                 int     offset,
+                                                 int     width,
+                                                 int     accum_offset,
+                                        __global float4 *accum,
+                                                 int     stride,
+                                                 float   radius)
 {
   /* The real mypaint function renders a dab with these constants
     const float hardness = 0.5f;
@@ -88,8 +88,8 @@ __kernel void mypaint_color_query_part1(__global float4 *buf,
       total_weight += pixel_weight;
     }
 
-  accum[gidy] = total_accum;
-  accum[gidy + get_global_size(0)] = (float4)(total_weight);
+  accum[(gidy + accum_offset) * 2] = total_accum;
+  accum[(gidy + accum_offset) * 2 + 1] = (float4)(total_weight);
 }
 
 __kernel void mypaint_color_query_part2(__global float4 *accum,
@@ -97,11 +97,13 @@ __kernel void mypaint_color_query_part2(__global float4 *accum,
 {
   float4 total_accum  = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
   float  total_weight = 0.0f;
+  size_t end_i = count * 2;
+  size_t i = 0;
 
-  for (int i = 0; i < count; ++i)
+  while (i < end_i)
     {
-      total_accum  += accum[i];
-      total_weight += accum[i + count].s0;
+      total_accum  += accum[i++];
+      total_weight += accum[i++].s0;
     }
 
   accum[0] = total_accum;
