@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>561</width>
-    <height>300</height>
+    <height>401</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -151,7 +151,7 @@
      <x>0</x>
      <y>0</y>
      <width>561</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -164,6 +164,8 @@
     <property name="title">
      <string>System</string>
     </property>
+    <addaction name="actionCircle_Benchmark"/>
+    <addaction name="separator"/>
     <addaction name="actionShow_OpenCL_Information"/>
    </widget>
    <addaction name="menuFile"/>
@@ -180,6 +182,11 @@
    </property>
    <property name="menuRole">
     <enum>QAction::QuitRole</enum>
+   </property>
+  </action>
+  <action name="actionCircle_Benchmark">
+   <property name="text">
+    <string>Circle Benchmark</string>
    </property>
   </action>
  </widget>
@@ -226,10 +233,27 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionCircle_Benchmark</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>runCircleBenchmark()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>280</x>
+     <y>149</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>showOpenCLInfo()</slot>
   <slot>actionQuit()</slot>
   <slot>setActiveTool()</slot>
+  <slot>runCircleBenchmark()</slot>
  </slots>
 </ui>

@@ -28,6 +28,7 @@ private slots:
     void showOpenCLInfo();
     void actionQuit();
     void setActiveTool();
+    void runCircleBenchmark();
 };
 
 #endif // MAINWINDOW_H
