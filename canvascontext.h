@@ -59,6 +59,7 @@ public:
                       vertexBuffer(0),
                       tileWidth(0),
                       tileHeight(0) {}
+    ~CanvasContext();
 
     QOpenGLFunctions_3_2_Core *glFuncs;
 

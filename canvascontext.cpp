@@ -43,6 +43,34 @@ void CanvasTile::unmapHost()
     }
 }
 
+CanvasContext::~CanvasContext()
+{
+    std::map<uint64_t, CanvasTile *>::iterator iter;
+
+    for (iter = tiles.begin(); iter != tiles.end(); ++iter)
+    {
+        CanvasTile *tile = iter->second;
+
+        if (tile->tileBuffer)
+            glFuncs->glDeleteBuffers(1, &tile->tileBuffer);
+    }
+
+    if (vertexBuffer)
+        glFuncs->glDeleteBuffers(1, &vertexBuffer);
+
+    if (vertexArray)
+        glFuncs->glDeleteVertexArrays(1, &vertexArray);
+
+    if (vertexShader)
+        glFuncs->glDeleteShader(vertexShader);
+
+    if (fragmentShader)
+        glFuncs->glDeleteShader(fragmentShader);
+
+    if (program)
+        glFuncs->glDeleteProgram(program);
+}
+
 CanvasTile *CanvasContext::getTile(int x, int y)
 {
     uint64_t key = (uint64_t)(x & 0xFFFFFFFF) | (uint64_t)(y & 0xFFFFFFFF) << 32;
