@@ -262,6 +262,7 @@ __kernel void mypaint_color_query_part2(__global float4 *accum,
             cl_int offset = offsetX + offsetY * stride;
 
             size_t global_work_size[1] = {height};
+            size_t local_work_size[1] = {1};
 
             cl_mem data = ctx->clOpenTile(tile);
 
@@ -273,7 +274,7 @@ __kernel void mypaint_color_query_part2(__global float4 *accum,
             err = clSetKernelArg(kernel1, 5, sizeof(cl_int), (void *)&row_count);
             err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                          kernel1, 1,
-                                         NULL, global_work_size, NULL,
+                                         NULL, global_work_size, local_work_size,
                                          0, NULL, NULL);
             check_cl_error(err);
 
@@ -409,6 +410,7 @@ static int drawDabFunction (MyPaintSurface *base_surface,
                 cl_int offset = offsetX + offsetY * stride;
 
                 size_t global_work_size[2] = {width, height};
+                size_t local_work_size[2] = {width, 1};
 
                 cl_mem data = ctx->clOpenTile(tile);
 
@@ -418,7 +420,7 @@ static int drawDabFunction (MyPaintSurface *base_surface,
                 err = clSetKernelArg(kernel, 4, sizeof(float), (void *)&tileY);
                 err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                              kernel, 2,
-                                             NULL, global_work_size, NULL,
+                                             NULL, global_work_size, local_work_size,
                                              0, NULL, NULL);
             }
         }
