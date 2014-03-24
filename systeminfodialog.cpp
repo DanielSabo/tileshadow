@@ -4,8 +4,10 @@
 #include <QOpenGLFunctions_3_2_Core>
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
+#include <OpenCL/cl_ext.h>
 #else
 #include <CL/cl.h>
+#include <CL/cl_ext.h>
 #endif
 
 #include "canvaswidget-opencl.h"
@@ -92,8 +94,35 @@ void SystemInfoDialog::showEvent(QShowEvent *event)
             addPlatformHeader(*queryResultString, devStr.toUtf8().constData());
 
             char infoReturnStr[1024];
+            cl_uint infoReturnInt = 0;
             clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_VERSION, sizeof(infoReturnStr), infoReturnStr, NULL);
             addPlatformValue(*queryResultString, NULL, infoReturnStr);
+
+#ifdef CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV
+            {
+                cl_uint nvComputeMajor = 0;
+                cl_uint nvComputeMinor = 0;
+                if (CL_SUCCESS == clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV, sizeof(nvComputeMajor), &nvComputeMajor, NULL)
+                    &&
+                    CL_SUCCESS == clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV, sizeof(nvComputeMinor), &nvComputeMinor, NULL))
+                {
+                    sprintf(infoReturnStr, "%d.%d", nvComputeMajor, nvComputeMinor);
+                    addPlatformValue(*queryResultString, "NVIDIA Compute Capability", infoReturnStr);
+                }
+            }
+#endif
+
+            clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(infoReturnInt), &infoReturnInt, NULL);
+            sprintf(infoReturnStr, "%d", infoReturnInt);
+            addPlatformValue(*queryResultString, "CL_DEVICE_MAX_COMPUTE_UNITS", infoReturnStr);
+
+#ifdef CL_DEVICE_WARP_SIZE_NV
+            if (CL_SUCCESS == clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_WARP_SIZE_NV, sizeof(infoReturnInt), &infoReturnInt, NULL))
+            {
+                sprintf(infoReturnStr, "%d", infoReturnInt);
+                addPlatformValue(*queryResultString, "CL_DEVICE_WARP_SIZE_NV", infoReturnStr);
+            }
+#endif
         }
 
         queryResultString->append("</div>\n");
