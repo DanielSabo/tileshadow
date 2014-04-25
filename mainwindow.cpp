@@ -4,7 +4,65 @@
 #include <math.h>
 #include <QElapsedTimer>
 #include "canvaswidget-opencl.h"
+#include <QDir>
+#include <QPushButton>
 
+void asciiTitleCase(QString &instr)
+{
+    bool lastspace = true;
+    for (int i = 0; i < instr.size(); i++)
+    {
+        if (instr[i].isSpace())
+        {
+            lastspace = true;
+            continue;
+        }
+
+        if (lastspace)
+        {
+            instr[i] = instr[i].toUpper();
+            lastspace = false;
+        }
+    }
+}
+
+void MainWindow::reloadTools()
+{
+    QWidget *toolbox = findChild<QWidget *>("toolbox");
+    if (!toolbox)
+        return;
+
+    QList<QWidget *>toolButtons = toolbox->findChildren<QWidget *>();
+    for (int i = 0; i < toolButtons.size(); ++i) {
+        delete toolButtons[i];
+    }
+
+    QStringList brushFiles = QDir(":/mypaint-tools/").entryList();
+
+    QBoxLayout *toolbox_layout = qobject_cast<QBoxLayout *>(toolbox->layout());
+    if (!toolbox_layout)
+        return;
+
+    for (int i = 0; i < brushFiles.size(); ++i)
+    {
+        QString brushfile = brushFiles.at(i);
+        brushfile.truncate(brushfile.length() - 4);
+        QString buttonName = brushfile;
+        //buttonName.replace(QChar('-'), " ");
+        buttonName.replace(QChar('_'), " ");
+        asciiTitleCase(buttonName);
+
+        QPushButton *button = new QPushButton(buttonName);
+        button->setProperty("toolName", brushfile);
+        connect(button, SIGNAL(clicked()), this, SLOT(setActiveTool()));
+        toolbox_layout->insertWidget(i, button);
+    }
+
+    QPushButton *button = new QPushButton("Debug");
+    button->setProperty("toolName", QString("debug"));
+    connect(button, SIGNAL(clicked()), this, SLOT(setActiveTool()));
+    toolbox_layout->insertWidget(0, button);
+}
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -15,12 +73,7 @@ MainWindow::MainWindow(QWidget *parent) :
     canvas = findChild<CanvasWidget*>("mainCanvas");
     setWindowTitle(QApplication::applicationDisplayName());
 
-    QWidget *toolbox = findChild<QWidget *>("toolbox");
-    QList<QWidget *>toolButtons = toolbox->findChildren<QWidget *>();
-
-    for (int i = 0; i < toolButtons.size(); ++i) {
-        connect(toolButtons[i], SIGNAL(clicked()), this, SLOT(setActiveTool()));
-    }
+    reloadTools();
 }
 
 MainWindow::~MainWindow()

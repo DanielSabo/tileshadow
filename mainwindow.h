@@ -24,6 +24,8 @@ private:
     QScopedPointer<SystemInfoDialog> infoWindow;
     CanvasWidget *canvas;
 
+    void reloadTools();
+
 private slots:
     void showOpenCLInfo();
     void actionQuit();

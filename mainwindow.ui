@@ -68,62 +68,9 @@
         <number>3</number>
        </property>
        <item>
-        <widget class="QPushButton" name="button_setToolDebug">
+        <widget class="QPushButton" name="pushButton">
          <property name="text">
-          <string>Debug</string>
-         </property>
-         <property name="toolName" stdset="0">
-          <string>debug</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="button_setToolDefault">
-         <property name="text">
-          <string>Default</string>
-         </property>
-         <property name="toolName" stdset="0">
-          <string>default</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="button_setToolPencil">
-         <property name="text">
-          <string>Pencil</string>
-         </property>
-         <property name="toolName" stdset="0">
-          <string>2B_pencil</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="button_setToolCharcoal">
-         <property name="text">
-          <string>Charcoal</string>
-         </property>
-         <property name="toolName" stdset="0">
-          <string>charcoal-04</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="button_setToolWatercolor">
-         <property name="text">
-          <string>Watercolor</string>
-         </property>
-         <property name="toolName" stdset="0">
-          <string>deevad-watercolor_glazing</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="button_setToolSpray2">
-         <property name="text">
-          <string>Spray</string>
-         </property>
-         <property name="toolName" stdset="0">
-          <string>deevad-spray2</string>
+          <string>Placeholder</string>
          </property>
         </widget>
        </item>
@@ -151,7 +98,7 @@
      <x>0</x>
      <y>0</y>
      <width>561</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
