@@ -73,6 +73,9 @@ MainWindow::MainWindow(QWidget *parent) :
     canvas = findChild<CanvasWidget*>("mainCanvas");
     setWindowTitle(QApplication::applicationDisplayName());
 
+    // Resize here because the big widget is unwieldy in the designer
+    resize(700,400);
+
     reloadTools();
 }
 
