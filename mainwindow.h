@@ -30,6 +30,8 @@ private slots:
     void showOpenCLInfo();
     void actionQuit();
     void setActiveTool();
+    void sizeSliderMoved(int value);
+
     void runCircleBenchmark();
 };
 

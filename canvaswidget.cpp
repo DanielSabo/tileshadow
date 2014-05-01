@@ -113,7 +113,8 @@ static const QGLFormat &getFormatSingleton()
 CanvasWidget::CanvasWidget(QWidget *parent) :
     QGLWidget(getFormatSingleton(), parent),
     ctx(NULL),
-    activeBrush("default")
+    activeBrush("default"),
+    toolSizeFactor(1.0f)
 {
 }
 
@@ -246,6 +247,8 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
         }
     }
 
+    ctx->stroke->multiplySize(toolSizeFactor);
+
     if(ctx->stroke->startStroke(pos, pressure))
         update();
 }
@@ -310,4 +313,9 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
 void CanvasWidget::setActiveTool(const QString &toolName)
 {
     activeBrush = toolName;
+}
+
+void CanvasWidget::setToolSizeFactor(float multipler)
+{
+    toolSizeFactor = multipler;
 }

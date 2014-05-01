@@ -30,6 +30,9 @@ public:
     virtual bool startStroke(QPointF point, float pressure) = 0;
     virtual bool strokeTo(QPointF point, float pressure) = 0;
 
+    virtual void multiplySize(float mult) = 0;
+    virtual float getPixelRadius() = 0;
+
     CanvasContext *ctx;
 };
 

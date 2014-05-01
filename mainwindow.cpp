@@ -113,6 +113,26 @@ void MainWindow::setActiveTool()
         qWarning() << sender()->objectName() << " has no toolName property.";
 }
 
+void MainWindow::sizeSliderMoved(int value)
+{
+    float sizeMultiplyer;
+
+    if (value > 0)
+    {
+        sizeMultiplyer = value / 10.0f + 1.0f;
+    }
+    else if (value < 0)
+    {
+        sizeMultiplyer = 1.0f / (-value / 10.0f + 1.0f);
+    }
+    else
+    {
+        sizeMultiplyer = 1.0f;
+    }
+
+    canvas->setToolSizeFactor(sizeMultiplyer);
+}
+
 double drawBenchmarkCircle(CanvasWidget *canvas, float radius, float centerX, float centerY, int numPoints)
 {
     QElapsedTimer timer;

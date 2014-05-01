@@ -4,12 +4,12 @@
 
 void BasicStrokeContext::drawDab(QPointF point)
 {
-    cl_int radius = 10;
-    int ix_start = tile_indice(point.x() - radius, TILE_PIXEL_WIDTH);
-    int iy_start = tile_indice(point.y() - radius, TILE_PIXEL_HEIGHT);
+    cl_int intRadius = radius;
+    int ix_start = tile_indice(point.x() - intRadius, TILE_PIXEL_WIDTH);
+    int iy_start = tile_indice(point.y() - intRadius, TILE_PIXEL_HEIGHT);
 
-    int ix_end   = tile_indice(point.x() + radius, TILE_PIXEL_WIDTH);
-    int iy_end   = tile_indice(point.y() + radius, TILE_PIXEL_HEIGHT);
+    int ix_end   = tile_indice(point.x() + intRadius, TILE_PIXEL_WIDTH);
+    int iy_end   = tile_indice(point.y() + intRadius, TILE_PIXEL_HEIGHT);
 
     const size_t global_work_size[2] = {TILE_PIXEL_HEIGHT, TILE_PIXEL_WIDTH};
     cl_kernel kernel = SharedOpenCL::getSharedOpenCL()->circleKernel;
@@ -18,7 +18,7 @@ void BasicStrokeContext::drawDab(QPointF point)
     cl_int stride = TILE_PIXEL_WIDTH;
 
     err = clSetKernelArg(kernel, 1, sizeof(cl_int), (void *)&stride);
-    err = clSetKernelArg(kernel, 4, sizeof(cl_int), (void *)&radius);
+    err = clSetKernelArg(kernel, 4, sizeof(cl_int), (void *)&intRadius);
 
     for (int iy = iy_start; iy <= iy_end; ++iy)
     {
@@ -115,4 +115,15 @@ bool BasicStrokeContext::strokeTo(QPointF point, float pressure)
         return true;
     }
     return false;
+}
+
+
+void BasicStrokeContext::multiplySize(float mult)
+{
+    radius *= mult;
+}
+
+float BasicStrokeContext::getPixelRadius()
+{
+    return radius;
 }

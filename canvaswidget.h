@@ -11,6 +11,7 @@ public:
     explicit CanvasWidget(QWidget *parent = 0);
     virtual  ~CanvasWidget();
 
+    void setToolSizeFactor(float multipler);
     void setActiveTool(const QString &toolName);
     void startStroke(QPointF pos, float pressure);
     void strokeTo(QPointF pos, float pressure);
@@ -31,7 +32,7 @@ private:
     CanvasContext *ctx;
 
     QString activeBrush;
-
+    float toolSizeFactor;
 signals:
 
 public slots:

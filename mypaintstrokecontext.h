@@ -16,6 +16,9 @@ public:
     bool fromJsonFile(const QString &path);
     void fromDefaults();
 
+    void multiplySize(float mult);
+    float getPixelRadius();
+
     MyPaintStrokeContextPrivate *priv;
 };
 

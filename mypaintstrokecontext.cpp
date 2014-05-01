@@ -129,6 +129,26 @@ void MyPaintStrokeContext::fromDefaults()
     mypaint_brush_set_base_value(priv->brush, MYPAINT_BRUSH_SETTING_COLOR_V, 1.0);
 }
 
+void MyPaintStrokeContext::multiplySize(float mult)
+{
+    float radius = mypaint_brush_get_base_value(priv->brush, MYPAINT_BRUSH_SETTING_RADIUS_LOGARITHMIC);
+    radius = log(exp(radius) * mult);
+
+    //FIXME: Should query the min and max values instead of hardcoding
+    if (radius < -2.0f)
+        radius = -2.0f;
+    if (radius > 6.0f)
+        radius = 6.0f;
+
+    mypaint_brush_set_base_value(priv->brush, MYPAINT_BRUSH_SETTING_RADIUS_LOGARITHMIC, radius);
+}
+
+float MyPaintStrokeContext::getPixelRadius()
+{
+    float radius = mypaint_brush_get_base_value(priv->brush, MYPAINT_BRUSH_SETTING_RADIUS_LOGARITHMIC);
+    return exp(radius);
+}
+
 MyPaintStrokeContext::MyPaintStrokeContext(CanvasContext *ctx) : StrokeContext(ctx)
 {
     priv = new MyPaintStrokeContextPrivate();
