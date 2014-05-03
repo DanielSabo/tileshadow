@@ -222,8 +222,8 @@ void CanvasWidget::paintGL()
             float offsetX = (ix * tileWidth) - 1.0f;
             float offsetY = 1.0f - ((iy + 1) * tileHeight);
 
-            CanvasTile *tile = ctx->getTile(ix, iy);
-            glFuncs->glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, tile->tileBuffer);
+            GLuint tileBuffer = ctx->getGLBuf(ix, iy);
+            glFuncs->glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, tileBuffer);
             glFuncs->glUniform2f(ctx->locationTileOrigin, offsetX, offsetY);
             glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }

@@ -6,11 +6,10 @@
 #include <CL/cl_gl.h>
 #endif
 
-CanvasTile::CanvasTile()
+CanvasTile::CanvasTile(int x, int y) : x(x), y(y)
 {
     isOpen = false;
     tileMem = 0;
-    tileBuffer = 0;
     tileData = NULL;
     tileMem = clCreateBuffer (SharedOpenCL::getSharedOpenCL()->ctx, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
                               TILE_COMP_TOTAL * sizeof(float), tileData, NULL);
@@ -45,14 +44,14 @@ void CanvasTile::unmapHost()
 
 CanvasContext::~CanvasContext()
 {
-    std::map<uint64_t, CanvasTile *>::iterator iter;
+    std::map<uint64_t, GLuint>::iterator iter;
 
-    for (iter = tiles.begin(); iter != tiles.end(); ++iter)
+    for (iter = glTiles.begin(); iter != glTiles.end(); ++iter)
     {
-        CanvasTile *tile = iter->second;
+        GLuint tileBuffer = iter->second;
 
-        if (tile->tileBuffer)
-            glFuncs->glDeleteBuffers(1, &tile->tileBuffer);
+        if (tileBuffer)
+            glFuncs->glDeleteBuffers(1, &tileBuffer);
     }
 
     if (vertexBuffer)
@@ -80,7 +79,8 @@ CanvasTile *CanvasContext::getTile(int x, int y)
     if (found != tiles.end())
         return found->second;
 
-    CanvasTile *tile = new CanvasTile();
+    CanvasTile *tile = new CanvasTile(x, y);
+    GLuint      glTile = 0;
 
     cl_int err = CL_SUCCESS;
     cl_mem data = clOpenTile(tile);
@@ -96,8 +96,8 @@ CanvasTile *CanvasContext::getTile(int x, int y)
                                  0, NULL, NULL);
 
 
-    glFuncs->glGenBuffers(1, &tile->tileBuffer);
-    glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, tile->tileBuffer);
+    glFuncs->glGenBuffers(1, &glTile);
+    glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, glTile);
     glFuncs->glBufferData(GL_TEXTURE_BUFFER,
                           sizeof(float) * TILE_COMP_TOTAL,
                           NULL,
@@ -105,12 +105,27 @@ CanvasTile *CanvasContext::getTile(int x, int y)
 
     clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
 
+    glTiles[key] = glTile;
+
     closeTile(tile);
 
     // cout << "Added tile at " << x << "," << y << endl;
     tiles[key] = tile;
 
     return tile;
+}
+
+GLuint CanvasContext::getGLBuf(int x, int y)
+{
+    uint64_t key = (uint64_t)(x & 0xFFFFFFFF) | (uint64_t)(y & 0xFFFFFFFF) << 32;
+    std::map<uint64_t, GLuint>::iterator found = glTiles.find(key);
+
+    if (found != glTiles.end())
+        return found->second;
+
+    // Generate the tile
+    getTile(x, y);
+    return glTiles[key];
 }
 
 cl_mem CanvasContext::clOpenTile(CanvasTile *tile)
@@ -146,6 +161,10 @@ void CanvasContext::closeTile(CanvasTile *tile)
     if (!tile->isOpen)
         return;
 
+    uint64_t key = (uint64_t)(tile->x & 0xFFFFFFFF) | (uint64_t)(tile->y & 0xFFFFFFFF) << 32;
+
+    GLuint tileBuffer = glTiles[key];
+
     if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
     {
         /* This function assumes cl_khr_gl_event is present; which allows
@@ -159,7 +178,7 @@ void CanvasContext::closeTile(CanvasTile *tile)
 
         cl_mem output = clCreateFromGLBuffer(context,
                                              CL_MEM_WRITE_ONLY,
-                                             tile->tileBuffer,
+                                             tileBuffer,
                                              &err);
 
         err = clEnqueueAcquireGLObjects(cmdQueue, 1, &output, 0, NULL, NULL);
@@ -177,7 +196,7 @@ void CanvasContext::closeTile(CanvasTile *tile)
         tile->mapHost();
 
         /* Push the new data to OpenGL */
-        glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, tile->tileBuffer);
+        glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, tileBuffer);
         glFuncs->glBufferData(GL_TEXTURE_BUFFER,
                               sizeof(float) * TILE_COMP_TOTAL,
                               tile->tileData,

@@ -39,13 +39,14 @@ public:
 class CanvasTile
 {
 public:
-    CanvasTile();
+    CanvasTile(int x, int y);
     ~CanvasTile();
 
+    int     x;
+    int     y;
     bool    isOpen;
     cl_mem  tileMem;
     float  *tileData;
-    GLuint  tileBuffer;
 
     void mapHost(void);
     void unmapHost(void);
@@ -84,8 +85,10 @@ public:
     QScopedPointer<StrokeContext> stroke;
 
     std::map<uint64_t, CanvasTile *> tiles;
+    std::map<uint64_t, GLuint> glTiles;
     std::list<CanvasTile *> openTiles;
 
+    GLuint getGLBuf(int x, int y);
     CanvasTile *getTile(int x, int y);
     cl_mem clOpenTile(CanvasTile *tile);
     float *openTile(CanvasTile *tile);
