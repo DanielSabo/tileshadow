@@ -27,7 +27,8 @@ SOURCES += main.cpp\
     canvaswidget-opencl.cpp \
     mypaintstrokecontext.cpp \
     canvascontext.cpp \
-    basicstrokecontext.cpp
+    basicstrokecontext.cpp \
+    benchmarkdialog.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -35,10 +36,12 @@ HEADERS  += mainwindow.h \
     canvaswidget-opencl.h \
     mypaintstrokecontext.h \
     canvascontext.h \
-    basicstrokecontext.h
+    basicstrokecontext.h \
+    benchmarkdialog.h
 
 FORMS    += mainwindow.ui \
-    systeminfodialog.ui
+    systeminfodialog.ui \
+    benchmarkdialog.ui
 
 win32 {
     INCLUDEPATH += "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v5.5\include"

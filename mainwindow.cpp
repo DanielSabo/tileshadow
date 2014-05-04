@@ -6,6 +6,7 @@
 #include "canvaswidget-opencl.h"
 #include <QDir>
 #include <QPushButton>
+#include <QCloseEvent>
 
 void asciiTitleCase(QString &instr)
 {
@@ -84,6 +85,15 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    if (!infoWindow.isNull())
+        infoWindow->close();
+    if (!benchmarkWindow.isNull())
+        benchmarkWindow->close();
+    event->accept();
+}
+
 void MainWindow::showOpenCLInfo()
 {
     if (infoWindow.isNull())
@@ -138,7 +148,6 @@ double drawBenchmarkCircle(CanvasWidget *canvas, float radius, float centerX, fl
     QElapsedTimer timer;
     float currentAngle = 0;
 
-    canvas->setUpdatesEnabled(false);
     timer.start();
     canvas->startStroke(QPointF(cosf(currentAngle) * radius + centerX, sinf(currentAngle) * radius + centerY), 1.0f);
     for (int i = 0; i < numPoints; ++i)
@@ -149,13 +158,25 @@ double drawBenchmarkCircle(CanvasWidget *canvas, float radius, float centerX, fl
     canvas->endStroke();
     clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
     double runTime = timer.elapsed();
-    canvas->setUpdatesEnabled(true);
 
     return runTime;
 }
 
 void MainWindow::runCircleBenchmark()
 {
+    if (benchmarkWindow.isNull())
+        {
+            benchmarkWindow.reset(new BenchmarkDialog (this));
+            benchmarkWindow->setWindowTitle(QApplication::applicationDisplayName() + " - Benchmark");
+        }
+
+    if (benchmarkWindow->isVisible())
+        benchmarkWindow->raise();
+    else
+        benchmarkWindow->show();
+
+    QString outputText;
+
     float radius = 100;
     float centerX = 150;
     float centerY = 150;
@@ -167,6 +188,10 @@ void MainWindow::runCircleBenchmark()
     int numRuns = 0;
     int localRuns = 0;
     double lastAverage = 0.0;
+    int currentRun = 0;
+
+    setEnabled(false);
+    canvas->setUpdatesEnabled(false);
 
     while (true)
     {
@@ -177,18 +202,28 @@ void MainWindow::runCircleBenchmark()
         localRuns += 1;
 
         qDebug() << "Run" << runTime << "ms";
+        outputText += QString().sprintf("Run %d\t%.4fms\n", currentRun, runTime);
+        benchmarkWindow->setOutputText(outputText);
 
         double newAverage = totalTime / numRuns;
         if (localRuns > 4)
         {
             localRuns = 0;
-            qDebug() << newAverage << lastAverage;
+            //qDebug() << newAverage << lastAverage;
             if (fabs(newAverage - lastAverage) < 1.0)
                 break;
         }
 
         lastAverage = newAverage;
+        currentRun += 1;
+        QCoreApplication::processEvents();
     }
 
     qDebug() << "Benchmark" << lastAverage << "ms";
+    outputText += "======\n";
+    outputText += QString().sprintf("Average\t%.4fms", lastAverage);
+
+    benchmarkWindow->setOutputText(outputText);
+    canvas->setUpdatesEnabled(true);
+    setEnabled(true);
 }
