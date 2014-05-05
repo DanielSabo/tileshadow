@@ -192,6 +192,18 @@ void MainWindow::runCircleBenchmark()
 
     setEnabled(false);
     canvas->setUpdatesEnabled(false);
+    benchmarkWindow->setOutputText(outputText);
+    QCoreApplication::processEvents();
+
+    // Discard first run
+    {
+        double runTime = drawBenchmarkCircle(canvas, radius, centerX, centerY, runPoints);
+
+        qDebug() << "First run" << runTime << "ms (discarded)";
+        outputText += QString().sprintf("First run\t%.4fms (discarded)\n", runTime);
+        benchmarkWindow->setOutputText(outputText);
+        QCoreApplication::processEvents();
+    }
 
     while (true)
     {
@@ -203,19 +215,26 @@ void MainWindow::runCircleBenchmark()
 
         qDebug() << "Run" << runTime << "ms";
         outputText += QString().sprintf("Run %d\t%.4fms\n", currentRun, runTime);
-        benchmarkWindow->setOutputText(outputText);
 
         double newAverage = totalTime / numRuns;
         if (localRuns > 4)
         {
             localRuns = 0;
             //qDebug() << newAverage << lastAverage;
-            if (fabs(newAverage - lastAverage) < 1.0)
+            if (fabs(newAverage - lastAverage) < newAverage * 0.0025)
                 break;
+        }
+
+        if(totalTime >= 1000.0 * 10)
+        {
+            qDebug() << "Failure to converge, giving up.";
+            outputText += "Failure to converge, giving up.";
+            break;
         }
 
         lastAverage = newAverage;
         currentRun += 1;
+        benchmarkWindow->setOutputText(outputText);
         QCoreApplication::processEvents();
     }
 
