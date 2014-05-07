@@ -17,6 +17,8 @@ public:
     void strokeTo(QPointF pos, float pressure);
     void endStroke();
 
+    float getScale();
+    void  setScale(float newScale);
 
 protected:
     void initializeGL();
@@ -33,6 +35,7 @@ private:
 
     QString activeBrush;
     float toolSizeFactor;
+    float viewScale;
 signals:
 
 public slots:

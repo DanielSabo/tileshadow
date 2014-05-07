@@ -114,7 +114,8 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
     QGLWidget(getFormatSingleton(), parent),
     ctx(NULL),
     activeBrush("default"),
-    toolSizeFactor(1.0f)
+    toolSizeFactor(1.0f),
+    viewScale(1.0f)
 {
 }
 
@@ -201,8 +202,8 @@ void CanvasWidget::paintGL()
     int widgetWidth  = width();
     int widgetHeight = height();
 
-    float tileWidth  = (2.0f * TILE_PIXEL_WIDTH) / (widgetWidth);
-    float tileHeight = (2.0f * TILE_PIXEL_HEIGHT) / (widgetHeight);
+    float tileWidth  = ((2.0f * TILE_PIXEL_WIDTH) / (widgetWidth)) * viewScale;
+    float tileHeight = ((2.0f * TILE_PIXEL_HEIGHT) / (widgetHeight)) * viewScale;
 
     glFuncs->glClearColor(0.2, 0.2, 0.4, 1.0);
     glFuncs->glClear(GL_COLOR_BUFFER_BIT);
@@ -215,8 +216,8 @@ void CanvasWidget::paintGL()
     glFuncs->glUniform2f(ctx->locationTilePixels, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT);
     glFuncs->glBindVertexArray(ctx->vertexArray);
 
-    for (ix = 0; ix * TILE_PIXEL_WIDTH < widgetWidth; ++ix)
-        for (iy = 0; iy * TILE_PIXEL_HEIGHT < widgetHeight; ++iy)
+    for (ix = 0; ix * TILE_PIXEL_WIDTH * viewScale < widgetWidth; ++ix)
+        for (iy = 0; iy * TILE_PIXEL_HEIGHT * viewScale < widgetHeight; ++iy)
         {
             float offsetX = (ix * tileWidth) - 1.0f;
             float offsetY = 1.0f - ((iy + 1) * tileHeight);
@@ -265,9 +266,20 @@ void CanvasWidget::endStroke()
     ctx->stroke.reset();
 }
 
+float CanvasWidget::getScale()
+{
+    return viewScale;
+}
+
+void CanvasWidget::setScale(float newScale)
+{
+    viewScale = qBound(0.25f, newScale, 4.0f);
+    update();
+}
+
 void CanvasWidget::mousePressEvent(QMouseEvent *event)
 {
-    QPointF pos = event->localPos();
+    QPointF pos = event->localPos() / viewScale;
 
     startStroke(pos, 1.0f);
 
@@ -283,7 +295,7 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
 
 void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
 {
-    QPointF pos = event->localPos();
+    QPointF pos = event->localPos() / viewScale;
 
     strokeTo(pos, 1.0f);
 
@@ -296,7 +308,7 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
 
     float xshift = event->hiResGlobalX() - event->globalX();
     float yshift = event->hiResGlobalY() - event->globalY();
-    QPointF point = QPointF(event->x() + xshift, event->y() + yshift);
+    QPointF point = QPointF(event->x() + xshift, event->y() + yshift) / viewScale;
 
     if (eventType == QEvent::TabletPress)
         startStroke(point, event->pressure());

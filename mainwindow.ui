@@ -185,7 +185,15 @@
     <addaction name="separator"/>
     <addaction name="actionShow_OpenCL_Information"/>
    </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="actionZoom_In"/>
+    <addaction name="actionZoom_Out"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuView"/>
    <addaction name="menuSystem"/>
   </widget>
   <action name="actionShow_OpenCL_Information">
@@ -204,6 +212,25 @@
   <action name="actionCircle_Benchmark">
    <property name="text">
     <string>Circle Benchmark</string>
+   </property>
+  </action>
+  <action name="actionZoom_In">
+   <property name="text">
+    <string>Zoom In</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+=</string>
+   </property>
+  </action>
+  <action name="actionZoom_Out">
+   <property name="text">
+    <string>Zoom Out</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+-</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
  </widget>
@@ -282,6 +309,38 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionZoom_In</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>zoomIn()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>280</x>
+     <y>200</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionZoom_Out</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>zoomOut()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>280</x>
+     <y>200</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>showOpenCLInfo()</slot>
@@ -289,5 +348,7 @@
   <slot>setActiveTool()</slot>
   <slot>runCircleBenchmark()</slot>
   <slot>sizeSliderMoved(int)</slot>
+  <slot>zoomIn()</slot>
+  <slot>zoomOut()</slot>
  </slots>
 </ui>

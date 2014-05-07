@@ -29,10 +29,13 @@ private:
     CanvasWidget *canvas;
 
     void reloadTools();
+    void updateTitle();
 
 private slots:
     void setActiveTool();
     void sizeSliderMoved(int value);
+    void zoomIn();
+    void zoomOut();
 
 public slots:
     void showOpenCLInfo();

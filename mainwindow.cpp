@@ -72,7 +72,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     canvas = findChild<CanvasWidget*>("mainCanvas");
-    setWindowTitle(QApplication::applicationDisplayName());
+    updateTitle();
 
     // Resize here because the big widget is unwieldy in the designer
     resize(700,400);
@@ -83,6 +83,19 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::updateTitle()
+{
+    QString title = QApplication::applicationDisplayName();
+    float scale = canvas->getScale();
+
+    if (scale >= 1.0)
+        title = title + " " + QString::number(scale * 100, 'f', 0) + "%";
+    else
+        title = title + " " + QString::number(scale * 100, 'f', 2) + "%";
+
+    setWindowTitle(title);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -141,6 +154,18 @@ void MainWindow::sizeSliderMoved(int value)
     }
 
     canvas->setToolSizeFactor(sizeMultiplyer);
+}
+
+void MainWindow::zoomIn()
+{
+    canvas->setScale(canvas->getScale() * 2);
+    updateTitle();
+}
+
+void MainWindow::zoomOut()
+{
+    canvas->setScale(canvas->getScale() * 0.5);
+    updateTitle();
 }
 
 double drawBenchmarkCircle(CanvasWidget *canvas, float radius, float centerX, float centerY, int numPoints)
