@@ -169,6 +169,8 @@ void CanvasContext::closeTile(CanvasTile *tile)
                                   0, NULL, NULL);
 
         err = clEnqueueReleaseGLObjects(cmdQueue, 1, &output, 0, NULL, NULL);
+
+        err = clReleaseMemObject(output);
     }
     else
     {
