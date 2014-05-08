@@ -8,10 +8,13 @@ __kernel void circle(__global float4 *buf,
   int gidx = get_global_id(0);
   int gidy = get_global_id(1);
 
-  float dist = sqrt(pow(x-gidx, 2.0f) + pow(y-gidy, 2.0f));
+  float rr = r*r;
+  float xx = (x - gidx) * (x - gidx);
+  float yy = (y - gidy) * (y - gidy);
 
-  if (dist < r)
+  if (xx + yy < rr)
     {
+      float dist = sqrt(xx + yy);
       float4 pixel = buf[gidx + gidy * stride];
 
       if (dist < r - 1)
