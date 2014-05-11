@@ -27,9 +27,11 @@ private:
     QScopedPointer<SystemInfoDialog> infoWindow;
     QScopedPointer<BenchmarkDialog> benchmarkWindow;
     CanvasWidget *canvas;
+    QStatusBar *statusBar;
 
     void reloadTools();
     void updateTitle();
+    void updateStatus();
 
 private slots:
     void setActiveTool();
@@ -41,6 +43,8 @@ public slots:
     void showOpenCLInfo();
     void runCircleBenchmark();
     void actionQuit();
+    void canvasStats();
+    void showStatusBar(bool visible);
 };
 
 #endif // MAINWINDOW_H

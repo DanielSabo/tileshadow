@@ -28,7 +28,8 @@ SOURCES += main.cpp\
     mypaintstrokecontext.cpp \
     canvascontext.cpp \
     basicstrokecontext.cpp \
-    benchmarkdialog.cpp
+    benchmarkdialog.cpp \
+    boxcartimer.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -37,7 +38,8 @@ HEADERS  += mainwindow.h \
     mypaintstrokecontext.h \
     canvascontext.h \
     basicstrokecontext.h \
-    benchmarkdialog.h
+    benchmarkdialog.h \
+    boxcartimer.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \

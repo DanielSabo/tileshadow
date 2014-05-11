@@ -2,6 +2,7 @@
 #define CANVASWIDGET_H
 
 #include <QGLWidget>
+#include "boxcartimer.h"
 
 class CanvasContext;
 class CanvasWidget : public QGLWidget
@@ -20,6 +21,9 @@ public:
     float getScale();
     void  setScale(float newScale);
 
+    BoxcarTimer mouseEventRate;
+    BoxcarTimer frameRate;
+
 protected:
     void initializeGL();
     void resizeGL(int w, int h);
@@ -36,7 +40,9 @@ private:
     QString activeBrush;
     float toolSizeFactor;
     float viewScale;
+
 signals:
+    void updateStats();
 
 public slots:
 

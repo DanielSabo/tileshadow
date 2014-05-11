@@ -7,6 +7,7 @@
 #include <QDir>
 #include <QPushButton>
 #include <QCloseEvent>
+#include <QStatusBar>
 
 void asciiTitleCase(QString &instr)
 {
@@ -72,7 +73,12 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     canvas = findChild<CanvasWidget*>("mainCanvas");
+    statusBar = findChild<QStatusBar*>("statusBar");
+    statusBar->hide();
     updateTitle();
+    updateStatus();
+
+    connect(canvas, SIGNAL(updateStats()), this, SLOT(canvasStats()));
 
     // Resize here because the big widget is unwieldy in the designer
     resize(700,400);
@@ -97,6 +103,28 @@ void MainWindow::updateTitle()
         title = title + " " + QString::number(scale * 100, 'f', 2) + "%";
 
     setWindowTitle(title);
+}
+
+void MainWindow::showStatusBar(bool s)
+{
+    if(s)
+        statusBar->show();
+    else
+        statusBar->hide();
+}
+
+void MainWindow::updateStatus()
+{
+    if (!statusBar->isVisible())
+        return;
+
+    statusBar->showMessage(
+        QString().sprintf("FPS: %.02f Events/sec: %.02f", canvas->frameRate.getRate(), canvas->mouseEventRate.getRate()));
+}
+
+void MainWindow::canvasStats()
+{
+    updateStatus();
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)

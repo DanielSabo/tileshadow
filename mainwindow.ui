@@ -184,6 +184,7 @@
     <addaction name="actionCircle_Benchmark"/>
     <addaction name="separator"/>
     <addaction name="actionShow_OpenCL_Information"/>
+    <addaction name="actionStatus_Bar"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -196,6 +197,7 @@
    <addaction name="menuView"/>
    <addaction name="menuSystem"/>
   </widget>
+  <widget class="QStatusBar" name="statusBar"/>
   <action name="actionShow_OpenCL_Information">
    <property name="text">
     <string>OpenCL Info</string>
@@ -231,6 +233,20 @@
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="actionStatus_Bar">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Status Bar</string>
+   </property>
+   <property name="toolTip">
+    <string>Status Bar</string>
    </property>
   </action>
  </widget>
@@ -341,6 +357,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionStatus_Bar</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>showStatusBar(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>280</x>
+     <y>200</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>showOpenCLInfo()</slot>
@@ -350,5 +382,6 @@
   <slot>sizeSliderMoved(int)</slot>
   <slot>zoomIn()</slot>
   <slot>zoomOut()</slot>
+  <slot>showStatusBar(bool)</slot>
  </slots>
 </ui>

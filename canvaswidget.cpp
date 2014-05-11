@@ -112,6 +112,8 @@ static const QGLFormat &getFormatSingleton()
 
 CanvasWidget::CanvasWidget(QWidget *parent) :
     QGLWidget(getFormatSingleton(), parent),
+    mouseEventRate(10),
+    frameRate(10),
     ctx(NULL),
     activeBrush("debug"),
     toolSizeFactor(1.0f),
@@ -195,6 +197,9 @@ void CanvasWidget::resizeGL(int w, int h)
 
 void CanvasWidget::paintGL()
 {
+    frameRate.addEvents(1);
+    emit updateStats();
+
     ctx->closeTiles();
 
     int ix, iy;
@@ -258,6 +263,7 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
 
 void CanvasWidget::strokeTo(QPointF pos, float pressure)
 {
+    mouseEventRate.addEvents(1);
     if (!ctx->stroke.isNull())
         if (ctx->stroke->strokeTo(pos, pressure))
             update();
