@@ -231,21 +231,23 @@ void CanvasWidget::paintGL()
 
 void CanvasWidget::startStroke(QPointF pos, float pressure)
 {
-    if (activeBrush == QString("debug"))
-        ctx->stroke.reset(new BasicStrokeContext(ctx));
-    else
+    ctx->stroke.reset(NULL);
+
+    if (activeBrush.endsWith(".myb"))
     {
         MyPaintStrokeContext *mypaint = new MyPaintStrokeContext(ctx);
-        if (mypaint->fromJsonFile(QString(":/mypaint-tools/") + activeBrush + ".myb"))
-        {
+        if (mypaint->fromJsonFile(QString(":/mypaint-tools/") + activeBrush))
             ctx->stroke.reset(mypaint);
-        }
         else
-        {
             delete mypaint;
-            qWarning() << "Unknown tool set \'" << activeBrush << "\', using debug";
-            ctx->stroke.reset(new BasicStrokeContext(ctx));
-        }
+    }
+    else if (activeBrush == QString("debug"))
+        ctx->stroke.reset(new BasicStrokeContext(ctx));
+
+    if (ctx->stroke.isNull())
+    {
+        qWarning() << "Unknown tool set \'" << activeBrush << "\', using debug";
+        ctx->stroke.reset(new BasicStrokeContext(ctx));
     }
 
     ctx->stroke->multiplySize(toolSizeFactor);

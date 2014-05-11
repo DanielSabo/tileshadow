@@ -47,8 +47,8 @@ void MainWindow::reloadTools()
     for (int i = 0; i < brushFiles.size(); ++i)
     {
         QString brushfile = brushFiles.at(i);
-        brushfile.truncate(brushfile.length() - 4);
         QString buttonName = brushfile;
+        buttonName.truncate(buttonName.length() - 4);
         //buttonName.replace(QChar('-'), " ");
         buttonName.replace(QChar('_'), " ");
         asciiTitleCase(buttonName);
