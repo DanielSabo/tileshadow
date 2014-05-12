@@ -113,7 +113,7 @@ static const QGLFormat &getFormatSingleton()
 CanvasWidget::CanvasWidget(QWidget *parent) :
     QGLWidget(getFormatSingleton(), parent),
     ctx(NULL),
-    activeBrush("default"),
+    activeBrush("debug"),
     toolSizeFactor(1.0f),
     viewScale(1.0f)
 {

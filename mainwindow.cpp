@@ -78,6 +78,7 @@ MainWindow::MainWindow(QWidget *parent) :
     resize(700,400);
 
     reloadTools();
+    canvas->setActiveTool("default.myb");
 }
 
 MainWindow::~MainWindow()
