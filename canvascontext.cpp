@@ -100,7 +100,7 @@ GLuint CanvasContext::getGLBuf(int x, int y)
                           GL_DYNAMIC_DRAW);
     glTiles[key] = glTile;
 
-    closeTile(layer.getTile(x, y));
+    closeTileAt(x, y);
 
     // Call clFinish here because we closed a tile outside of closeTiles()
     clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
@@ -108,9 +108,9 @@ GLuint CanvasContext::getGLBuf(int x, int y)
     return glTile;
 }
 
-void CanvasContext::closeTile(CanvasTile *tile)
+void CanvasContext::closeTileAt(int x, int y)
 {
-    uint64_t key = (uint64_t)(tile->x & 0xFFFFFFFF) | (uint64_t)(tile->y & 0xFFFFFFFF) << 32;
+    uint64_t key = (uint64_t)(x & 0xFFFFFFFF) | (uint64_t)(y & 0xFFFFFFFF) << 32;
 
     GLuint tileBuffer;
     std::map<uint64_t, GLuint>::iterator found = glTiles.find(key);
@@ -125,8 +125,6 @@ void CanvasContext::closeTile(CanvasTile *tile)
         /* This function assumes cl_khr_gl_event is present; which allows
          * the Acquire and Release calls to be used without explicitly syncing.
          */
-        tile->unmapHost();
-
         cl_int err = CL_SUCCESS;
         cl_command_queue cmdQueue = SharedOpenCL::getSharedOpenCL()->cmdQueue;
         cl_context context = SharedOpenCL::getSharedOpenCL()->ctx;
@@ -138,7 +136,7 @@ void CanvasContext::closeTile(CanvasTile *tile)
 
         err = clEnqueueAcquireGLObjects(cmdQueue, 1, &output, 0, NULL, NULL);
 
-        err = clEnqueueCopyBuffer(cmdQueue, tile->tileMem, output,
+        err = clEnqueueCopyBuffer(cmdQueue, layer.clOpenTileAt(x, y), output,
                                   0, 0, sizeof(float) * TILE_COMP_TOTAL,
                                   0, NULL, NULL);
 
@@ -148,13 +146,11 @@ void CanvasContext::closeTile(CanvasTile *tile)
     }
     else
     {
-        tile->mapHost();
-
         /* Push the new data to OpenGL */
         glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, tileBuffer);
         glFuncs->glBufferData(GL_TEXTURE_BUFFER,
                               sizeof(float) * TILE_COMP_TOTAL,
-                              tile->tileData,
+                              layer.openTileAt(x, y),
                               GL_STREAM_DRAW);
     }
 }
@@ -168,8 +164,7 @@ void CanvasContext::closeTiles(void)
          dirtyIter != dirtyTiles.end();
          dirtyIter++)
     {
-        CanvasTile *tile = layer.getTile(dirtyIter->x(), dirtyIter->y());
-        closeTile(tile);
+        closeTileAt(dirtyIter->x(), dirtyIter->y());
     }
 
     dirtyTiles.clear();

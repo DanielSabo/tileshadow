@@ -100,7 +100,7 @@ public:
     TileSet dirtyTiles;
 
     GLuint getGLBuf(int x, int y);
-    void closeTile(CanvasTile *tile);
+    void closeTileAt(int x, int y);
     void closeTiles(void);
 
 };
