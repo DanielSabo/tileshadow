@@ -43,6 +43,7 @@ public:
     MyPaintBrush         *brush;
     CanvasMyPaintSurface *surface;
     QElapsedTimer         timer;
+    TileSet               modTiles;
 };
 
 bool MyPaintStrokeContext::fromJsonFile(const QString &path)
@@ -171,7 +172,7 @@ MyPaintStrokeContext::~MyPaintStrokeContext()
     delete priv;
 }
 
-bool MyPaintStrokeContext::startStroke(QPointF point, float pressure)
+TileSet MyPaintStrokeContext::startStroke(QPointF point, float pressure)
 {
     (void)point; (void)pressure;
 
@@ -186,18 +187,22 @@ bool MyPaintStrokeContext::startStroke(QPointF point, float pressure)
                             0.0 /* deltaTime in ms*/);
     #endif
     priv->timer.start();
-    return true;
+    priv->modTiles.clear();
+    return TileSet();
 }
 
 
-bool MyPaintStrokeContext::strokeTo(QPointF point, float pressure)
+TileSet MyPaintStrokeContext::strokeTo(QPointF point, float pressure)
 {
     double dt = priv->timer.restart() / 1000.0;
     mypaint_brush_stroke_to(priv->brush, (MyPaintSurface *)priv->surface,
                             point.x(), point.y(),
                             pressure /* pressure */, 0.0f /* xtilt */, 0.0f /* ytilt */,
                             dt /* deltaTime in ms*/);
-    return true;
+
+    TileSet result = priv->modTiles;
+    priv->modTiles.clear();
+    return result;
 }
 
 static void getColorFunction (MyPaintSurface *base_surface,
@@ -428,6 +433,7 @@ static int drawDabFunction (MyPaintSurface *base_surface,
                 size_t global_work_size[2] = {width, height};
                 size_t local_work_size[2] = {width, 1};
 
+                surface->strokeContext->priv->modTiles.insert(QPoint(ix, iy));
                 cl_mem data = ctx->clOpenTileAt(ix, iy);
 
                 err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&data);

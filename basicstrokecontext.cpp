@@ -1,8 +1,10 @@
 #include "basicstrokecontext.h"
 #include <algorithm>
 #include <cmath>
+#include <QSet>
+#include <QList>
 
-void BasicStrokeContext::drawDab(QPointF point)
+void BasicStrokeContext::drawDab(QPointF point, TileSet &modTiles)
 {
     cl_int intRadius = radius;
     int ix_start = tile_indice(point.x() - intRadius, TILE_PIXEL_WIDTH);
@@ -31,6 +33,8 @@ void BasicStrokeContext::drawDab(QPointF point)
             cl_int offsetY = point.y() - (iy * TILE_PIXEL_HEIGHT);
             cl_mem data = ctx->clOpenTileAt(ix, iy);
 
+            modTiles.insert(QPoint(ix, iy));
+
             err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&data);
             err = clSetKernelArg(kernel, 2, sizeof(cl_int), (void *)&offsetX);
             err = clSetKernelArg(kernel, 3, sizeof(cl_int), (void *)&offsetY);
@@ -42,20 +46,24 @@ void BasicStrokeContext::drawDab(QPointF point)
         }
     }
 
+    (void)err;
+
     lastDab = point;
 }
 
-bool BasicStrokeContext::startStroke(QPointF point, float pressure)
+TileSet BasicStrokeContext::startStroke(QPointF point, float pressure)
 {
+    TileSet modTiles;
     (void)pressure;
 
     start = point;
-    drawDab(point);
-    return true;
+    drawDab(point, modTiles);
+    return modTiles;
 }
 
-bool BasicStrokeContext::strokeTo(QPointF point, float pressure)
+TileSet BasicStrokeContext::strokeTo(QPointF point, float pressure)
 {
+    TileSet modTiles;
     (void)pressure;
 
     float dist = sqrtf(powf(lastDab.x() - point.x(), 2.0f) + powf(lastDab.y() - point.y(), 2.0f));
@@ -96,9 +104,9 @@ bool BasicStrokeContext::strokeTo(QPointF point, float pressure)
         for (int i = 0; i < dx; ++i)
         {
             if (steep)
-                drawDab(QPointF(y, x));
+                drawDab(QPointF(y, x), modTiles);
             else
-                drawDab(QPointF(x, y));
+                drawDab(QPointF(x, y), modTiles);
 
             while (d >= 0)
             {
@@ -109,10 +117,10 @@ bool BasicStrokeContext::strokeTo(QPointF point, float pressure)
             x = x + sx;
             d = d + (2 * dy);
         }
-        drawDab(QPointF(x1, y1));
-        return true;
+        drawDab(QPointF(x1, y1), modTiles);
+        return modTiles;
     }
-    return false;
+    return modTiles;
 }
 
 

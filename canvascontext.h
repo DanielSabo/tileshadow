@@ -3,8 +3,10 @@
 
 #include "canvaswidget-opencl.h"
 #include <QPointF>
+#include <QSet>
 #include <QOpenGLFunctions_3_2_Core>
 #include <map>
+#include <set>
 
 static const int TILE_PIXEL_WIDTH  = 128;
 static const int TILE_PIXEL_HEIGHT = 128;
@@ -21,14 +23,21 @@ static inline int tile_indice (int coordinate, int stride)
 
 class CanvasContext;
 
+struct _TilePointCompare
+{
+    bool operator()(const QPoint &a, const QPoint &b);
+};
+
+typedef std::set<QPoint, _TilePointCompare> TileSet;
+
 class StrokeContext
 {
 public:
     StrokeContext(CanvasContext *ctx) : ctx(ctx) {}
     virtual ~StrokeContext() {}
 
-    virtual bool startStroke(QPointF point, float pressure) = 0;
-    virtual bool strokeTo(QPointF point, float pressure) = 0;
+    virtual TileSet startStroke(QPointF point, float pressure) = 0;
+    virtual TileSet strokeTo(QPointF point, float pressure) = 0;
 
     virtual void multiplySize(float mult) = 0;
     virtual float getPixelRadius() = 0;
@@ -44,7 +53,6 @@ public:
 
     int     x;
     int     y;
-    bool    isOpen;
     cl_mem  tileMem;
     float  *tileData;
 
@@ -86,7 +94,7 @@ public:
 
     std::map<uint64_t, CanvasTile *> tiles;
     std::map<uint64_t, GLuint> glTiles;
-    std::list<CanvasTile *> openTiles;
+    TileSet dirtyTiles;
 
     GLuint getGLBuf(int x, int y);
     CanvasTile *getTile(int x, int y);

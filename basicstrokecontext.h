@@ -8,9 +8,9 @@ class BasicStrokeContext : public StrokeContext
 public:
     BasicStrokeContext(CanvasContext *ctx) : StrokeContext(ctx), radius(10.0f) {}
 
-    bool startStroke(QPointF point, float pressure);
-    bool strokeTo(QPointF point, float pressure);
-    void drawDab(QPointF point);
+    TileSet startStroke(QPointF point, float pressure);
+    TileSet strokeTo(QPointF point, float pressure);
+    void drawDab(QPointF point, TileSet &modTiles);
 
     void multiplySize(float mult);
     float getPixelRadius();

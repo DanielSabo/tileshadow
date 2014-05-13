@@ -1,14 +1,26 @@
 #include "canvascontext.h"
 
+#include <QDebug>
+
 #ifdef __APPLE__
 #include <OpenCL/cl_gl.h>
 #else
 #include <CL/cl_gl.h>
 #endif
 
+bool _TilePointCompare::operator ()(const QPoint &a, const QPoint &b)
+{
+    if (a.y() < b.y())
+        return true;
+    else if (a.y() > b.y())
+        return false;
+    else if (a.x() < b.x())
+        return true;
+    return false;
+}
+
 CanvasTile::CanvasTile(int x, int y) : x(x), y(y)
 {
-    isOpen = false;
     tileMem = 0;
     tileData = NULL;
     tileMem = clCreateBuffer (SharedOpenCL::getSharedOpenCL()->ctx, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
@@ -37,7 +49,7 @@ void CanvasTile::unmapHost()
 {
     if (tileData)
     {
-        clEnqueueUnmapMemObject(SharedOpenCL::getSharedOpenCL()->cmdQueue, tileMem, tileData, 0, NULL, NULL);
+        cl_int err = clEnqueueUnmapMemObject(SharedOpenCL::getSharedOpenCL()->cmdQueue, tileMem, tileData, 0, NULL, NULL);
         tileData = NULL;
     }
 }
@@ -130,42 +142,25 @@ GLuint CanvasContext::getGLBuf(int x, int y)
 
 cl_mem CanvasContext::clOpenTile(CanvasTile *tile)
 {
-    if (!tile->isOpen)
-    {
-        openTiles.push_front(tile);
-    }
-
     tile->unmapHost();
-
-    tile->isOpen = true;
 
     return tile->tileMem;
 }
 
 float *CanvasContext::openTile(CanvasTile *tile)
 {
-    if (!tile->isOpen)
-    {
-        openTiles.push_front(tile);
-    }
-
     tile->mapHost();
-
-    tile->isOpen = true;
 
     return tile->tileData;
 }
 
 cl_mem CanvasContext::clOpenTileAt(int x, int y)
 {
-    clOpenTile(getTile(x, y));
+    return clOpenTile(getTile(x, y));
 }
 
 void CanvasContext::closeTile(CanvasTile *tile)
 {
-    if (!tile->isOpen)
-        return;
-
     uint64_t key = (uint64_t)(tile->x & 0xFFFFFFFF) | (uint64_t)(tile->y & 0xFFFFFFFF) << 32;
 
     GLuint tileBuffer;
@@ -213,8 +208,6 @@ void CanvasContext::closeTile(CanvasTile *tile)
                               tile->tileData,
                               GL_STREAM_DRAW);
     }
-
-    tile->isOpen = false;
 }
 
 void CanvasContext::closeTiles(void)
@@ -222,14 +215,16 @@ void CanvasContext::closeTiles(void)
     if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
         glFinish();
 
-    while(!openTiles.empty())
+    for (TileSet::iterator dirtyIter = dirtyTiles.begin();
+         dirtyIter != dirtyTiles.end();
+         dirtyIter++)
     {
-        CanvasTile *tile = openTiles.front();
-
+        CanvasTile *tile = getTile(dirtyIter->x(), dirtyIter->y());
         closeTile(tile);
-
-        openTiles.pop_front();
     }
+
+    dirtyTiles.clear();
+
 
     if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
         clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);

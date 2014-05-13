@@ -257,16 +257,29 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
 
     ctx->stroke->multiplySize(toolSizeFactor);
 
-    if(ctx->stroke->startStroke(pos, pressure))
+    TileSet changedTiles = ctx->stroke->startStroke(pos, pressure);
+
+    if(!changedTiles.empty())
+    {
+        ctx->dirtyTiles.insert(changedTiles.begin(), changedTiles.end());
         update();
+    }
 }
 
 void CanvasWidget::strokeTo(QPointF pos, float pressure)
 {
     mouseEventRate.addEvents(1);
+    TileSet changedTiles;
     if (!ctx->stroke.isNull())
-        if (ctx->stroke->strokeTo(pos, pressure))
-            update();
+    {
+        changedTiles = ctx->stroke->strokeTo(pos, pressure);
+    }
+
+    if(!changedTiles.empty())
+    {
+        ctx->dirtyTiles.insert(changedTiles.begin(), changedTiles.end());
+        update();
+    }
 }
 
 void CanvasWidget::endStroke()
