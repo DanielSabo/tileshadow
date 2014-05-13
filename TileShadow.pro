@@ -20,6 +20,8 @@ QMAKE_CFLAGS += -std=gnu99
 QMAKE_CXXFLAGS += -O2
 QMAKE_CFLAGS += -O2
 
+CONFIG -= warn_on
+
 SOURCES += main.cpp\
         mainwindow.cpp \
     systeminfodialog.cpp \
