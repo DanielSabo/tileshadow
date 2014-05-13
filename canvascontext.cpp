@@ -92,7 +92,6 @@ CanvasTile *CanvasContext::getTile(int x, int y)
         return found->second;
 
     CanvasTile *tile = new CanvasTile(x, y);
-    GLuint      glTile = 0;
 
     cl_int err = CL_SUCCESS;
     cl_mem data = clOpenTile(tile);
@@ -107,21 +106,6 @@ CanvasTile *CanvasContext::getTile(int x, int y)
                                  NULL, global_work_size, NULL,
                                  0, NULL, NULL);
 
-
-    glFuncs->glGenBuffers(1, &glTile);
-    glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, glTile);
-    glFuncs->glBufferData(GL_TEXTURE_BUFFER,
-                          sizeof(float) * TILE_COMP_TOTAL,
-                          NULL,
-                          GL_DYNAMIC_DRAW);
-
-    clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
-
-    glTiles[key] = glTile;
-
-    closeTile(tile);
-
-    // cout << "Added tile at " << x << "," << y << endl;
     tiles[key] = tile;
 
     return tile;
@@ -136,8 +120,21 @@ GLuint CanvasContext::getGLBuf(int x, int y)
         return found->second;
 
     // Generate the tile
-    getTile(x, y);
-    return glTiles[key];
+    GLuint glTile = 0;
+    glFuncs->glGenBuffers(1, &glTile);
+    glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, glTile);
+    glFuncs->glBufferData(GL_TEXTURE_BUFFER,
+                          sizeof(float) * TILE_COMP_TOTAL,
+                          NULL,
+                          GL_DYNAMIC_DRAW);
+    glTiles[key] = glTile;
+
+    closeTile(getTile(x, y));
+
+    // Call clFinish here because we closed a tile outside of closeTiles()
+    clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
+
+    return glTile;
 }
 
 cl_mem CanvasContext::clOpenTile(CanvasTile *tile)
