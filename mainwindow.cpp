@@ -75,8 +75,10 @@ MainWindow::MainWindow(QWidget *parent) :
     canvas = findChild<CanvasWidget*>("mainCanvas");
     statusBar = findChild<QStatusBar*>("statusBar");
     statusBar->hide();
+    layersList = findChild<QListWidget*>("layerList");
     updateTitle();
     updateStatus();
+    updateLayers();
 
     connect(canvas, SIGNAL(updateStats()), this, SLOT(canvasStats()));
 
@@ -120,6 +122,24 @@ void MainWindow::updateStatus()
 
     statusBar->showMessage(
         QString().sprintf("FPS: %.02f Events/sec: %.02f", canvas->frameRate.getRate(), canvas->mouseEventRate.getRate()));
+}
+
+void MainWindow::updateLayers()
+{
+    QList<QString> canvasLayers = canvas->getLayerList();
+
+    layersList->clear();
+    foreach(QString layerName, canvasLayers)
+    {
+        layersList->addItem(layerName);
+    }
+    layersList->setCurrentRow(canvas->getActiveLayer());
+}
+
+void MainWindow::layerListSelection(int row)
+{
+    int layerIdx = (layersList->count() - 1) - row;
+    canvas->setActiveLayer(layerIdx);
 }
 
 void MainWindow::canvasStats()

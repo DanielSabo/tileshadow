@@ -311,6 +311,27 @@ void CanvasWidget::setScale(float newScale)
     update();
 }
 
+int CanvasWidget::getActiveLayer()
+{
+    return getLayerList().size() - 1;
+}
+
+void CanvasWidget::setActiveLayer(int layerIndex)
+{
+
+}
+
+QList<QString> CanvasWidget::getLayerList()
+{
+    QList<QString> result;
+
+    result.append(QString("Dummy Layer 03"));
+    result.append(QString("Dummy Layer 02"));
+    result.append(QString("Dummy Layer 01"));
+
+    return result;
+}
+
 void CanvasWidget::mousePressEvent(QMouseEvent *event)
 {
     QPointF pos = event->localPos() / viewScale;

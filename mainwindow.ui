@@ -59,7 +59,7 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="QWidget" name="widget_2" native="true">
+        <widget class="QWidget" name="toolSettings" native="true">
          <layout class="QVBoxLayout" name="verticalLayout_3">
           <property name="spacing">
            <number>3</number>
@@ -101,6 +101,49 @@
             </property>
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="layerBox">
+         <property name="title">
+          <string>Layers</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <property name="spacing">
+           <number>0</number>
+          </property>
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="QListWidget" name="layerList">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="sizeAdjustPolicy">
+             <enum>QAbstractScrollArea::AdjustToContents</enum>
             </property>
            </widget>
           </item>
@@ -168,7 +211,7 @@
      <x>0</x>
      <y>0</y>
      <width>561</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -373,6 +416,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>layerList</sender>
+   <signal>currentRowChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>layerListSelection(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>506</x>
+     <y>90</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>280</x>
+     <y>200</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>showOpenCLInfo()</slot>
@@ -383,5 +442,6 @@
   <slot>zoomIn()</slot>
   <slot>zoomOut()</slot>
   <slot>showStatusBar(bool)</slot>
+  <slot>layerListSelection(int)</slot>
  </slots>
 </ui>

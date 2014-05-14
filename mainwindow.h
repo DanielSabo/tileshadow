@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QListWidget>
 #include <QLabel>
 #include <QScopedPointer>
 #include "systeminfodialog.h"
@@ -28,10 +29,12 @@ private:
     QScopedPointer<BenchmarkDialog> benchmarkWindow;
     CanvasWidget *canvas;
     QStatusBar *statusBar;
+    QListWidget *layersList;
 
     void reloadTools();
     void updateTitle();
     void updateStatus();
+    void updateLayers();
 
 private slots:
     void setActiveTool();
@@ -45,6 +48,7 @@ public slots:
     void actionQuit();
     void canvasStats();
     void showStatusBar(bool visible);
+    void layerListSelection(int row);
 };
 
 #endif // MAINWINDOW_H

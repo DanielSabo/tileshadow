@@ -21,6 +21,10 @@ public:
     float getScale();
     void  setScale(float newScale);
 
+    int getActiveLayer();
+    void setActiveLayer(int layerIndex);
+    QList<QString> getLayerList();
+
     BoxcarTimer mouseEventRate;
     BoxcarTimer frameRate;
 
