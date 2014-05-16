@@ -76,7 +76,8 @@ public:
                       program(0),
                       vertexBuffer(0),
                       tileWidth(0),
-                      tileHeight(0) {}
+                      tileHeight(0),
+                      currentLayer(0) {}
     ~CanvasContext();
 
     QOpenGLFunctions_3_2_Core *glFuncs;
@@ -98,6 +99,7 @@ public:
 
     QScopedPointer<StrokeContext> stroke;
 
+    int currentLayer;
     CanvasStack layers;
 
     std::map<uint64_t, GLuint> glTiles;

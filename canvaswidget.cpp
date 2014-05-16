@@ -190,6 +190,7 @@ void CanvasWidget::initializeGL()
     SharedOpenCL::getSharedOpenCL();
 
     ctx->layers.newLayerAt(0);
+    ctx->layers.newLayerAt(0);
 }
 
 void CanvasWidget::resizeGL(int w, int h)
@@ -243,7 +244,12 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
     if (ctx->layers.layers.empty())
         return;
 
-    CanvasLayer *targetLayer = ctx->layers.layers.at(0);
+    CanvasLayer *targetLayer = ctx->layers.layers.at(ctx->currentLayer);
+
+    if (ctx->currentLayer)
+        ctx->currentLayer = 0;
+    else
+        ctx->currentLayer = 1;
 
     if (activeBrush.endsWith(".myb"))
     {
