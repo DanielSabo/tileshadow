@@ -5,6 +5,8 @@ CanvasStack::CanvasStack()
 {
     backgroundTile = new CanvasTile(0, 0);
     backgroundTile->fill(1.0f, 1.0f, 1.0f, 1.0f);
+    backgroundTileCL = backgroundTile->copy();
+    backgroundTileCL->unmapHost();
 }
 
 void CanvasStack::newLayerAt(int index)
@@ -38,7 +40,7 @@ cl_mem CanvasStack::clOpenTileAt(int x, int y)
         result = layers.at(0)->getTileMaybe(x, y);
 
     if (!result)
-        result = backgroundTile;
+        result = backgroundTileCL;
 
     result->unmapHost();
     return result->tileMem;

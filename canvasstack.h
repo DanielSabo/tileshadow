@@ -22,6 +22,7 @@ public:
 
     std::map<uint64_t, CanvasTile *> tiles;
     CanvasTile *backgroundTile;
+    CanvasTile *backgroundTileCL;
 };
 
 #endif // CANVASSTACK_H
