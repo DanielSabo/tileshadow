@@ -54,6 +54,23 @@ void CanvasTile::unmapHost()
     }
 }
 
+void CanvasTile::fill(float r, float g, float b, float a)
+{
+    unmapHost();
+
+    cl_kernel kernel = SharedOpenCL::getSharedOpenCL()->fillKernel;
+    const size_t global_work_size[1] = {TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT};
+
+    float color[4] = {r, g, b, a};
+
+    clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&tileMem);
+    clSetKernelArg(kernel, 1, sizeof(cl_float4), (void *)&color);
+    clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
+                           kernel, 1,
+                           NULL, global_work_size, NULL,
+                           0, NULL, NULL);
+}
+
 CanvasContext::~CanvasContext()
 {
     std::map<uint64_t, GLuint>::iterator iter;

@@ -26,19 +26,7 @@ CanvasTile *CanvasLayer::getTile(int x, int y)
 
     CanvasTile *tile = new CanvasTile(x, y);
 
-    tile->unmapHost();
-
-    cl_int err = CL_SUCCESS;
-    cl_kernel kernel = SharedOpenCL::getSharedOpenCL()->fillKernel;
-    const size_t global_work_size[1] = {TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT};
-    float pixel[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-
-    err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&tile->tileMem);
-    err = clSetKernelArg(kernel, 1, sizeof(cl_float4), (void *)&pixel);
-    err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
-                                 kernel, 1,
-                                 NULL, global_work_size, NULL,
-                                 0, NULL, NULL);
+    tile->fill(1.0f, 1.0f, 1.0f, 1.0f);
 
     tiles[key] = tile;
 
