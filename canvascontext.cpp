@@ -71,6 +71,21 @@ void CanvasTile::fill(float r, float g, float b, float a)
                            0, NULL, NULL);
 }
 
+CanvasTile *CanvasTile::copy()
+{
+    CanvasTile *result = new CanvasTile(x, y);
+
+    unmapHost();
+    result->unmapHost();
+
+    clEnqueueCopyBuffer(SharedOpenCL::getSharedOpenCL()->cmdQueue,
+                        tileMem, result->tileMem, 0, 0,
+                        TILE_COMP_TOTAL * sizeof(float),
+                        0, NULL, NULL);
+
+    return result;
+}
+
 CanvasContext::~CanvasContext()
 {
     std::map<uint64_t, GLuint>::iterator iter;

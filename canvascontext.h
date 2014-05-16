@@ -63,6 +63,7 @@ public:
     void unmapHost(void);
 
     void fill(float r, float g, float b, float a);
+    CanvasTile *copy();
 };
 
 class CanvasContext
