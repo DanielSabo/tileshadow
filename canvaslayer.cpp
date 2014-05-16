@@ -38,7 +38,7 @@ CanvasTile *CanvasLayer::getTile(int x, int y)
 
     CanvasTile *tile = new CanvasTile(x, y);
 
-    tile->fill(1.0f, 1.0f, 1.0f, 1.0f);
+    tile->fill(0.0f, 0.0f, 0.0f, 0.0f);
 
     tiles[key] = tile;
 
