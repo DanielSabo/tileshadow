@@ -47,7 +47,7 @@ void cpuBlendInPlace(CanvasTile *inTile, CanvasTile *auxTile)
     }
 }
 
-float *CanvasStack::openTileAt(int x, int y)
+CanvasTile *CanvasStack::getTileAt(int x, int y)
 {
     int layerCount = layers.size();
 
@@ -85,9 +85,7 @@ float *CanvasStack::openTileAt(int x, int y)
         result = inTile;
     }
 
-    if (!result)
-        result = backgroundTile;
-    else
+    if (result)
     {
         uint64_t key = (uint64_t)(x & 0xFFFFFFFF) | (uint64_t)(y & 0xFFFFFFFF) << 32;
         std::map<uint64_t, CanvasTile *>::iterator found = tiles.find(key);
@@ -103,18 +101,23 @@ float *CanvasStack::openTileAt(int x, int y)
         }
     }
 
+    return result;
+}
+
+float *CanvasStack::openTileAt(int x, int y)
+{
+    CanvasTile *result = getTileAt(x, y);
+
+    if (!result)
+        result = backgroundTile;
+
     result->mapHost();
     return result->tileData;
 }
 
 cl_mem CanvasStack::clOpenTileAt(int x, int y)
 {
-    int layerCount = layers.size();
-
-    CanvasTile *result = NULL;
-
-    if (layerCount == 1)
-        result = layers.at(0)->getTileMaybe(x, y);
+    CanvasTile *result = getTileAt(x, y);
 
     if (!result)
         result = backgroundTileCL;

@@ -17,6 +17,7 @@ public:
 
     QList<CanvasLayer *> layers;
 
+    CanvasTile *getTileAt(int x, int y);
     float *openTileAt(int x, int y);
     cl_mem clOpenTileAt(int x, int y);
 
