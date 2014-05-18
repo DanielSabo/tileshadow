@@ -133,7 +133,7 @@ void MainWindow::updateLayers()
     {
         layersList->addItem(layerName);
     }
-    layersList->setCurrentRow(canvas->getActiveLayer());
+    layersList->setCurrentRow((layersList->count() - 1) + canvas->getActiveLayer());
 }
 
 void MainWindow::layerListSelection(int row)

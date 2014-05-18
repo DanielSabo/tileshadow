@@ -246,11 +246,6 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
 
     CanvasLayer *targetLayer = ctx->layers.layers.at(ctx->currentLayer);
 
-    if (ctx->currentLayer)
-        ctx->currentLayer = 0;
-    else
-        ctx->currentLayer = 1;
-
     if (activeBrush.endsWith(".myb"))
     {
         MyPaintStrokeContext *mypaint = new MyPaintStrokeContext(ctx, targetLayer);
@@ -313,21 +308,21 @@ void CanvasWidget::setScale(float newScale)
 
 int CanvasWidget::getActiveLayer()
 {
-    return getLayerList().size() - 1;
+    return ctx->currentLayer;
 }
 
 void CanvasWidget::setActiveLayer(int layerIndex)
 {
-
+    if (layerIndex >= 0 && layerIndex < ctx->layers.layers.size())
+        ctx->currentLayer = layerIndex;
 }
 
 QList<QString> CanvasWidget::getLayerList()
 {
     QList<QString> result;
 
-    result.append(QString("Dummy Layer 03"));
-    result.append(QString("Dummy Layer 02"));
-    result.append(QString("Dummy Layer 01"));
+    for (int i = ctx->layers.layers.size(); i > 0; --i)
+        result.append(QString().sprintf("Layer %02d", i));
 
     return result;
 }

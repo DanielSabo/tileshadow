@@ -110,7 +110,7 @@
        <item>
         <widget class="QGroupBox" name="layerBox">
          <property name="title">
-          <string>Layers</string>
+          <string/>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
@@ -211,7 +211,7 @@
      <x>0</x>
      <y>0</y>
      <width>561</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
