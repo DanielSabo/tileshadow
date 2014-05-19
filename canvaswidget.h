@@ -23,6 +23,8 @@ public:
 
     int getActiveLayer();
     void setActiveLayer(int layerIndex);
+    void addLayerAbove(int layerIndex);
+    void removeLayer(int layerIndex);
     QList<QString> getLayerList();
 
     BoxcarTimer mouseEventRate;

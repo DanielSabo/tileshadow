@@ -147,6 +147,53 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QWidget" name="layerBoxButtons" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>24</height>
+             </size>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_2">
+             <property name="spacing">
+              <number>6</number>
+             </property>
+             <property name="leftMargin">
+              <number>6</number>
+             </property>
+             <property name="topMargin">
+              <number>6</number>
+             </property>
+             <property name="rightMargin">
+              <number>6</number>
+             </property>
+             <property name="bottomMargin">
+              <number>6</number>
+             </property>
+             <item>
+              <widget class="QPushButton" name="delLayerButton">
+               <property name="text">
+                <string>-</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="addLayerButton">
+               <property name="text">
+                <string>+</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
@@ -343,8 +390,8 @@
    <slot>runCircleBenchmark()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
+     <x>473</x>
+     <y>148</y>
     </hint>
     <hint type="destinationlabel">
      <x>280</x>
@@ -432,6 +479,38 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>delLayerButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>layerListRemove()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>473</x>
+     <y>148</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>280</x>
+     <y>200</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>addLayerButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>layerListAdd()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>527</x>
+     <y>148</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>280</x>
+     <y>200</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>showOpenCLInfo()</slot>
@@ -443,5 +522,7 @@
   <slot>zoomOut()</slot>
   <slot>showStatusBar(bool)</slot>
   <slot>layerListSelection(int)</slot>
+  <slot>layerListAdd()</slot>
+  <slot>layerListRemove()</slot>
  </slots>
 </ui>

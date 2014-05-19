@@ -15,6 +15,22 @@ CanvasLayer::~CanvasLayer()
     }
 }
 
+TileSet CanvasLayer::getTileSet()
+{
+    std::map<uint64_t, CanvasTile *>::iterator iter;
+    TileSet result;
+
+    for (iter = tiles.begin(); iter != tiles.end(); ++iter)
+    {
+        int x = iter->first & 0xFFFFFFFF;
+        int y = (iter->first >> 32) & 0xFFFFFFFF;
+
+        result.insert(QPoint(x, y));
+    }
+
+    return result;
+}
+
 CanvasTile *CanvasLayer::getTileMaybe(int x, int y)
 {
     uint64_t key = (uint64_t)(x & 0xFFFFFFFF) | (uint64_t)(y & 0xFFFFFFFF) << 32;

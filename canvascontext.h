@@ -7,6 +7,7 @@
 #include <QOpenGLFunctions_3_2_Core>
 #include <map>
 #include <set>
+#include "tileset.h"
 #include "canvaslayer.h"
 #include "canvasstack.h"
 
@@ -24,13 +25,6 @@ static inline int tile_indice (int coordinate, int stride)
 }
 
 class CanvasContext;
-
-struct _TilePointCompare
-{
-    bool operator()(const QPoint &a, const QPoint &b);
-};
-
-typedef std::set<QPoint, _TilePointCompare> TileSet;
 
 class StrokeContext
 {

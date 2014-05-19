@@ -127,19 +127,32 @@ void MainWindow::updateStatus()
 void MainWindow::updateLayers()
 {
     QList<QString> canvasLayers = canvas->getLayerList();
+    int selectedLayer = canvas->getActiveLayer();
 
     layersList->clear();
     foreach(QString layerName, canvasLayers)
     {
         layersList->addItem(layerName);
     }
-    layersList->setCurrentRow((layersList->count() - 1) + canvas->getActiveLayer());
+    layersList->setCurrentRow((layersList->count() - 1) - selectedLayer);
 }
 
 void MainWindow::layerListSelection(int row)
 {
     int layerIdx = (layersList->count() - 1) - row;
     canvas->setActiveLayer(layerIdx);
+}
+
+void MainWindow::layerListAdd()
+{
+    canvas->addLayerAbove(canvas->getActiveLayer());
+    updateLayers();
+}
+
+void MainWindow::layerListRemove()
+{
+    canvas->removeLayer(canvas->getActiveLayer());
+    updateLayers();
 }
 
 void MainWindow::canvasStats()

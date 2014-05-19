@@ -190,7 +190,6 @@ void CanvasWidget::initializeGL()
     SharedOpenCL::getSharedOpenCL();
 
     ctx->layers.newLayerAt(0);
-    ctx->layers.newLayerAt(0);
 }
 
 void CanvasWidget::resizeGL(int w, int h)
@@ -315,6 +314,27 @@ void CanvasWidget::setActiveLayer(int layerIndex)
 {
     if (layerIndex >= 0 && layerIndex < ctx->layers.layers.size())
         ctx->currentLayer = layerIndex;
+}
+
+void CanvasWidget::addLayerAbove(int layerIndex)
+{
+    ctx->layers.newLayerAt(layerIndex);
+}
+
+void CanvasWidget::removeLayer(int layerIndex)
+{
+    /* Before we delete the layer, dirty all tiles it intersects */
+    if (layerIndex < 0 || layerIndex > ctx->layers.layers.size())
+        return;
+
+    TileSet layerTiles = ctx->layers.layers[layerIndex]->getTileSet();
+    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+
+    ctx->layers.removeLayerAt(layerIndex);
+    if (layerIndex == ctx->currentLayer)
+        ctx->currentLayer = qMax(0, ctx->currentLayer - 1);
+
+    update();
 }
 
 QList<QString> CanvasWidget::getLayerList()

@@ -2,6 +2,7 @@
 #define CANVASLAYER_H
 
 #include "canvaswidget-opencl.h"
+#include "tileset.h"
 #include <map>
 
 class CanvasTile;
@@ -13,6 +14,8 @@ public:
     ~CanvasLayer();
 
     std::map<uint64_t, CanvasTile *> tiles;
+
+    TileSet getTileSet();
 
     float *openTileAt(int x, int y);
     cl_mem clOpenTileAt(int x, int y);

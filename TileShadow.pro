@@ -45,7 +45,8 @@ HEADERS  += mainwindow.h \
     benchmarkdialog.h \
     boxcartimer.h \
     canvaslayer.h \
-    canvasstack.h
+    canvasstack.h \
+    tileset.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \

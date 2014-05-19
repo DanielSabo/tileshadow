@@ -14,6 +14,7 @@ public:
     CanvasStack();
 
     void newLayerAt(int index);
+    void removeLayerAt(int index);
 
     QList<CanvasLayer *> layers;
 

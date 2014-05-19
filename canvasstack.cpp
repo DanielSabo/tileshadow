@@ -14,6 +14,15 @@ void CanvasStack::newLayerAt(int index)
     layers.insert(index, new CanvasLayer());
 }
 
+void CanvasStack::removeLayerAt(int index)
+{
+    if (index < 0 || index > layers.size())
+        return;
+    if (layers.size() == 1)
+        return;
+    layers.removeAt(index);
+}
+
 void cpuBlendInPlace(CanvasTile *inTile, CanvasTile *auxTile)
 {
     inTile->mapHost();

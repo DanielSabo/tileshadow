@@ -49,6 +49,8 @@ public slots:
     void canvasStats();
     void showStatusBar(bool visible);
     void layerListSelection(int row);
+    void layerListAdd();
+    void layerListRemove();
 };
 
 #endif // MAINWINDOW_H
