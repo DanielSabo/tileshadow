@@ -56,6 +56,23 @@ void cpuBlendInPlace(CanvasTile *inTile, CanvasTile *auxTile)
     }
 }
 
+void clBlendInPlace(CanvasTile *inTile, CanvasTile *auxTile)
+{
+    const size_t global_work_size[1] = {TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT};
+    inTile->unmapHost();
+    auxTile->unmapHost();
+
+    cl_kernel kernel = SharedOpenCL::getSharedOpenCL()->blendKernel_over;
+
+    clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&inTile->tileMem);
+    clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&inTile->tileMem);
+    clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&auxTile->tileMem);
+    clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
+                           kernel,
+                           1, NULL, global_work_size, NULL,
+                           0, NULL, NULL);
+}
+
 CanvasTile *CanvasStack::getTileAt(int x, int y)
 {
     int layerCount = layers.size();
@@ -70,8 +87,8 @@ CanvasTile *CanvasStack::getTileAt(int x, int y)
 
         if (auxTile)
         {
-            result = backgroundTile->copy();
-            cpuBlendInPlace(result, auxTile);
+            result = backgroundTileCL->copy();
+            clBlendInPlace(result, auxTile);
         }
         else
             result = NULL;
@@ -86,8 +103,8 @@ CanvasTile *CanvasStack::getTileAt(int x, int y)
             if (auxTile)
             {
                 if (!inTile)
-                    inTile = backgroundTile->copy();
-                cpuBlendInPlace(inTile, auxTile);
+                    inTile = backgroundTileCL->copy();
+                clBlendInPlace(inTile, auxTile);
             }
         }
 

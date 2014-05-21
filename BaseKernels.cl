@@ -48,3 +48,23 @@ __kernel void fill(__global float4 *buf,
 {
   buf[get_global_id(0)] = color;
 }
+
+__kernel void tileSVGOver(__global float4 *out,
+                          __global float4 *in,
+                          __global float4 *aux)
+{
+    float4 out_pixel;
+    float4 in_pixel = in[get_global_id(0)];
+    float4 aux_pixel = aux[get_global_id(0)];
+
+    float alpha = aux_pixel.s3;
+    float dst_alpha = in_pixel.s3;
+
+    float a = alpha + dst_alpha * (1.0f - alpha);
+    float src_term = alpha / a;
+    float aux_term = 1.0f - src_term;
+    out_pixel.s012 = aux_pixel.s012 * src_term + in_pixel.s012 * aux_term;
+    out_pixel.s3   = a;
+
+    out[get_global_id(0)] = out_pixel;
+}

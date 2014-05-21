@@ -440,6 +440,13 @@ SharedOpenCL::SharedOpenCL()
             qWarning() << "Could not find base kernel \"" << "fill" << "\" (" << err << ")";
         }
 
+        blendKernel_over = clCreateKernel (baseKernelProg, "tileSVGOver", &err);;
+
+        if (err != CL_SUCCESS)
+        {
+            qWarning() << "Could not find base kernel \"" << "tileSVGOver" << "\" (" << err << ")";
+        }
+
         clReleaseProgram (baseKernelProg);
     }
 

@@ -46,6 +46,9 @@ public:
 
     cl_kernel circleKernel;
     cl_kernel fillKernel;
+
+    cl_kernel blendKernel_over;
+
     cl_kernel mypaintDabKernel;
     cl_kernel mypaintGetColorKernelPart1;
     cl_kernel mypaintGetColorKernelPart2;
