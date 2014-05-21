@@ -68,7 +68,8 @@ void MainWindow::reloadTools()
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    ui(new Ui::MainWindow),
+    freezeLayerList(false)
 {
     ui->setupUi(this);
 
@@ -81,6 +82,7 @@ MainWindow::MainWindow(QWidget *parent) :
     updateLayers();
 
     connect(canvas, SIGNAL(updateStats()), this, SLOT(canvasStats()));
+    connect(canvas, SIGNAL(updateLayers()), this, SLOT(updateLayers()));
 
     // Resize here because the big widget is unwieldy in the designer
     resize(700,400);
@@ -126,19 +128,26 @@ void MainWindow::updateStatus()
 
 void MainWindow::updateLayers()
 {
+    freezeLayerList = true;
+
     QList<QString> canvasLayers = canvas->getLayerList();
-    int selectedLayer = canvas->getActiveLayer();
 
     layersList->clear();
     foreach(QString layerName, canvasLayers)
     {
         layersList->addItem(layerName);
     }
-    layersList->setCurrentRow((layersList->count() - 1) - selectedLayer);
+    layersList->setCurrentRow((layersList->count() - 1) - canvas->getActiveLayer());
+
+    freezeLayerList = false;
 }
 
 void MainWindow::layerListSelection(int row)
 {
+    /* Don't update the selection while the list is changing */
+    if (freezeLayerList)
+        return;
+
     int layerIdx = (layersList->count() - 1) - row;
     canvas->setActiveLayer(layerIdx);
 }
@@ -146,13 +155,11 @@ void MainWindow::layerListSelection(int row)
 void MainWindow::layerListAdd()
 {
     canvas->addLayerAbove(canvas->getActiveLayer());
-    updateLayers();
 }
 
 void MainWindow::layerListRemove()
 {
     canvas->removeLayer(canvas->getActiveLayer());
-    updateLayers();
 }
 
 void MainWindow::canvasStats()

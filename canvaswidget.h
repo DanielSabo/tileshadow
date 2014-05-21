@@ -49,6 +49,7 @@ private:
 
 signals:
     void updateStats();
+    void updateLayers();
 
 public slots:
 

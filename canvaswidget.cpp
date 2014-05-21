@@ -190,6 +190,7 @@ void CanvasWidget::initializeGL()
     SharedOpenCL::getSharedOpenCL();
 
     ctx->layers.newLayerAt(0);
+    emit updateLayers();
 }
 
 void CanvasWidget::resizeGL(int w, int h)
@@ -307,18 +308,31 @@ void CanvasWidget::setScale(float newScale)
 
 int CanvasWidget::getActiveLayer()
 {
+    if (!ctx)
+        return 0;
+
     return ctx->currentLayer;
 }
 
 void CanvasWidget::setActiveLayer(int layerIndex)
 {
+    if (!ctx)
+        return;
+
     if (layerIndex >= 0 && layerIndex < ctx->layers.layers.size())
+    {
+        bool update = (ctx->currentLayer != layerIndex);
         ctx->currentLayer = layerIndex;
+
+        if (update)
+            emit updateLayers();
+    }
 }
 
 void CanvasWidget::addLayerAbove(int layerIndex)
 {
-    ctx->layers.newLayerAt(layerIndex);
+    ctx->layers.newLayerAt(layerIndex + 1);
+    emit updateLayers();
 }
 
 void CanvasWidget::removeLayer(int layerIndex)
@@ -335,11 +349,16 @@ void CanvasWidget::removeLayer(int layerIndex)
         ctx->currentLayer = qMax(0, ctx->currentLayer - 1);
 
     update();
+
+    emit updateLayers();
 }
 
 QList<QString> CanvasWidget::getLayerList()
 {
     QList<QString> result;
+
+    if (!ctx)
+        return result;
 
     for (int i = ctx->layers.layers.size(); i > 0; --i)
         result.append(QString().sprintf("Layer %02d", i));

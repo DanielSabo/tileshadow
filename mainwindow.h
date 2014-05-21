@@ -30,11 +30,11 @@ private:
     CanvasWidget *canvas;
     QStatusBar *statusBar;
     QListWidget *layersList;
+    bool freezeLayerList;
 
     void reloadTools();
     void updateTitle();
     void updateStatus();
-    void updateLayers();
 
 private slots:
     void setActiveTool();
@@ -51,6 +51,7 @@ public slots:
     void layerListSelection(int row);
     void layerListAdd();
     void layerListRemove();
+    void updateLayers();
 };
 
 #endif // MAINWINDOW_H
