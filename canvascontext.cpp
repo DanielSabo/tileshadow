@@ -163,7 +163,13 @@ void CanvasContext::closeTile(CanvasTile *tile)
 
     uint64_t key = (uint64_t)(tile->x & 0xFFFFFFFF) | (uint64_t)(tile->y & 0xFFFFFFFF) << 32;
 
-    GLuint tileBuffer = glTiles[key];
+    GLuint tileBuffer;
+    std::map<uint64_t, GLuint>::iterator found = glTiles.find(key);
+
+    if (found != glTiles.end())
+        tileBuffer = found->second;
+    else
+        return;
 
     if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
     {
