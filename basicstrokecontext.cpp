@@ -24,14 +24,12 @@ void BasicStrokeContext::drawDab(QPointF point)
     {
         for (int ix = ix_start; ix <= ix_end; ++ix)
         {
-            CanvasTile *tile = ctx->getTile(ix, iy);
-
             float pixel[4] = {1.0f, 1.0f, 1.0f, 1.0f};
             pixel[(ix + iy) % 3] = 0.0f;
 
             cl_int offsetX = point.x() - (ix * TILE_PIXEL_WIDTH);
             cl_int offsetY = point.y() - (iy * TILE_PIXEL_HEIGHT);
-            cl_mem data = ctx->clOpenTile(tile);
+            cl_mem data = ctx->clOpenTileAt(ix, iy);
 
             err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&data);
             err = clSetKernelArg(kernel, 2, sizeof(cl_int), (void *)&offsetX);

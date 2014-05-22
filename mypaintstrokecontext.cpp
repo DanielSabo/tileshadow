@@ -268,8 +268,6 @@ __kernel void mypaint_color_query_part2(__global float4 *accum,
 
         for (int ix = ix_start; ix <= ix_end; ++ix)
         {
-            CanvasTile *tile = ctx->getTile(ix, iy);
-
             const int tileOriginX = ix * TILE_PIXEL_WIDTH;
             const int offsetX = std::max(firstPixelX - tileOriginX, 0);
             const int extraX = std::max(tileOriginX + TILE_PIXEL_WIDTH - lastPixelX - 1, 0);
@@ -284,7 +282,7 @@ __kernel void mypaint_color_query_part2(__global float4 *accum,
             size_t global_work_size[1] = {height};
             size_t local_work_size[1] = {1};
 
-            cl_mem data = ctx->clOpenTile(tile);
+            cl_mem data = ctx->clOpenTileAt(ix, iy);
 
             err = clSetKernelArg(kernel1, 0, sizeof(cl_mem), (void *)&data);
             err = clSetKernelArg(kernel1, 1, sizeof(float), (void *)&tileX);
@@ -416,8 +414,6 @@ static int drawDabFunction (MyPaintSurface *base_surface,
 
             for (int ix = ix_start; ix <= ix_end; ++ix)
             {
-                CanvasTile *tile = ctx->getTile(ix, iy);
-
                 const int tileOriginX = ix * TILE_PIXEL_WIDTH;
                 const int offsetX = std::max(firstPixelX - tileOriginX, 0);
                 const int extraX = std::max(tileOriginX + TILE_PIXEL_WIDTH - lastPixelX - 1, 0);
@@ -432,7 +428,7 @@ static int drawDabFunction (MyPaintSurface *base_surface,
                 size_t global_work_size[2] = {width, height};
                 size_t local_work_size[2] = {width, 1};
 
-                cl_mem data = ctx->clOpenTile(tile);
+                cl_mem data = ctx->clOpenTileAt(ix, iy);
 
                 err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&data);
                 err = clSetKernelArg(kernel, 1, sizeof(cl_int), (void *)&offset);

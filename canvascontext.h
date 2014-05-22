@@ -94,6 +94,8 @@ public:
     float *openTile(CanvasTile *tile);
     void closeTile(CanvasTile *tile);
     void closeTiles(void);
+
+    cl_mem clOpenTileAt(int x, int y);
 };
 
 #endif // CANVASCONTEXT_H

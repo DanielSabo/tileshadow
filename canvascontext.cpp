@@ -156,6 +156,11 @@ float *CanvasContext::openTile(CanvasTile *tile)
     return tile->tileData;
 }
 
+cl_mem CanvasContext::clOpenTileAt(int x, int y)
+{
+    clOpenTile(getTile(x, y));
+}
+
 void CanvasContext::closeTile(CanvasTile *tile)
 {
     if (!tile->isOpen)
