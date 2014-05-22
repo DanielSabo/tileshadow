@@ -18,6 +18,7 @@ public:
     cl_mem clOpenTileAt(int x, int y);
 
     CanvasTile *getTile(int x, int y);
+    CanvasTile *getTileMaybe(int x, int y);
 };
 
 #endif // CANVASLAYER_H

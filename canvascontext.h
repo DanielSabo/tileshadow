@@ -8,6 +8,7 @@
 #include <map>
 #include <set>
 #include "canvaslayer.h"
+#include "canvasstack.h"
 
 static const int TILE_PIXEL_WIDTH  = 128;
 static const int TILE_PIXEL_HEIGHT = 128;
@@ -96,7 +97,7 @@ public:
 
     QScopedPointer<StrokeContext> stroke;
 
-    CanvasLayer layer;
+    CanvasStack layers;
 
     std::map<uint64_t, GLuint> glTiles;
     TileSet dirtyTiles;

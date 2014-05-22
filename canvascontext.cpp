@@ -153,7 +153,7 @@ void CanvasContext::closeTileAt(int x, int y)
 
         err = clEnqueueAcquireGLObjects(cmdQueue, 1, &output, 0, NULL, NULL);
 
-        err = clEnqueueCopyBuffer(cmdQueue, layer.clOpenTileAt(x, y), output,
+        err = clEnqueueCopyBuffer(cmdQueue, layers.clOpenTileAt(x, y), output,
                                   0, 0, sizeof(float) * TILE_COMP_TOTAL,
                                   0, NULL, NULL);
 
@@ -167,7 +167,7 @@ void CanvasContext::closeTileAt(int x, int y)
         glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, tileBuffer);
         glFuncs->glBufferData(GL_TEXTURE_BUFFER,
                               sizeof(float) * TILE_COMP_TOTAL,
-                              layer.openTileAt(x, y),
+                              layers.openTileAt(x, y),
                               GL_STREAM_DRAW);
     }
 }

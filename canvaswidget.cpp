@@ -188,6 +188,8 @@ void CanvasWidget::initializeGL()
     glFuncs->glVertexAttribPointer( 0, 2, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL);
 
     SharedOpenCL::getSharedOpenCL();
+
+    ctx->layers.newLayerAt(0);
 }
 
 void CanvasWidget::resizeGL(int w, int h)
@@ -238,21 +240,26 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
 {
     ctx->stroke.reset(NULL);
 
+    if (ctx->layers.layers.empty())
+        return;
+
+    CanvasLayer *targetLayer = ctx->layers.layers.at(0);
+
     if (activeBrush.endsWith(".myb"))
     {
-        MyPaintStrokeContext *mypaint = new MyPaintStrokeContext(ctx, &ctx->layer);
+        MyPaintStrokeContext *mypaint = new MyPaintStrokeContext(ctx, targetLayer);
         if (mypaint->fromJsonFile(QString(":/mypaint-tools/") + activeBrush))
             ctx->stroke.reset(mypaint);
         else
             delete mypaint;
     }
     else if (activeBrush == QString("debug"))
-        ctx->stroke.reset(new BasicStrokeContext(ctx, &ctx->layer));
+        ctx->stroke.reset(new BasicStrokeContext(ctx, targetLayer));
 
     if (ctx->stroke.isNull())
     {
         qWarning() << "Unknown tool set \'" << activeBrush << "\', using debug";
-        ctx->stroke.reset(new BasicStrokeContext(ctx, &ctx->layer));
+        ctx->stroke.reset(new BasicStrokeContext(ctx, targetLayer));
     }
 
     ctx->stroke->multiplySize(toolSizeFactor);

@@ -32,7 +32,8 @@ SOURCES += main.cpp\
     basicstrokecontext.cpp \
     benchmarkdialog.cpp \
     boxcartimer.cpp \
-    canvaslayer.cpp
+    canvaslayer.cpp \
+    canvasstack.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -43,7 +44,8 @@ HEADERS  += mainwindow.h \
     basicstrokecontext.h \
     benchmarkdialog.h \
     boxcartimer.h \
-    canvaslayer.h
+    canvaslayer.h \
+    canvasstack.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \

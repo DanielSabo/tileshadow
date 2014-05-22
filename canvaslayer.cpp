@@ -15,6 +15,18 @@ CanvasLayer::~CanvasLayer()
     }
 }
 
+CanvasTile *CanvasLayer::getTileMaybe(int x, int y)
+{
+    uint64_t key = (uint64_t)(x & 0xFFFFFFFF) | (uint64_t)(y & 0xFFFFFFFF) << 32;
+
+    std::map<uint64_t, CanvasTile *>::iterator found = tiles.find(key);
+
+    if (found != tiles.end())
+        return found->second;
+    else
+        return NULL;
+}
+
 CanvasTile *CanvasLayer::getTile(int x, int y)
 {
     uint64_t key = (uint64_t)(x & 0xFFFFFFFF) | (uint64_t)(y & 0xFFFFFFFF) << 32;
