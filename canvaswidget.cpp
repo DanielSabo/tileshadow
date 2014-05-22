@@ -240,19 +240,19 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
 
     if (activeBrush.endsWith(".myb"))
     {
-        MyPaintStrokeContext *mypaint = new MyPaintStrokeContext(ctx);
+        MyPaintStrokeContext *mypaint = new MyPaintStrokeContext(ctx, &ctx->layer);
         if (mypaint->fromJsonFile(QString(":/mypaint-tools/") + activeBrush))
             ctx->stroke.reset(mypaint);
         else
             delete mypaint;
     }
     else if (activeBrush == QString("debug"))
-        ctx->stroke.reset(new BasicStrokeContext(ctx));
+        ctx->stroke.reset(new BasicStrokeContext(ctx, &ctx->layer));
 
     if (ctx->stroke.isNull())
     {
         qWarning() << "Unknown tool set \'" << activeBrush << "\', using debug";
-        ctx->stroke.reset(new BasicStrokeContext(ctx));
+        ctx->stroke.reset(new BasicStrokeContext(ctx, &ctx->layer));
     }
 
     ctx->stroke->multiplySize(toolSizeFactor);

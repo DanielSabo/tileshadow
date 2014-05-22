@@ -31,7 +31,8 @@ SOURCES += main.cpp\
     canvascontext.cpp \
     basicstrokecontext.cpp \
     benchmarkdialog.cpp \
-    boxcartimer.cpp
+    boxcartimer.cpp \
+    canvaslayer.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -41,7 +42,8 @@ HEADERS  += mainwindow.h \
     canvascontext.h \
     basicstrokecontext.h \
     benchmarkdialog.h \
-    boxcartimer.h
+    boxcartimer.h \
+    canvaslayer.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \

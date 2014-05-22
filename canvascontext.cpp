@@ -82,35 +82,6 @@ CanvasContext::~CanvasContext()
         glFuncs->glDeleteProgram(program);
 }
 
-CanvasTile *CanvasContext::getTile(int x, int y)
-{
-    uint64_t key = (uint64_t)(x & 0xFFFFFFFF) | (uint64_t)(y & 0xFFFFFFFF) << 32;
-
-    std::map<uint64_t, CanvasTile *>::iterator found = tiles.find(key);
-
-    if (found != tiles.end())
-        return found->second;
-
-    CanvasTile *tile = new CanvasTile(x, y);
-
-    cl_int err = CL_SUCCESS;
-    cl_mem data = clOpenTile(tile);
-    cl_kernel kernel = SharedOpenCL::getSharedOpenCL()->fillKernel;
-    const size_t global_work_size[1] = {TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT};
-    float pixel[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-
-    err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&data);
-    err = clSetKernelArg(kernel, 1, sizeof(cl_float4), (void *)&pixel);
-    err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
-                                 kernel, 1,
-                                 NULL, global_work_size, NULL,
-                                 0, NULL, NULL);
-
-    tiles[key] = tile;
-
-    return tile;
-}
-
 GLuint CanvasContext::getGLBuf(int x, int y)
 {
     uint64_t key = (uint64_t)(x & 0xFFFFFFFF) | (uint64_t)(y & 0xFFFFFFFF) << 32;
@@ -129,31 +100,12 @@ GLuint CanvasContext::getGLBuf(int x, int y)
                           GL_DYNAMIC_DRAW);
     glTiles[key] = glTile;
 
-    closeTile(getTile(x, y));
+    closeTile(layer.getTile(x, y));
 
     // Call clFinish here because we closed a tile outside of closeTiles()
     clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
 
     return glTile;
-}
-
-cl_mem CanvasContext::clOpenTile(CanvasTile *tile)
-{
-    tile->unmapHost();
-
-    return tile->tileMem;
-}
-
-float *CanvasContext::openTile(CanvasTile *tile)
-{
-    tile->mapHost();
-
-    return tile->tileData;
-}
-
-cl_mem CanvasContext::clOpenTileAt(int x, int y)
-{
-    return clOpenTile(getTile(x, y));
 }
 
 void CanvasContext::closeTile(CanvasTile *tile)
@@ -216,7 +168,7 @@ void CanvasContext::closeTiles(void)
          dirtyIter != dirtyTiles.end();
          dirtyIter++)
     {
-        CanvasTile *tile = getTile(dirtyIter->x(), dirtyIter->y());
+        CanvasTile *tile = layer.getTile(dirtyIter->x(), dirtyIter->y());
         closeTile(tile);
     }
 

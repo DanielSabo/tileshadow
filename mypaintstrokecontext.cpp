@@ -150,7 +150,7 @@ float MyPaintStrokeContext::getPixelRadius()
     return exp(radius);
 }
 
-MyPaintStrokeContext::MyPaintStrokeContext(CanvasContext *ctx) : StrokeContext(ctx)
+MyPaintStrokeContext::MyPaintStrokeContext(CanvasContext *ctx, CanvasLayer *layer) : StrokeContext(ctx, layer)
 {
     priv = new MyPaintStrokeContextPrivate();
 
@@ -211,7 +211,7 @@ static void getColorFunction (MyPaintSurface *base_surface,
                               float * color_r, float * color_g, float * color_b, float * color_a)
 {
     CanvasMyPaintSurface *surface = (CanvasMyPaintSurface *)base_surface;
-    CanvasContext *ctx = surface->strokeContext->ctx;
+    CanvasLayer *layer = surface->strokeContext->layer;
 
     if (radius < 1.0f)
         radius = 1.0f;
@@ -287,7 +287,7 @@ __kernel void mypaint_color_query_part2(__global float4 *accum,
             size_t global_work_size[1] = {height};
             size_t local_work_size[1] = {1};
 
-            cl_mem data = ctx->clOpenTileAt(ix, iy);
+            cl_mem data = layer->clOpenTileAt(ix, iy);
 
             err = clSetKernelArg(kernel1, 0, sizeof(cl_mem), (void *)&data);
             err = clSetKernelArg(kernel1, 1, sizeof(float), (void *)&tileX);
@@ -366,7 +366,7 @@ static int drawDabFunction (MyPaintSurface *base_surface,
 
     if (radius >= 1.0f)
     {
-        CanvasContext *ctx = surface->strokeContext->ctx;
+        CanvasLayer *layer = surface->strokeContext->layer;
 
         int fringe_radius = radius + 1.5f;
 
@@ -434,7 +434,7 @@ static int drawDabFunction (MyPaintSurface *base_surface,
                 size_t local_work_size[2] = {width, 1};
 
                 surface->strokeContext->priv->modTiles.insert(QPoint(ix, iy));
-                cl_mem data = ctx->clOpenTileAt(ix, iy);
+                cl_mem data = layer->clOpenTileAt(ix, iy);
 
                 err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&data);
                 err = clSetKernelArg(kernel, 1, sizeof(cl_int), (void *)&offset);

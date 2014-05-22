@@ -7,6 +7,7 @@
 #include <QOpenGLFunctions_3_2_Core>
 #include <map>
 #include <set>
+#include "canvaslayer.h"
 
 static const int TILE_PIXEL_WIDTH  = 128;
 static const int TILE_PIXEL_HEIGHT = 128;
@@ -33,7 +34,7 @@ typedef std::set<QPoint, _TilePointCompare> TileSet;
 class StrokeContext
 {
 public:
-    StrokeContext(CanvasContext *ctx) : ctx(ctx) {}
+    StrokeContext(CanvasContext *ctx, CanvasLayer *layer) : ctx(ctx), layer(layer) {}
     virtual ~StrokeContext() {}
 
     virtual TileSet startStroke(QPointF point, float pressure) = 0;
@@ -43,6 +44,7 @@ public:
     virtual float getPixelRadius() = 0;
 
     CanvasContext *ctx;
+    CanvasLayer   *layer;
 };
 
 class CanvasTile
@@ -92,18 +94,15 @@ public:
 
     QScopedPointer<StrokeContext> stroke;
 
-    std::map<uint64_t, CanvasTile *> tiles;
+    CanvasLayer layer;
+
     std::map<uint64_t, GLuint> glTiles;
     TileSet dirtyTiles;
 
     GLuint getGLBuf(int x, int y);
-    CanvasTile *getTile(int x, int y);
-    cl_mem clOpenTile(CanvasTile *tile);
-    float *openTile(CanvasTile *tile);
     void closeTile(CanvasTile *tile);
     void closeTiles(void);
 
-    cl_mem clOpenTileAt(int x, int y);
 };
 
 #endif // CANVASCONTEXT_H

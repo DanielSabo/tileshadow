@@ -31,7 +31,7 @@ void BasicStrokeContext::drawDab(QPointF point, TileSet &modTiles)
 
             cl_int offsetX = point.x() - (ix * TILE_PIXEL_WIDTH);
             cl_int offsetY = point.y() - (iy * TILE_PIXEL_HEIGHT);
-            cl_mem data = ctx->clOpenTileAt(ix, iy);
+            cl_mem data = layer->clOpenTileAt(ix, iy);
 
             modTiles.insert(QPoint(ix, iy));
 
