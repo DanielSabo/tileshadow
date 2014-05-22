@@ -7,7 +7,7 @@ CanvasLayer::CanvasLayer()
 
 CanvasLayer::~CanvasLayer()
 {
-    std::map<uint64_t, CanvasTile *>::iterator iter;
+    TileMap::iterator iter;
 
     for (iter = tiles.begin(); iter != tiles.end(); ++iter)
     {
@@ -17,15 +17,12 @@ CanvasLayer::~CanvasLayer()
 
 TileSet CanvasLayer::getTileSet()
 {
-    std::map<uint64_t, CanvasTile *>::iterator iter;
+    TileMap::iterator iter;
     TileSet result;
 
     for (iter = tiles.begin(); iter != tiles.end(); ++iter)
     {
-        int x = iter->first & 0xFFFFFFFF;
-        int y = (iter->first >> 32) & 0xFFFFFFFF;
-
-        result.insert(QPoint(x, y));
+        result.insert(iter->first);
     }
 
     return result;
@@ -33,9 +30,7 @@ TileSet CanvasLayer::getTileSet()
 
 CanvasTile *CanvasLayer::getTileMaybe(int x, int y)
 {
-    uint64_t key = (uint64_t)(x & 0xFFFFFFFF) | (uint64_t)(y & 0xFFFFFFFF) << 32;
-
-    std::map<uint64_t, CanvasTile *>::iterator found = tiles.find(key);
+    TileMap::iterator found = tiles.find(QPoint(x, y));
 
     if (found != tiles.end())
         return found->second;
@@ -45,9 +40,7 @@ CanvasTile *CanvasLayer::getTileMaybe(int x, int y)
 
 CanvasTile *CanvasLayer::getTile(int x, int y)
 {
-    uint64_t key = (uint64_t)(x & 0xFFFFFFFF) | (uint64_t)(y & 0xFFFFFFFF) << 32;
-
-    std::map<uint64_t, CanvasTile *>::iterator found = tiles.find(key);
+    TileMap::iterator found = tiles.find(QPoint(x, y));
 
     if (found != tiles.end())
         return found->second;
@@ -56,7 +49,7 @@ CanvasTile *CanvasLayer::getTile(int x, int y)
 
     tile->fill(0.0f, 0.0f, 0.0f, 0.0f);
 
-    tiles[key] = tile;
+    tiles[QPoint(x, y)] = tile;
 
     return tile;
 }

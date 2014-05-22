@@ -3,7 +3,6 @@
 
 #include "canvaswidget-opencl.h"
 #include "tileset.h"
-#include <map>
 
 class CanvasTile;
 
@@ -13,7 +12,7 @@ public:
     CanvasLayer();
     ~CanvasLayer();
 
-    std::map<uint64_t, CanvasTile *> tiles;
+    TileMap tiles;
 
     TileSet getTileSet();
 

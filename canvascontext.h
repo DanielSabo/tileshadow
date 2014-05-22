@@ -6,7 +6,6 @@
 #include <QSet>
 #include <QOpenGLFunctions_3_2_Core>
 #include <map>
-#include <set>
 #include "tileset.h"
 #include "canvaslayer.h"
 #include "canvasstack.h"
@@ -96,7 +95,9 @@ public:
     int currentLayer;
     CanvasStack layers;
 
-    std::map<uint64_t, GLuint> glTiles;
+    typedef std::map<QPoint, GLuint, _TilePointCompare> GLTileMap;
+
+    GLTileMap glTiles;
     TileSet dirtyTiles;
 
     GLuint getGLBuf(int x, int y);

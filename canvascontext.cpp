@@ -88,7 +88,7 @@ CanvasTile *CanvasTile::copy()
 
 CanvasContext::~CanvasContext()
 {
-    std::map<uint64_t, GLuint>::iterator iter;
+    GLTileMap::iterator iter;
 
     for (iter = glTiles.begin(); iter != glTiles.end(); ++iter)
     {
@@ -116,8 +116,7 @@ CanvasContext::~CanvasContext()
 
 GLuint CanvasContext::getGLBuf(int x, int y)
 {
-    uint64_t key = (uint64_t)(x & 0xFFFFFFFF) | (uint64_t)(y & 0xFFFFFFFF) << 32;
-    std::map<uint64_t, GLuint>::iterator found = glTiles.find(key);
+    GLTileMap::iterator found = glTiles.find(QPoint(x, y));
 
     if (found != glTiles.end())
         return found->second;
@@ -130,7 +129,7 @@ GLuint CanvasContext::getGLBuf(int x, int y)
                           sizeof(float) * TILE_COMP_TOTAL,
                           NULL,
                           GL_DYNAMIC_DRAW);
-    glTiles[key] = glTile;
+    glTiles[QPoint(x, y)] = glTile;
 
     closeTileAt(x, y);
 
@@ -142,10 +141,8 @@ GLuint CanvasContext::getGLBuf(int x, int y)
 
 void CanvasContext::closeTileAt(int x, int y)
 {
-    uint64_t key = (uint64_t)(x & 0xFFFFFFFF) | (uint64_t)(y & 0xFFFFFFFF) << 32;
-
     GLuint tileBuffer;
-    std::map<uint64_t, GLuint>::iterator found = glTiles.find(key);
+    GLTileMap::iterator found = glTiles.find(QPoint(x, y));
 
     if (found != glTiles.end())
         tileBuffer = found->second;

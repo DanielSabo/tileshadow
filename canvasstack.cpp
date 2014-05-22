@@ -113,8 +113,7 @@ CanvasTile *CanvasStack::getTileAt(int x, int y)
 
     if (result)
     {
-        uint64_t key = (uint64_t)(x & 0xFFFFFFFF) | (uint64_t)(y & 0xFFFFFFFF) << 32;
-        std::map<uint64_t, CanvasTile *>::iterator found = tiles.find(key);
+        TileMap::iterator found = tiles.find(QPoint(x, y));
 
         if (found != tiles.end())
         {
@@ -123,7 +122,7 @@ CanvasTile *CanvasStack::getTileAt(int x, int y)
         }
         else
         {
-            tiles[key] = result;
+            tiles[QPoint(x, y)] = result;
         }
     }
 

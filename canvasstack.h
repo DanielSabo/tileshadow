@@ -3,7 +3,7 @@
 
 #include <QList>
 #include "canvaswidget-opencl.h"
-#include <map>
+#include "tileset.h"
 
 class CanvasTile;
 class CanvasLayer;
@@ -22,7 +22,7 @@ public:
     float *openTileAt(int x, int y);
     cl_mem clOpenTileAt(int x, int y);
 
-    std::map<uint64_t, CanvasTile *> tiles;
+    TileMap tiles;
     CanvasTile *backgroundTile;
     CanvasTile *backgroundTileCL;
 };
