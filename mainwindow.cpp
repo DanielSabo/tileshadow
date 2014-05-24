@@ -194,6 +194,11 @@ void MainWindow::actionQuit()
     QApplication::quit();
 }
 
+void MainWindow::actionSaveAs()
+{
+    canvas->saveAsORA("tileShadow.ora");
+}
+
 void MainWindow::setActiveTool()
 {
     QVariant toolNameProp = sender()->property("toolName");

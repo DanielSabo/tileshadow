@@ -27,6 +27,8 @@ public:
     void removeLayer(int layerIndex);
     QList<QString> getLayerList();
 
+    void saveAsORA(QString path);
+
     BoxcarTimer mouseEventRate;
     BoxcarTimer frameRate;
 

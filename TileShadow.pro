@@ -33,7 +33,8 @@ SOURCES += main.cpp\
     benchmarkdialog.cpp \
     boxcartimer.cpp \
     canvaslayer.cpp \
-    canvasstack.cpp
+    canvasstack.cpp \
+    ora.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -46,7 +47,8 @@ HEADERS  += mainwindow.h \
     boxcartimer.h \
     canvaslayer.h \
     canvasstack.h \
-    tileset.h
+    tileset.h \
+    ora.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \
@@ -72,3 +74,4 @@ RESOURCES += \
     Resources.qrc
 
 include(brushlib/brushlib.pri)
+include(lodepng/lodepng.pri)

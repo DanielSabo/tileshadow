@@ -103,7 +103,6 @@ public:
     GLuint getGLBuf(int x, int y);
     void closeTileAt(int x, int y);
     void closeTiles(void);
-
 };
 
 #endif // CANVASCONTEXT_H

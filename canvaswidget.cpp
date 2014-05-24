@@ -2,6 +2,7 @@
 #include "canvaswidget-opencl.h"
 #include "canvascontext.h"
 #include "basicstrokecontext.h"
+#include "ora.h"
 #include <iostream>
 #include <map>
 #include <list>
@@ -419,4 +420,9 @@ void CanvasWidget::setActiveTool(const QString &toolName)
 void CanvasWidget::setToolSizeFactor(float multipler)
 {
     toolSizeFactor = multipler;
+}
+
+void CanvasWidget::saveAsORA(QString path)
+{
+    saveStackAs(&ctx->layers, path);
 }
