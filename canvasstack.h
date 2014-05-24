@@ -13,7 +13,7 @@ class CanvasStack
 public:
     CanvasStack();
 
-    void newLayerAt(int index);
+    void newLayerAt(int index, QString name = "");
     void removeLayerAt(int index);
 
     QList<CanvasLayer *> layers;

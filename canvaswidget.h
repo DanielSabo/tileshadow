@@ -46,6 +46,7 @@ private:
     QString activeBrush;
     float toolSizeFactor;
     float viewScale;
+    int lastNewLayerNumber;
 
 signals:
     void updateStats();

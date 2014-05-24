@@ -9,9 +9,9 @@ CanvasStack::CanvasStack()
     backgroundTileCL->unmapHost();
 }
 
-void CanvasStack::newLayerAt(int index)
+void CanvasStack::newLayerAt(int index, QString name)
 {
-    layers.insert(index, new CanvasLayer());
+    layers.insert(index, new CanvasLayer(name));
 }
 
 void CanvasStack::removeLayerAt(int index)

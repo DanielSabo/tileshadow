@@ -1,7 +1,7 @@
 #include "canvaslayer.h"
 #include "canvascontext.h"
 
-CanvasLayer::CanvasLayer()
+CanvasLayer::CanvasLayer(QString name) : name(name)
 {
 }
 

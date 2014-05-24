@@ -9,8 +9,10 @@ class CanvasTile;
 class CanvasLayer
 {
 public:
-    CanvasLayer();
+    CanvasLayer(QString name = "");
     ~CanvasLayer();
+
+    QString name;
 
     TileMap tiles;
 

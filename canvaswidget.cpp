@@ -117,7 +117,8 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
     ctx(NULL),
     activeBrush("debug"),
     toolSizeFactor(1.0f),
-    viewScale(1.0f)
+    viewScale(1.0f),
+    lastNewLayerNumber(0)
 {
 }
 
@@ -189,8 +190,7 @@ void CanvasWidget::initializeGL()
 
     SharedOpenCL::getSharedOpenCL();
 
-    ctx->layers.newLayerAt(0);
-    emit updateLayers();
+    addLayerAbove(-1);
 }
 
 void CanvasWidget::resizeGL(int w, int h)
@@ -331,7 +331,7 @@ void CanvasWidget::setActiveLayer(int layerIndex)
 
 void CanvasWidget::addLayerAbove(int layerIndex)
 {
-    ctx->layers.newLayerAt(layerIndex + 1);
+    ctx->layers.newLayerAt(layerIndex + 1, QString().sprintf("Layer %02d", ++lastNewLayerNumber));
     emit updateLayers();
 }
 
@@ -360,8 +360,8 @@ QList<QString> CanvasWidget::getLayerList()
     if (!ctx)
         return result;
 
-    for (int i = ctx->layers.layers.size(); i > 0; --i)
-        result.append(QString().sprintf("Layer %02d", i));
+    for (int i = ctx->layers.layers.size() - 1; i >= 0; --i)
+        result.append(ctx->layers.layers[i]->name);
 
     return result;
 }
