@@ -12,6 +12,7 @@ class CanvasStack
 {
 public:
     CanvasStack();
+    ~CanvasStack();
 
     void newLayerAt(int index, QString name = "");
     void removeLayerAt(int index);
