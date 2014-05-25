@@ -14,6 +14,7 @@ void saveStackAs(CanvasStack *stack, QString path)
 {
     QList<CanvasLayer *>::iterator layersIter;
 
+    /* FIXME: This should use something like QSaveFile but QZip is not compatible */
     QZipWriter oraZipWriter(path, QIODevice::WriteOnly);
     oraZipWriter.setCompressionPolicy(QZipWriter::NeverCompress);
 
