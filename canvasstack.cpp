@@ -129,6 +129,20 @@ CanvasTile *CanvasStack::getTileAt(int x, int y)
     return result;
 }
 
+TileSet CanvasStack::getTileSet()
+{
+    QList<CanvasLayer *>::iterator layersIter;
+    TileSet result;
+
+    for (layersIter = layers.begin(); layersIter != layers.end(); layersIter++)
+    {
+        TileSet layerSet = (*layersIter)->getTileSet();
+        result.insert(layerSet.begin(), layerSet.end());
+    }
+
+    return result;
+}
+
 float *CanvasStack::openTileAt(int x, int y)
 {
     CanvasTile *result = getTileAt(x, y);
