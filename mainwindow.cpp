@@ -8,6 +8,7 @@
 #include <QPushButton>
 #include <QCloseEvent>
 #include <QStatusBar>
+#include <QFileDialog>
 
 void asciiTitleCase(QString &instr)
 {
@@ -194,12 +195,13 @@ void MainWindow::actionQuit()
     QApplication::quit();
 }
 
-#include <QDate>
-
 void MainWindow::actionSaveAs()
 {
-//    canvas->saveAsORA("tileShadow.ora");
-    QString filename = QString("tileShadow-") + QDate::currentDate().toString() + QString(".ora");
+    QString filename = QFileDialog::getSaveFileName(this, "Save As...", "untitled.ora", "OpenRaster (*.ora)");
+
+    if (filename.isEmpty())
+        return;
+
     canvas->saveAsORA(filename);
 }
 
