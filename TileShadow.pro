@@ -75,3 +75,5 @@ RESOURCES += \
 
 include(brushlib/brushlib.pri)
 include(lodepng/lodepng.pri)
+include(zlib/zlib.pri)
+include(qzip/qzip.pri)

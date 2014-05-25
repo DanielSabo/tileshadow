@@ -194,9 +194,13 @@ void MainWindow::actionQuit()
     QApplication::quit();
 }
 
+#include <QDate>
+
 void MainWindow::actionSaveAs()
 {
-    canvas->saveAsORA("tileShadow.ora");
+//    canvas->saveAsORA("tileShadow.ora");
+    QString filename = QString("tileShadow-") + QDate::currentDate().toString() + QString(".ora");
+    canvas->saveAsORA(filename);
 }
 
 void MainWindow::setActiveTool()
