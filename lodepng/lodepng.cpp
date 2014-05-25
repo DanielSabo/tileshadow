@@ -5862,6 +5862,7 @@ unsigned lodepng_encode_memory(unsigned char** out, size_t* outsize, const unsig
   state.info_raw.bitdepth = bitdepth;
   state.info_png.color.colortype = colortype;
   state.info_png.color.bitdepth = bitdepth;
+  state.encoder.auto_convert = LAC_NO; /* Disable LAC due to buggy pallet with 16bpc input - Daniel Sabo */
   lodepng_encode(out, outsize, image, w, h, &state);
   error = state.error;
   lodepng_state_cleanup(&state);
