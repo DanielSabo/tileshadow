@@ -195,6 +195,16 @@ void MainWindow::actionQuit()
     QApplication::quit();
 }
 
+void MainWindow::actionOpenFile()
+{
+    QString filename = QFileDialog::getOpenFileName(this, "Open", QString(), "OpenRaster (*.ora)");
+
+    if (filename.isEmpty())
+        return;
+
+    canvas->openORA(filename);
+}
+
 void MainWindow::actionSaveAs()
 {
     QString filename = QFileDialog::getSaveFileName(this, "Save As...", "untitled.ora", "OpenRaster (*.ora)");

@@ -422,6 +422,14 @@ void CanvasWidget::setToolSizeFactor(float multipler)
     toolSizeFactor = multipler;
 }
 
+void CanvasWidget::openORA(QString path)
+{
+    loadStackFromORA(&ctx->layers, path);
+    ctx->glTiles.clear();
+    update();
+    emit updateLayers();
+}
+
 void CanvasWidget::saveAsORA(QString path)
 {
     saveStackAs(&ctx->layers, path);

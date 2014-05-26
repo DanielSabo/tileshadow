@@ -4,5 +4,6 @@
 #include "canvasstack.h"
 
 void saveStackAs(CanvasStack *stack, QString path);
+void loadStackFromORA(CanvasStack *stack, QString path);
 
 #endif // ORA_H

@@ -46,6 +46,7 @@ public slots:
     void showOpenCLInfo();
     void runCircleBenchmark();
     void actionQuit();
+    void actionOpenFile();
     void actionSaveAs();
     void canvasStats();
     void showStatusBar(bool visible);
