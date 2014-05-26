@@ -180,13 +180,15 @@ TileSet MyPaintStrokeContext::startStroke(QPointF point, float pressure)
     mypaint_brush_reset (priv->brush);
     mypaint_brush_new_stroke(priv->brush);
 
-    /* FIXME: brushlib doesn't seem to want the first point */
-    #if 0
+    mypaint_brush_stroke_to(priv->brush, (MyPaintSurface *)priv->surface,
+                            point.x(), point.y(),
+                            0.0f /* pressure */, 0.0f /* xtilt */, 0.0f /* ytilt */,
+                            1000.0f / 60.0f /* deltaTime in ms*/);
+
     mypaint_brush_stroke_to(priv->brush, (MyPaintSurface *)priv->surface,
                             point.x(), point.y(),
                             pressure /* pressure */, 0.0f /* xtilt */, 0.0f /* ytilt */,
-                            0.0 /* deltaTime in ms*/);
-    #endif
+                            1000.0f / 60.0f /* deltaTime in ms*/);
     priv->timer.start();
     priv->modTiles.clear();
     return TileSet();
