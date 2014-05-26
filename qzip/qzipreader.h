@@ -48,11 +48,9 @@
 #include <QtCore/qfile.h>
 #include <QtCore/qstring.h>
 
-QT_BEGIN_NAMESPACE
-
 class QZipReaderPrivate;
 
-class Q_GUI_EXPORT QZipReader
+class QZipReader
 {
 public:
     explicit QZipReader(const QString &fileName, QIODevice::OpenMode mode = QIODevice::ReadOnly );
@@ -65,7 +63,7 @@ public:
     bool isReadable() const;
     bool exists() const;
 
-    struct Q_GUI_EXPORT FileInfo
+    struct FileInfo
     {
         FileInfo();
         FileInfo(const FileInfo &other);
@@ -106,7 +104,5 @@ private:
     QZipReaderPrivate *d;
     Q_DISABLE_COPY(QZipReader)
 };
-
-QT_END_NAMESPACE
 
 #endif // QZIPREADER_H

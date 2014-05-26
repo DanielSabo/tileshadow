@@ -45,11 +45,9 @@
 #include <QtCore/qstring.h>
 #include <QtCore/qfile.h>
 
-QT_BEGIN_NAMESPACE
-
 class QZipWriterPrivate;
 
-class Q_GUI_EXPORT QZipWriter
+class QZipWriter
 {
 public:
     explicit QZipWriter(const QString &fileName, QIODevice::OpenMode mode = (QIODevice::WriteOnly | QIODevice::Truncate) );
@@ -97,7 +95,5 @@ private:
     QZipWriterPrivate *d;
     Q_DISABLE_COPY(QZipWriter)
 };
-
-QT_END_NAMESPACE
 
 #endif // QZIPWRITER_H
