@@ -32,8 +32,10 @@ SOURCES += main.cpp\
     basicstrokecontext.cpp \
     benchmarkdialog.cpp \
     boxcartimer.cpp \
+    canvastile.cpp \
     canvaslayer.cpp \
     canvasstack.cpp \
+    tileset.cpp \
     ora.cpp
 
 HEADERS  += mainwindow.h \
@@ -45,6 +47,7 @@ HEADERS  += mainwindow.h \
     basicstrokecontext.h \
     benchmarkdialog.h \
     boxcartimer.h \
+    canvastile.h \
     canvaslayer.h \
     canvasstack.h \
     tileset.h \

@@ -1,4 +1,5 @@
 #include "basicstrokecontext.h"
+#include "canvastile.h"
 #include <algorithm>
 #include <cmath>
 #include <QSet>

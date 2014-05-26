@@ -1,4 +1,5 @@
 #include "canvasstack.h"
+#include "canvastile.h"
 #include "canvascontext.h"
 
 CanvasStack::CanvasStack()

@@ -1,4 +1,5 @@
 #include "mypaintstrokecontext.h"
+#include "canvastile.h"
 #include <QElapsedTimer>
 #include <cstring>
 #include <iostream>

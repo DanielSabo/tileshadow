@@ -1,5 +1,6 @@
 #include "canvaswidget.h"
 #include "canvaswidget-opencl.h"
+#include "canvastile.h"
 #include "canvascontext.h"
 #include "basicstrokecontext.h"
 #include "ora.h"

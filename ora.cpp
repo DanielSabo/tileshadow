@@ -1,4 +1,5 @@
 #include "canvascontext.h"
+#include "canvastile.h"
 #include "ora.h"
 
 #include <QRect>
