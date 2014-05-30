@@ -61,7 +61,7 @@ __kernel void tileSVGOver(__global float4 *out,
     float dst_alpha = in_pixel.s3;
 
     float a = alpha + dst_alpha * (1.0f - alpha);
-    float src_term = alpha / a;
+    float src_term = (a > 0.0f) ? alpha / a : 0.0f;
     float aux_term = 1.0f - src_term;
     out_pixel.s012 = aux_pixel.s012 * src_term + in_pixel.s012 * aux_term;
     out_pixel.s3   = a;
