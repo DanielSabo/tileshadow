@@ -9,5 +9,7 @@
         <file>mypaint-tools/default.myb</file>
         <file>mypaint-tools/spray_02.myb</file>
         <file>mypaint-tools/watercolor_glazing.myb</file>
+        <file>mypaint-tools/large_hard_eraser.myb</file>
+        <file>mypaint-tools/kneaded_eraser.myb</file>
     </qresource>
 </RCC>
