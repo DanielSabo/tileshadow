@@ -123,6 +123,7 @@ __kernel void mypaint_dab(__global float4 *buf,
                                    float   cs,
                                    float   slope1,
                                    float   slope2,
+                                   float   color_alpha, /* Max alpha value */
                                    float4  color)
 {
   int gidx = get_global_id(0);
@@ -147,10 +148,11 @@ __kernel void mypaint_dab(__global float4 *buf,
       alpha = alpha * color.s3;
       float dst_alpha = pixel.s3;
 
-      float a = alpha + dst_alpha * (1.0f - alpha);
+      float a = alpha * color_alpha + dst_alpha * (1.0f - alpha);
       float a_term = dst_alpha * (1.0f - alpha);
 
-      pixel.s012 = (color.s012 * alpha + pixel.s012 * a_term) / a;
+      if (a > 0.0f) /* Needed because color_alpha can make a = zero */
+        pixel.s012 = (color.s012 * alpha * color_alpha + pixel.s012 * a_term) / a;
       pixel.s3   = a;
 
       buf[idx] = pixel;

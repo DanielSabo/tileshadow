@@ -354,13 +354,8 @@ static int drawDabFunction (MyPaintSurface *base_surface,
     if (aspect_ratio < 1.0f)
         aspect_ratio = 1.0f;
 
-    (void)colorize;
-
     if (lock_alpha > 0.0f)
         qWarning() << "drawDab called with unsupported values lock_alpha = " << lock_alpha << endl;
-
-    if (color_a != 1.0f)
-        qWarning() << "drawDab called with unsupported values color_a = " << color_a << endl;
 
     if (colorize != 0.0f)
         qWarning() << "drawDab called with unsupported values colorize = " << colorize << endl;
@@ -412,7 +407,8 @@ static int drawDabFunction (MyPaintSurface *base_surface,
         err = clSetKernelArg(kernel, 9, sizeof(float), (void *)&cs);
         err = clSetKernelArg(kernel, 10, sizeof(float), (void *)&slope1);
         err = clSetKernelArg(kernel, 11, sizeof(float), (void *)&slope2);
-        err = clSetKernelArg(kernel, 12, sizeof(cl_float4), (void *)&color);
+        err = clSetKernelArg(kernel, 12, sizeof(float), (void *)&color_a);
+        err = clSetKernelArg(kernel, 13, sizeof(cl_float4), (void *)&color);
 
         for (int iy = iy_start; iy <= iy_end; ++iy)
         {
