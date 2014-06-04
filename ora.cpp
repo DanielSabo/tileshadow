@@ -130,10 +130,13 @@ void saveStackAs(CanvasStack *stack, QString path)
         unsigned char *pngData;
         size_t pngDataSize;
 
-        lodepng_encode_memory(&pngData, &pngDataSize,
-                              (unsigned char*)layerData,
-                              bounds.width(), bounds.height(),
-                              LCT_RGBA, 16);
+        unsigned int png_error = lodepng_encode_memory(&pngData, &pngDataSize,
+                                                       (unsigned char*)layerData,
+                                                       bounds.width(), bounds.height(),
+                                                       LCT_RGBA, 16);
+
+        if (png_error)
+            qDebug() << "lodepng error:" << lodepng_error_text(png_error);
 
         QString layerFileName = QString().sprintf("layer%03d.png", layerNum++);
 
