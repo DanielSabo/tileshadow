@@ -2,18 +2,12 @@
 #include "canvastile.h"
 #include "canvascontext.h"
 
-CanvasLayer::CanvasLayer(QString name) : name(name)
+CanvasLayer::CanvasLayer(QString name) : name(name), tiles(new TileMap, _deleteTileMap)
 {
 }
 
 CanvasLayer::~CanvasLayer()
 {
-    TileMap::iterator iter;
-
-    for (iter = tiles.begin(); iter != tiles.end(); ++iter)
-    {
-        delete iter->second;
-    }
 }
 
 TileSet CanvasLayer::getTileSet()
@@ -21,7 +15,7 @@ TileSet CanvasLayer::getTileSet()
     TileMap::iterator iter;
     TileSet result;
 
-    for (iter = tiles.begin(); iter != tiles.end(); ++iter)
+    for (iter = tiles->begin(); iter != tiles->end(); ++iter)
     {
         result.insert(iter->first);
     }
@@ -31,9 +25,9 @@ TileSet CanvasLayer::getTileSet()
 
 CanvasTile *CanvasLayer::getTileMaybe(int x, int y)
 {
-    TileMap::iterator found = tiles.find(QPoint(x, y));
+    TileMap::iterator found = tiles->find(QPoint(x, y));
 
-    if (found != tiles.end())
+    if (found != tiles->end())
         return found->second;
     else
         return NULL;
@@ -41,16 +35,16 @@ CanvasTile *CanvasLayer::getTileMaybe(int x, int y)
 
 CanvasTile *CanvasLayer::getTile(int x, int y)
 {
-    TileMap::iterator found = tiles.find(QPoint(x, y));
+    TileMap::iterator found = tiles->find(QPoint(x, y));
 
-    if (found != tiles.end())
+    if (found != tiles->end())
         return found->second;
 
     CanvasTile *tile = new CanvasTile(x, y);
 
     tile->fill(0.0f, 0.0f, 0.0f, 0.0f);
 
-    tiles[QPoint(x, y)] = tile;
+    (*tiles)[QPoint(x, y)] = tile;
 
     return tile;
 }

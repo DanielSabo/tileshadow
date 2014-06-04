@@ -1,6 +1,7 @@
 #ifndef CANVASLAYER_H
 #define CANVASLAYER_H
 
+#include <QSharedPointer>
 #include "canvaswidget-opencl.h"
 #include "tileset.h"
 
@@ -14,7 +15,7 @@ public:
 
     QString name;
 
-    TileMap tiles;
+    QSharedPointer<TileMap> tiles;
 
     TileSet getTileSet();
 

@@ -15,4 +15,6 @@ struct _TilePointCompare
 typedef std::set<QPoint, _TilePointCompare> TileSet;
 typedef std::map<QPoint, CanvasTile *, _TilePointCompare> TileMap;
 
+void _deleteTileMap(TileMap *tiles);
+
 #endif // TILESET_H

@@ -64,7 +64,7 @@ void saveStackAs(CanvasStack *stack, QString path)
         QRect bounds;
         uint16_t *layerData = NULL;
 
-        if ((*layersIter)->tiles.empty())
+        if ((*layersIter)->tiles->empty())
         {
             bounds = QRect(0, 0, 1, 1);
             layerData = new uint16_t[bounds.width() * bounds.height() * 4];
@@ -74,13 +74,13 @@ void saveStackAs(CanvasStack *stack, QString path)
         {
             TileMap::iterator tilesIter;
 
-            tilesIter = (*layersIter)->tiles.begin();
+            tilesIter = (*layersIter)->tiles->begin();
 
             QRect tileBounds = QRect(tilesIter->first.x(), tilesIter->first.y(), 1, 1);
 
             tilesIter++;
 
-            for (; tilesIter != (*layersIter)->tiles.end(); tilesIter++)
+            for (; tilesIter != (*layersIter)->tiles->end(); tilesIter++)
             {
                 tileBounds = tileBounds.united(QRect(tilesIter->first.x(), tilesIter->first.y(), 1, 1));
             }
