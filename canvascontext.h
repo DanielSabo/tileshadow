@@ -21,8 +21,9 @@ public:
     virtual TileSet startStroke(QPointF point, float pressure) = 0;
     virtual TileSet strokeTo(QPointF point, float pressure) = 0;
 
-    virtual void multiplySize(float mult) = 0;
+    virtual void multiplySize(float mult);
     virtual float getPixelRadius() = 0;
+    virtual void setColor(QColor const &color);
 
     CanvasContext *ctx;
     CanvasLayer   *layer;

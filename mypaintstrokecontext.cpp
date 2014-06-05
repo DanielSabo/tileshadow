@@ -10,6 +10,7 @@
 #include <QJsonObject>
 #include <QJsonValue>
 #include <QJsonArray>
+#include <QColor>
 
 extern "C" {
 #include "mypaint-brush.h"
@@ -149,6 +150,13 @@ float MyPaintStrokeContext::getPixelRadius()
 {
     float radius = mypaint_brush_get_base_value(priv->brush, MYPAINT_BRUSH_SETTING_RADIUS_LOGARITHMIC);
     return exp(radius);
+}
+
+void MyPaintStrokeContext::setColor(QColor const &color)
+{
+    mypaint_brush_set_base_value(priv->brush, MYPAINT_BRUSH_SETTING_COLOR_H, color.hsvHueF());
+    mypaint_brush_set_base_value(priv->brush, MYPAINT_BRUSH_SETTING_COLOR_S, color.hsvSaturationF());
+    mypaint_brush_set_base_value(priv->brush, MYPAINT_BRUSH_SETTING_COLOR_V, color.valueF());
 }
 
 MyPaintStrokeContext::MyPaintStrokeContext(CanvasContext *ctx, CanvasLayer *layer) : StrokeContext(ctx, layer)

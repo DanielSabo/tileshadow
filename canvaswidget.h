@@ -2,6 +2,7 @@
 #define CANVASWIDGET_H
 
 #include <QGLWidget>
+#include <QColor>
 #include "boxcartimer.h"
 
 class CanvasContext;
@@ -13,6 +14,7 @@ public:
     virtual  ~CanvasWidget();
 
     void setToolSizeFactor(float multipler);
+    void setToolColor(const QColor &color);
     void setActiveTool(const QString &toolName);
     void startStroke(QPointF pos, float pressure);
     void strokeTo(QPointF pos, float pressure);
@@ -48,6 +50,7 @@ private:
 
     QString activeBrush;
     float toolSizeFactor;
+    QColor toolColor;
     float viewScale;
     int lastNewLayerNumber;
 

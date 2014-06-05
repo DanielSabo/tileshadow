@@ -9,6 +9,7 @@
 #include <QCloseEvent>
 #include <QStatusBar>
 #include <QFileDialog>
+#include <hsvcolordial.h>
 
 void asciiTitleCase(QString &instr)
 {
@@ -84,6 +85,14 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(canvas, SIGNAL(updateStats()), this, SLOT(canvasStats()));
     connect(canvas, SIGNAL(updateLayers()), this, SLOT(updateLayers()));
+
+    {
+        //FIXME: This belongs in the UI file
+        HSVColorDial *dial = findChild<HSVColorDial*>("toolColorDial");
+        if (dial)
+            connect(dial, SIGNAL(updateColor(QColor const &)), this, SLOT(colorDialChanged(QColor const &)));
+        this->colorDialChanged(dial->getColor());
+    }
 
     // Resize here because the big widget is unwieldy in the designer
     resize(700,400);
@@ -224,6 +233,11 @@ void MainWindow::setActiveTool()
     }
     else
         qWarning() << sender()->objectName() << " has no toolName property.";
+}
+
+void MainWindow::colorDialChanged(QColor const &color)
+{
+    canvas->setToolColor(color);
 }
 
 void MainWindow::sizeSliderMoved(int value)

@@ -54,6 +54,7 @@ public slots:
     void layerListAdd();
     void layerListRemove();
     void updateLayers();
+    void colorDialChanged(QColor const &color);
 };
 
 #endif // MAINWINDOW_H

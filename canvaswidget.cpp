@@ -119,6 +119,7 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
     ctx(NULL),
     activeBrush("debug"),
     toolSizeFactor(1.0f),
+    toolColor(QColor::fromRgbF(0.0, 0.0, 0.0)),
     viewScale(1.0f),
     lastNewLayerNumber(0)
 {
@@ -266,6 +267,7 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
     }
 
     ctx->stroke->multiplySize(toolSizeFactor);
+    ctx->stroke->setColor(toolColor);
 
     TileSet changedTiles = ctx->stroke->startStroke(pos, pressure);
 
@@ -421,6 +423,11 @@ void CanvasWidget::setActiveTool(const QString &toolName)
 void CanvasWidget::setToolSizeFactor(float multipler)
 {
     toolSizeFactor = multipler;
+}
+
+void CanvasWidget::setToolColor(const QColor &color)
+{
+    toolColor = color;
 }
 
 void CanvasWidget::openORA(QString path)

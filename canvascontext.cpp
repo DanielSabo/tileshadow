@@ -1,6 +1,7 @@
 #include "canvascontext.h"
 #include "canvastile.h"
 
+#include <QColor>
 #include <QDebug>
 
 #ifdef __APPLE__
@@ -8,6 +9,9 @@
 #else
 #include <CL/cl_gl.h>
 #endif
+
+void StrokeContext::multiplySize(float mult) {}
+void StrokeContext::setColor(const QColor &color) {}
 
 CanvasContext::~CanvasContext()
 {
