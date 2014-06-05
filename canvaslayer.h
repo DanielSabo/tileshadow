@@ -24,6 +24,8 @@ public:
 
     CanvasTile *getTile(int x, int y);
     CanvasTile *getTileMaybe(int x, int y);
+
+    CanvasLayer *deepCopy();
 };
 
 #endif // CANVASLAYER_H

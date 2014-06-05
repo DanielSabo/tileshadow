@@ -10,6 +10,19 @@ CanvasLayer::~CanvasLayer()
 {
 }
 
+CanvasLayer *CanvasLayer::deepCopy()
+{
+    CanvasLayer *result = new CanvasLayer();
+    result->name = name;
+
+    for (TileMap::iterator iter = tiles->begin(); iter != tiles->end(); ++iter)
+    {
+        (*result->tiles)[iter->first] = iter->second->copy();
+    }
+
+    return result;
+}
+
 TileSet CanvasLayer::getTileSet()
 {
     TileMap::iterator iter;
