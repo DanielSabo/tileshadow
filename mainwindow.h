@@ -48,6 +48,8 @@ public slots:
     void actionQuit();
     void actionOpenFile();
     void actionSaveAs();
+    void actionUndo();
+    void actionRedo();
     void canvasStats();
     void showStatusBar(bool visible);
     void layerListSelection(int row);

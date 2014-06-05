@@ -224,6 +224,16 @@ void MainWindow::actionSaveAs()
     canvas->saveAsORA(filename);
 }
 
+void MainWindow::actionUndo()
+{
+
+}
+
+void MainWindow::actionRedo()
+{
+
+}
+
 void MainWindow::setActiveTool()
 {
     QVariant toolNameProp = sender()->property("toolName");
