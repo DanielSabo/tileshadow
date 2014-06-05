@@ -9,6 +9,7 @@
 #include "tileset.h"
 #include "canvaslayer.h"
 #include "canvasstack.h"
+#include "canvasundoevent.h"
 
 class CanvasContext;
 
@@ -63,16 +64,21 @@ public:
     QScopedPointer<StrokeContext> stroke;
 
     int currentLayer;
+    QScopedPointer<CanvasLayer> currentLayerCopy;
     CanvasStack layers;
+
+    QList<CanvasUndoEvent *> undoHistory;
 
     typedef std::map<QPoint, GLuint, _TilePointCompare> GLTileMap;
 
     GLTileMap glTiles;
     TileSet dirtyTiles;
+    TileSet strokeModifiedTiles;
 
     GLuint getGLBuf(int x, int y);
     void closeTileAt(int x, int y);
     void closeTiles(void);
+    void clearUndoHistory();
 };
 
 #endif // CANVASCONTEXT_H

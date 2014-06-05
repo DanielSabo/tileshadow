@@ -194,6 +194,7 @@ void CanvasWidget::initializeGL()
     SharedOpenCL::getSharedOpenCL();
 
     addLayerAbove(-1);
+    ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
 }
 
 void CanvasWidget::resizeGL(int w, int h)
@@ -274,6 +275,7 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
     if(!changedTiles.empty())
     {
         ctx->dirtyTiles.insert(changedTiles.begin(), changedTiles.end());
+        ctx->strokeModifiedTiles.insert(changedTiles.begin(), changedTiles.end());
         update();
     }
 }
@@ -290,6 +292,7 @@ void CanvasWidget::strokeTo(QPointF pos, float pressure)
     if(!changedTiles.empty())
     {
         ctx->dirtyTiles.insert(changedTiles.begin(), changedTiles.end());
+        ctx->strokeModifiedTiles.insert(changedTiles.begin(), changedTiles.end());
         update();
     }
 }
@@ -297,6 +300,24 @@ void CanvasWidget::strokeTo(QPointF pos, float pressure)
 void CanvasWidget::endStroke()
 {
     ctx->stroke.reset();
+
+    CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
+    undoEvent->targetTileMap = ctx->layers.layers[ctx->currentLayer]->tiles;
+
+    CanvasLayer *currentLayerObj = ctx->layers.layers[ctx->currentLayer];
+
+    for (TileSet::iterator iter = ctx->strokeModifiedTiles.begin(); iter != ctx->strokeModifiedTiles.end(); iter++)
+    {
+        /* Move oldTile to the layer because we will are just going to overwrite the one it currentLayerCopy */
+        CanvasTile *oldTile = ctx->currentLayerCopy->getTileMaybe(iter->x(), iter->y());
+        undoEvent->tiles[*iter] = oldTile;
+
+        /* FIXME: It's hypothetically possible that the stroke removed tiles */
+        (*ctx->currentLayerCopy->tiles)[*iter] = (*currentLayerObj->tiles)[*iter]->copy();
+    }
+
+    ctx->undoHistory.prepend(undoEvent);
+    ctx->strokeModifiedTiles.clear();
 }
 
 float CanvasWidget::getScale()
@@ -327,6 +348,7 @@ void CanvasWidget::setActiveLayer(int layerIndex)
     {
         bool update = (ctx->currentLayer != layerIndex);
         ctx->currentLayer = layerIndex;
+        ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
 
         if (update)
             emit updateLayers();
@@ -335,22 +357,31 @@ void CanvasWidget::setActiveLayer(int layerIndex)
 
 void CanvasWidget::addLayerAbove(int layerIndex)
 {
+    /* FIXME: Undo event for layer history */
+    ctx->clearUndoHistory();
+
     ctx->layers.newLayerAt(layerIndex + 1, QString().sprintf("Layer %02d", ++lastNewLayerNumber));
     emit updateLayers();
 }
 
 void CanvasWidget::removeLayer(int layerIndex)
 {
-    /* Before we delete the layer, dirty all tiles it intersects */
     if (layerIndex < 0 || layerIndex > ctx->layers.layers.size())
         return;
 
+    /* FIXME: Undo event for layer history */
+    ctx->clearUndoHistory();
+
+    /* Before we delete the layer, dirty all tiles it intersects */
     TileSet layerTiles = ctx->layers.layers[layerIndex]->getTileSet();
     ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
 
     ctx->layers.removeLayerAt(layerIndex);
     if (layerIndex == ctx->currentLayer)
+    {
         ctx->currentLayer = qMax(0, ctx->currentLayer - 1);
+        ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
+    }
 
     update();
 
@@ -368,6 +399,27 @@ QList<QString> CanvasWidget::getLayerList()
         result.append(ctx->layers.layers[i]->name);
 
     return result;
+}
+
+void CanvasWidget::undo()
+{
+    if (ctx->undoHistory.empty())
+        return;
+
+    CanvasUndoEvent *undoEvent = ctx->undoHistory.first();
+    ctx->undoHistory.removeFirst();
+    TileSet changedTiles = undoEvent->apply(&ctx->layers);
+
+    if(!changedTiles.empty())
+    {
+        ctx->dirtyTiles.insert(changedTiles.begin(), changedTiles.end());
+    }
+
+    //FIXME: This only needed to copy changedTiles
+    ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
+
+    update();
+    emit updateLayers();
 }
 
 void CanvasWidget::mousePressEvent(QMouseEvent *event)

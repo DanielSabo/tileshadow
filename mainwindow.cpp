@@ -226,7 +226,7 @@ void MainWindow::actionSaveAs()
 
 void MainWindow::actionUndo()
 {
-
+    canvas->undo();
 }
 
 void MainWindow::actionRedo()

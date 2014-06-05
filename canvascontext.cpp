@@ -129,3 +129,13 @@ void CanvasContext::closeTiles(void)
     if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
         clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
 }
+
+void CanvasContext::clearUndoHistory()
+{
+    while (!undoHistory.empty())
+    {
+        CanvasUndoEvent *event = undoHistory.first();
+        delete event;
+        undoHistory.removeFirst();
+    }
+}

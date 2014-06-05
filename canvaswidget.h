@@ -59,7 +59,7 @@ signals:
     void updateLayers();
 
 public slots:
-
+    void undo();
 };
 
 #endif // CANVASWIDGET_H

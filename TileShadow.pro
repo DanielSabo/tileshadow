@@ -37,7 +37,8 @@ SOURCES += main.cpp\
     canvasstack.cpp \
     tileset.cpp \
     ora.cpp \
-    hsvcolordial.cpp
+    hsvcolordial.cpp \
+    canvasundoevent.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -53,7 +54,8 @@ HEADERS  += mainwindow.h \
     canvasstack.h \
     tileset.h \
     ora.h \
-    hsvcolordial.h
+    hsvcolordial.h \
+    canvasundoevent.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \
