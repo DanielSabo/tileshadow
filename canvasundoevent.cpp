@@ -22,7 +22,7 @@ CanvasUndoTiles::~CanvasUndoTiles()
     tiles.clear();
 }
 
-TileSet CanvasUndoTiles::apply(CanvasStack *stack)
+TileSet CanvasUndoTiles::apply(CanvasStack *stack, int *activeLayer)
 {
     TileSet modifiedTiles;
 
@@ -40,6 +40,8 @@ TileSet CanvasUndoTiles::apply(CanvasStack *stack)
 
         modifiedTiles.insert(iter->first);
     }
+
+    *activeLayer = currentLayer;
 
     // FIXME: This event is now invalid, using it again would be an error
     tiles.clear();

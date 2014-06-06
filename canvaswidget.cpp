@@ -303,6 +303,7 @@ void CanvasWidget::endStroke()
 
     CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
     undoEvent->targetTileMap = ctx->layers.layers[ctx->currentLayer]->tiles;
+    undoEvent->currentLayer = ctx->currentLayer;
 
     CanvasLayer *currentLayerObj = ctx->layers.layers[ctx->currentLayer];
 
@@ -406,16 +407,20 @@ void CanvasWidget::undo()
     if (ctx->undoHistory.empty())
         return;
 
+    int newActiveLayer = ctx->currentLayer;
+
     CanvasUndoEvent *undoEvent = ctx->undoHistory.first();
     ctx->undoHistory.removeFirst();
-    TileSet changedTiles = undoEvent->apply(&ctx->layers);
+    TileSet changedTiles = undoEvent->apply(&ctx->layers, &newActiveLayer);
 
     if(!changedTiles.empty())
     {
         ctx->dirtyTiles.insert(changedTiles.begin(), changedTiles.end());
     }
 
-    //FIXME: This only needed to copy changedTiles
+    ctx->currentLayer = newActiveLayer;
+
+    //FIXME: This only needs to copy changedTiles or if currentLayer changed
     ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
 
     update();

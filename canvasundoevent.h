@@ -10,7 +10,7 @@ class CanvasUndoEvent
 public:
     CanvasUndoEvent();
     virtual ~CanvasUndoEvent();
-    virtual TileSet apply(CanvasStack *stack) = 0;
+    virtual TileSet apply(CanvasStack *stack, int *activeLayer) = 0;
 };
 
 class CanvasUndoTiles : public CanvasUndoEvent
@@ -18,8 +18,9 @@ class CanvasUndoTiles : public CanvasUndoEvent
 public:
     CanvasUndoTiles();
     ~CanvasUndoTiles();
-    TileSet apply(CanvasStack *stack);
+    TileSet apply(CanvasStack *stack, int *activeLayer);
 
+    int currentLayer;
     QSharedPointer<TileMap> targetTileMap;
     TileMap tiles;
 };
