@@ -106,7 +106,8 @@ void HSVColorDial::paintEvent(QPaintEvent *event)
 {
     Q_D(HSVColorDial);
 
-    const int dialSize = (width() / 2) * 2;
+    const int dialSize = (qMin(width(), height()) / 2) * 2;
+    const int dialOffsetX = dialSize < width() ? (width() - dialSize) / 2 : 0;
     const float outerRadius = dialSize / 2 - dialSize * .03;
     const float innerRadius = outerRadius - dialSize * .1;
 
@@ -175,11 +176,11 @@ void HSVColorDial::paintEvent(QPaintEvent *event)
     }
 
     QPainter painter(this);
-    painter.drawImage(QPoint(0,0), *d->renderedDial);
-    painter.drawImage(d->boxRect.topLeft(), *d->renderedInnerBox);
+    painter.drawImage(QPoint(dialOffsetX,0), *d->renderedDial);
+    painter.drawImage(d->boxRect.topLeft() + QPoint(dialOffsetX, 0), *d->renderedInnerBox);
 
     { /* Selected hue */
-        QPointF center = QPointF(dialSize / 2, dialSize / 2) + QPointF(0.5f, 0.5f);
+        QPointF center = QPointF(dialSize / 2 + dialOffsetX, dialSize / 2) + QPointF(0.5f, 0.5f);
         QPointF p1 = QPointF(cos(d->h * -2.0 * M_PI) * (innerRadius + 2), sin(d->h * -2.0 * M_PI) * (innerRadius + 2)) + center;
         QPointF p2 = QPointF(cos(d->h * -2.0 * M_PI) * (outerRadius - 2), sin(d->h * -2.0 * M_PI) * (outerRadius - 2)) + center;
 
@@ -195,7 +196,7 @@ void HSVColorDial::paintEvent(QPaintEvent *event)
         const int SELECT_CIRCLE_RADIUS = 3;
 
         QPoint selectedPoint = QPoint(xFactor * d->boxRect.width(), yFactor * d->boxRect.height()) + d->boxRect.topLeft();
-        QRect selectedBox = QRect(selectedPoint.x() - SELECT_CIRCLE_RADIUS,
+        QRect selectedBox = QRect(selectedPoint.x() - SELECT_CIRCLE_RADIUS + dialOffsetX,
                                   selectedPoint.y() - SELECT_CIRCLE_RADIUS,
                                   SELECT_CIRCLE_RADIUS * 2,
                                   SELECT_CIRCLE_RADIUS * 2);
@@ -217,8 +218,9 @@ void HSVColorDial::mouseMoveEvent(QMouseEvent *event)
 {
     Q_D(HSVColorDial);
 
-    const int dialSize = (width() / 2) * 2;
-    float dx = event->x() - dialSize / 2.0f;
+    const int dialSize = (qMin(width(), height()) / 2) * 2;
+    const int dialOffsetX = dialSize < width() ? (width() - dialSize) / 2 : 0;
+    float dx = event->x() - dialOffsetX - dialSize / 2.0f;
     float dy = event->y() - dialSize / 2.0f;
 
     if (d->inDialDrag)
@@ -231,7 +233,7 @@ void HSVColorDial::mouseMoveEvent(QMouseEvent *event)
     }
     else if(d->inBoxDrag)
     {
-        float s = event->x() - d->boxRect.x();
+        float s = event->x() - dialOffsetX - d->boxRect.x();
         s = 1.0f - qBound(0.0f, s, float(d->boxRect.width())) / d->boxRect.width();
         s = powf(s, 1.0 / BOX_VALUE_FACTOR);
         float v = event->y() - d->boxRect.y();
@@ -249,11 +251,12 @@ void HSVColorDial::mousePressEvent(QMouseEvent *event)
 {
     Q_D(HSVColorDial);
 
-    const int dialSize = (width() / 2) * 2;
+    const int dialSize = (qMin(width(), height()) / 2) * 2;
+    const int dialOffsetX = dialSize < width() ? (width() - dialSize) / 2 : 0;
     const float outerRadius = dialSize / 2 - dialSize * .03;
     const float innerRadius = outerRadius - dialSize * .1;
 
-    float dx = event->x() - dialSize / 2.0f;
+    float dx = event->x() - dialOffsetX - dialSize / 2.0f;
     float dy = event->y() - dialSize / 2.0f;
 
     float r = sqrtf(dx*dx + dy*dy);
@@ -269,7 +272,7 @@ void HSVColorDial::mousePressEvent(QMouseEvent *event)
     }
     else if (d->boxRect.contains(event->pos()))
     {
-        float s = event->x() - d->boxRect.x();
+        float s = event->x() - dialOffsetX - d->boxRect.x();
         s = 1.0f - qBound(0.0f, s, float(d->boxRect.width())) / d->boxRect.width();
         s = powf(s, 1.0 / BOX_VALUE_FACTOR);
         float v = event->y() - d->boxRect.y();
@@ -289,9 +292,10 @@ void HSVColorDial::mouseReleaseEvent(QMouseEvent *event)
 {
     Q_D(HSVColorDial);
 
-    const int dialSize = (width() / 2) * 2;
+    const int dialSize = (qMin(width(), height()) / 2) * 2;
+    const int dialOffsetX = dialSize < width() ? (width() - dialSize) / 2 : 0;
 
-    float dx = event->x() - dialSize / 2.0f;
+    float dx = event->x() - dialOffsetX - dialSize / 2.0f;
     float dy = event->y() - dialSize / 2.0f;
 
     if (d->inDialDrag)
