@@ -48,3 +48,35 @@ TileSet CanvasUndoTiles::apply(CanvasStack *stack, int *activeLayer)
 
     return modifiedTiles;
 }
+
+CanvasUndoLayers::CanvasUndoLayers(CanvasStack *stack, int activeLayer)
+{
+    for (QList<CanvasLayer *>::iterator iter = stack->layers.begin(); iter != stack->layers.end(); ++iter)
+        layers.push_back(new CanvasLayer(**iter));
+    currentLayer = activeLayer;
+}
+
+CanvasUndoLayers::~CanvasUndoLayers()
+{
+    for (QList<CanvasLayer *>::iterator iter = layers.begin(); iter != layers.end(); ++iter)
+        delete *iter;
+    layers.clear();
+}
+
+TileSet CanvasUndoLayers::apply(CanvasStack *stack, int *activeLayer)
+{
+    TileSet oldStackTiles = stack->getTileSet();
+    stack->clearLayers();
+
+    for (QList<CanvasLayer *>::iterator iter = layers.begin(); iter != layers.end(); ++iter)
+        stack->layers.push_back(*iter);
+
+    TileSet modifiedTiles = stack->getTileSet();
+    modifiedTiles.insert(oldStackTiles.begin(), oldStackTiles.end());
+
+    // FIXME: This event is now invalid, using it again would be an error
+    layers.clear();
+
+    *activeLayer = currentLayer;
+    return modifiedTiles;
+}

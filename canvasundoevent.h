@@ -25,4 +25,16 @@ public:
     TileMap tiles;
 };
 
+class CanvasUndoLayers : public CanvasUndoEvent
+{
+public:
+    CanvasUndoLayers();
+    CanvasUndoLayers(CanvasStack *stack, int activeLayer);
+    ~CanvasUndoLayers();
+    TileSet apply(CanvasStack *stack, int *activeLayer);
+
+    int currentLayer;
+    QList<CanvasLayer *> layers;
+};
+
 #endif // CANVASUNDOEVENT_H

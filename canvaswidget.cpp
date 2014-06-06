@@ -193,8 +193,10 @@ void CanvasWidget::initializeGL()
 
     SharedOpenCL::getSharedOpenCL();
 
-    addLayerAbove(-1);
+    ctx->layers.newLayerAt(0, QString().sprintf("Layer %02d", ++lastNewLayerNumber));
     ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
+
+    emit updateLayers();
 }
 
 void CanvasWidget::resizeGL(int w, int h)
@@ -358,8 +360,8 @@ void CanvasWidget::setActiveLayer(int layerIndex)
 
 void CanvasWidget::addLayerAbove(int layerIndex)
 {
-    /* FIXME: Undo event for layer history */
-    ctx->clearUndoHistory();
+    CanvasUndoLayers *undoEvent = new CanvasUndoLayers(&ctx->layers, ctx->currentLayer);
+    ctx->undoHistory.prepend(undoEvent);
 
     ctx->layers.newLayerAt(layerIndex + 1, QString().sprintf("Layer %02d", ++lastNewLayerNumber));
     emit updateLayers();
@@ -370,8 +372,8 @@ void CanvasWidget::removeLayer(int layerIndex)
     if (layerIndex < 0 || layerIndex > ctx->layers.layers.size())
         return;
 
-    /* FIXME: Undo event for layer history */
-    ctx->clearUndoHistory();
+    CanvasUndoLayers *undoEvent = new CanvasUndoLayers(&ctx->layers, ctx->currentLayer);
+    ctx->undoHistory.prepend(undoEvent);
 
     /* Before we delete the layer, dirty all tiles it intersects */
     TileSet layerTiles = ctx->layers.layers[layerIndex]->getTileSet();
