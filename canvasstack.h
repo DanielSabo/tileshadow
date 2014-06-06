@@ -16,6 +16,7 @@ public:
 
     void newLayerAt(int index, QString name = "");
     void removeLayerAt(int index);
+    void clearLayers();
 
     QList<CanvasLayer *> layers;
 

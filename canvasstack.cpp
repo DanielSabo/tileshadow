@@ -12,13 +12,10 @@ CanvasStack::CanvasStack()
 
 CanvasStack::~CanvasStack()
 {
-    while (!layers.empty())
-        delete layers.takeAt(0);
     delete backgroundTile;
     delete backgroundTileCL;
 
-    for (TileMap::iterator iter = tiles.begin(); iter != tiles.end(); ++iter)
-        delete iter->second;
+    clearLayers();
 }
 
 void CanvasStack::newLayerAt(int index, QString name)
@@ -33,6 +30,17 @@ void CanvasStack::removeLayerAt(int index)
     if (layers.size() == 1)
         return;
     delete layers.takeAt(index);
+}
+
+void CanvasStack::clearLayers()
+{
+    for (QList<CanvasLayer *>::iterator iter = layers.begin(); iter != layers.end(); ++iter)
+        delete *iter;
+    layers.clear();
+
+    for (TileMap::iterator iter = tiles.begin(); iter != tiles.end(); ++iter)
+        delete iter->second;
+    tiles.clear();
 }
 
 void cpuBlendInPlace(CanvasTile *inTile, CanvasTile *auxTile)
