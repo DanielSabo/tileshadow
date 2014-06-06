@@ -472,7 +472,7 @@
   </connection>
   <connection>
    <sender>toolSizeSlider</sender>
-   <signal>sliderMoved(int)</signal>
+   <signal>valueChanged(int)</signal>
    <receiver>MainWindow</receiver>
    <slot>sizeSliderMoved(int)</slot>
    <hints>
