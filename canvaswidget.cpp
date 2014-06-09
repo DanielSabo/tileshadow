@@ -319,6 +319,7 @@ void CanvasWidget::endStroke()
         (*ctx->currentLayerCopy->tiles)[*iter] = (*currentLayerObj->tiles)[*iter]->copy();
     }
 
+    ctx->clearRedoHistory(); //FIXME: This should probably happen at the start of the stroke
     ctx->undoHistory.prepend(undoEvent);
     ctx->strokeModifiedTiles.clear();
 }
@@ -360,6 +361,7 @@ void CanvasWidget::setActiveLayer(int layerIndex)
 
 void CanvasWidget::addLayerAbove(int layerIndex)
 {
+    ctx->clearRedoHistory();
     CanvasUndoLayers *undoEvent = new CanvasUndoLayers(&ctx->layers, ctx->currentLayer);
     ctx->undoHistory.prepend(undoEvent);
 
@@ -372,6 +374,7 @@ void CanvasWidget::removeLayer(int layerIndex)
     if (layerIndex < 0 || layerIndex > ctx->layers.layers.size())
         return;
 
+    ctx->clearRedoHistory();
     CanvasUndoLayers *undoEvent = new CanvasUndoLayers(&ctx->layers, ctx->currentLayer);
     ctx->undoHistory.prepend(undoEvent);
 
@@ -414,7 +417,33 @@ void CanvasWidget::undo()
     CanvasUndoEvent *undoEvent = ctx->undoHistory.first();
     ctx->undoHistory.removeFirst();
     TileSet changedTiles = undoEvent->apply(&ctx->layers, &newActiveLayer);
-    delete undoEvent;
+    ctx->redoHistory.push_front(undoEvent);
+
+    if(!changedTiles.empty())
+    {
+        ctx->dirtyTiles.insert(changedTiles.begin(), changedTiles.end());
+    }
+
+    ctx->currentLayer = newActiveLayer;
+
+    //FIXME: This only needs to copy changedTiles or if currentLayer changed
+    ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
+
+    update();
+    emit updateLayers();
+}
+
+void CanvasWidget::redo()
+{
+    if (ctx->redoHistory.empty())
+        return;
+
+    int newActiveLayer = ctx->currentLayer;
+
+    CanvasUndoEvent *undoEvent = ctx->redoHistory.first();
+    ctx->redoHistory.removeFirst();
+    TileSet changedTiles = undoEvent->apply(&ctx->layers, &newActiveLayer);
+    ctx->undoHistory.push_front(undoEvent);
 
     if(!changedTiles.empty())
     {

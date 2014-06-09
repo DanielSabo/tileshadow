@@ -60,6 +60,7 @@ signals:
 
 public slots:
     void undo();
+    void redo();
 };
 
 #endif // CANVASWIDGET_H

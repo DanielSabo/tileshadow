@@ -231,7 +231,7 @@ void MainWindow::actionUndo()
 
 void MainWindow::actionRedo()
 {
-
+    canvas->redo();
 }
 
 void MainWindow::setActiveTool()

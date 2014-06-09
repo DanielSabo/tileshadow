@@ -68,6 +68,7 @@ public:
     CanvasStack layers;
 
     QList<CanvasUndoEvent *> undoHistory;
+    QList<CanvasUndoEvent *> redoHistory;
 
     typedef std::map<QPoint, GLuint, _TilePointCompare> GLTileMap;
 
@@ -79,6 +80,7 @@ public:
     void closeTileAt(int x, int y);
     void closeTiles(void);
     void clearUndoHistory();
+    void clearRedoHistory();
 };
 
 #endif // CANVASCONTEXT_H

@@ -16,6 +16,7 @@ void StrokeContext::setColor(const QColor &color) {}
 CanvasContext::~CanvasContext()
 {
     clearUndoHistory();
+    clearRedoHistory();
 
     GLTileMap::iterator iter;
 
@@ -139,5 +140,15 @@ void CanvasContext::clearUndoHistory()
         CanvasUndoEvent *event = undoHistory.first();
         delete event;
         undoHistory.removeFirst();
+    }
+}
+
+void CanvasContext::clearRedoHistory()
+{
+    while (!redoHistory.empty())
+    {
+        CanvasUndoEvent *event = redoHistory.first();
+        delete event;
+        redoHistory.removeFirst();
     }
 }
