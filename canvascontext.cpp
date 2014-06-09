@@ -15,6 +15,8 @@ void StrokeContext::setColor(const QColor &color) {}
 
 CanvasContext::~CanvasContext()
 {
+    clearUndoHistory();
+
     GLTileMap::iterator iter;
 
     for (iter = glTiles.begin(); iter != glTiles.end(); ++iter)
