@@ -414,6 +414,7 @@ void CanvasWidget::undo()
     CanvasUndoEvent *undoEvent = ctx->undoHistory.first();
     ctx->undoHistory.removeFirst();
     TileSet changedTiles = undoEvent->apply(&ctx->layers, &newActiveLayer);
+    delete undoEvent;
 
     if(!changedTiles.empty())
     {
