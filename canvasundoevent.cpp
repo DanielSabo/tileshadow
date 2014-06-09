@@ -1,5 +1,6 @@
 #include "canvasundoevent.h"
 #include "canvastile.h"
+#include <algorithm>
 
 CanvasUndoEvent::CanvasUndoEvent()
 {
@@ -25,27 +26,23 @@ CanvasUndoTiles::~CanvasUndoTiles()
 TileSet CanvasUndoTiles::apply(CanvasStack *stack, int *activeLayer)
 {
     TileSet modifiedTiles;
+    TileMap redoTiles;
 
     for (TileMap::iterator iter = tiles.begin(); iter != tiles.end(); ++iter)
     {
-        delete (*targetTileMap)[iter->first];
+        redoTiles[iter->first] = (*targetTileMap)[iter->first];
+
         if (iter->second)
-        {
             (*targetTileMap)[iter->first] = iter->second;
-        }
         else
-        {
             targetTileMap->erase(iter->first);
-        }
 
         modifiedTiles.insert(iter->first);
     }
 
-    *activeLayer = currentLayer;
+    tiles = redoTiles;
 
-    // FIXME: This event is now invalid, using it again would be an error
-    tiles.clear();
-
+    std::swap(*activeLayer, currentLayer);
     return modifiedTiles;
 }
 
@@ -65,7 +62,12 @@ CanvasUndoLayers::~CanvasUndoLayers()
 
 TileSet CanvasUndoLayers::apply(CanvasStack *stack, int *activeLayer)
 {
+    QList<CanvasLayer *> redoLayers;
     TileSet oldStackTiles = stack->getTileSet();
+
+    for (QList<CanvasLayer *>::iterator iter = stack->layers.begin(); iter != stack->layers.end(); ++iter)
+        redoLayers.push_back(new CanvasLayer(**iter));
+
     stack->clearLayers();
 
     for (QList<CanvasLayer *>::iterator iter = layers.begin(); iter != layers.end(); ++iter)
@@ -74,9 +76,8 @@ TileSet CanvasUndoLayers::apply(CanvasStack *stack, int *activeLayer)
     TileSet modifiedTiles = stack->getTileSet();
     modifiedTiles.insert(oldStackTiles.begin(), oldStackTiles.end());
 
-    // FIXME: This event is now invalid, using it again would be an error
-    layers.clear();
+    layers = redoLayers;
 
-    *activeLayer = currentLayer;
+    std::swap(*activeLayer, currentLayer);
     return modifiedTiles;
 }
