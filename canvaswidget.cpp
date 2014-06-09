@@ -366,6 +366,7 @@ void CanvasWidget::addLayerAbove(int layerIndex)
     ctx->undoHistory.prepend(undoEvent);
 
     ctx->layers.newLayerAt(layerIndex + 1, QString().sprintf("Layer %02d", ++lastNewLayerNumber));
+    ctx->currentLayer = layerIndex + 1;
     emit updateLayers();
 }
 
