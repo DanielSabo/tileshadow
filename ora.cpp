@@ -102,8 +102,7 @@ void saveStackAs(CanvasStack *stack, QString path)
                                                  + (4 * ix * TILE_PIXEL_WIDTH);
                     if (tile)
                     {
-                        tile->mapHost();
-                        float *tileData = tile->tileData;
+                        float *tileData = tile->mapHost();
 
                         for (int row = 0; row < TILE_PIXEL_HEIGHT; row++)
                         {

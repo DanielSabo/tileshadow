@@ -25,8 +25,8 @@ public:
     cl_mem  tileMem;
     float  *tileData;
 
-    void mapHost(void);
-    void unmapHost(void);
+    float *mapHost(void);
+    cl_mem unmapHost(void);
 
     void fill(float r, float g, float b, float a);
     CanvasTile *copy();

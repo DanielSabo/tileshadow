@@ -66,16 +66,12 @@ cl_mem CanvasLayer::clOpenTileAt(int x, int y)
 {
     CanvasTile *tile = getTile(x, y);
 
-    tile->unmapHost();
-
-    return tile->tileMem;
+    return tile->unmapHost();
 }
 
 float *CanvasLayer::openTileAt(int x, int y)
 {
     CanvasTile *tile = getTile(x, y);
 
-    tile->mapHost();
-
-    return tile->tileData;
+    return tile->mapHost();
 }

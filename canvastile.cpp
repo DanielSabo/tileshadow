@@ -15,7 +15,7 @@ CanvasTile::~CanvasTile(void)
     clReleaseMemObject(tileMem);
 }
 
-void CanvasTile::mapHost(void)
+float *CanvasTile::mapHost(void)
 {
     if (!tileData)
     {
@@ -25,15 +25,19 @@ void CanvasTile::mapHost(void)
                                                       0, TILE_COMP_TOTAL * sizeof(float),
                                                       0, NULL, NULL, &err);
     }
+
+    return tileData;
 }
 
-void CanvasTile::unmapHost()
+cl_mem CanvasTile::unmapHost()
 {
     if (tileData)
     {
         cl_int err = clEnqueueUnmapMemObject(SharedOpenCL::getSharedOpenCL()->cmdQueue, tileMem, tileData, 0, NULL, NULL);
         tileData = NULL;
     }
+
+    return tileMem;
 }
 
 void CanvasTile::fill(float r, float g, float b, float a)

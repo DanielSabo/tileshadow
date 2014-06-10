@@ -45,13 +45,10 @@ void CanvasStack::clearLayers()
 
 void cpuBlendInPlace(CanvasTile *inTile, CanvasTile *auxTile)
 {
-    inTile->mapHost();
-    auxTile->mapHost();
-
     const int numPixels = TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT;
 
-    float *in  = inTile->tileData;
-    float *aux = auxTile->tileData;
+    float *in  = inTile->mapHost();
+    float *aux = auxTile->mapHost();
     float *out = in;
 
     for (int i = 0; i < numPixels; ++i)
@@ -79,14 +76,14 @@ void cpuBlendInPlace(CanvasTile *inTile, CanvasTile *auxTile)
 void clBlendInPlace(CanvasTile *inTile, CanvasTile *auxTile)
 {
     const size_t global_work_size[1] = {TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT};
-    inTile->unmapHost();
-    auxTile->unmapHost();
+    cl_mem inMem  = inTile->unmapHost();
+    cl_mem auxMem = auxTile->unmapHost();
 
     cl_kernel kernel = SharedOpenCL::getSharedOpenCL()->blendKernel_over;
 
-    clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&inTile->tileMem);
-    clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&inTile->tileMem);
-    clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&auxTile->tileMem);
+    clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&inMem);
+    clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&inMem);
+    clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&auxMem);
     clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                            kernel,
                            1, NULL, global_work_size, NULL,
@@ -170,8 +167,7 @@ float *CanvasStack::openTileAt(int x, int y)
     if (!result)
         result = backgroundTile;
 
-    result->mapHost();
-    return result->tileData;
+    return result->mapHost();
 }
 
 cl_mem CanvasStack::clOpenTileAt(int x, int y)
@@ -181,6 +177,5 @@ cl_mem CanvasStack::clOpenTileAt(int x, int y)
     if (!result)
         result = backgroundTileCL;
 
-    result->unmapHost();
-    return result->tileMem;
+    return result->unmapHost();
 }
