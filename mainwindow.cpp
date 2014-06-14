@@ -206,7 +206,7 @@ void MainWindow::actionQuit()
 
 void MainWindow::actionOpenFile()
 {
-    QString filename = QFileDialog::getOpenFileName(this, "Open", QString(), "OpenRaster (*.ora)");
+    QString filename = QFileDialog::getOpenFileName(this, "Open", QDir::homePath(), "OpenRaster (*.ora)");
 
     if (filename.isEmpty())
         return;
@@ -216,7 +216,9 @@ void MainWindow::actionOpenFile()
 
 void MainWindow::actionSaveAs()
 {
-    QString filename = QFileDialog::getSaveFileName(this, "Save As...", "untitled.ora", "OpenRaster (*.ora)");
+    QString filename = QFileDialog::getSaveFileName(this, "Save As...",
+                                                    QDir::homePath() + QDir::toNativeSeparators("/untitled.ora"),
+                                                    "OpenRaster (*.ora)");
 
     if (filename.isEmpty())
         return;
