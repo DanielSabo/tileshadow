@@ -41,6 +41,7 @@ public:
                       vertexBuffer(0),
                       tileWidth(0),
                       tileHeight(0),
+                      inTabletStroke(false),
                       currentLayer(0) {}
     ~CanvasContext();
 
@@ -61,6 +62,7 @@ public:
     int tileWidth;
     int tileHeight;
 
+    bool inTabletStroke;
     QScopedPointer<StrokeContext> stroke;
 
     int currentLayer;

@@ -301,6 +301,9 @@ void CanvasWidget::strokeTo(QPointF pos, float pressure)
 
 void CanvasWidget::endStroke()
 {
+    if (ctx->stroke.isNull())
+        return;
+
     ctx->stroke.reset();
 
     CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
@@ -464,6 +467,9 @@ void CanvasWidget::redo()
 
 void CanvasWidget::mousePressEvent(QMouseEvent *event)
 {
+    if (ctx->inTabletStroke)
+        return;
+
     QPointF pos = event->localPos() / viewScale;
 
     startStroke(pos, 1.0f);
@@ -473,6 +479,9 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
 
 void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
 {
+    if (ctx->inTabletStroke)
+        return;
+
     endStroke();
 
     event->accept();
@@ -480,6 +489,9 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
 
 void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
 {
+    if (ctx->inTabletStroke)
+        return;
+
     QPointF pos = event->localPos() / viewScale;
 
     strokeTo(pos, 1.0f);
@@ -496,11 +508,19 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
     QPointF point = QPointF(event->x() + xshift, event->y() + yshift) / viewScale;
 
     if (eventType == QEvent::TabletPress)
+    {
         startStroke(point, event->pressure());
+        ctx->inTabletStroke = true;
+    }
     else if (eventType == QEvent::TabletRelease)
+    {
+        ctx->inTabletStroke = false;
         endStroke();
+    }
     else if (eventType == QEvent::TabletMove)
+    {
         strokeTo(point, event->pressure());
+    }
     else
         return;
 
