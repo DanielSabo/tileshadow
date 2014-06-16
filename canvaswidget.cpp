@@ -370,6 +370,7 @@ void CanvasWidget::addLayerAbove(int layerIndex)
 
     ctx->layers.newLayerAt(layerIndex + 1, QString().sprintf("Layer %02d", ++lastNewLayerNumber));
     ctx->currentLayer = layerIndex + 1;
+    ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
     emit updateLayers();
 }
 
