@@ -15,8 +15,6 @@
 
 void saveStackAs(CanvasStack *stack, QString path)
 {
-    QList<CanvasLayer *>::iterator layersIter;
-
     /* FIXME: This should use something like QSaveFile but QZip is not compatible */
     QZipWriter oraZipWriter(path, QIODevice::WriteOnly);
     oraZipWriter.setCompressionPolicy(QZipWriter::NeverCompress);
@@ -59,12 +57,14 @@ void saveStackAs(CanvasStack *stack, QString path)
 
     stackXML.writeStartElement("stack");
 
-    for (layersIter = stack->layers.begin(); layersIter != stack->layers.end(); layersIter++)
+    for (int layerIdx = stack->layers.size() - 1; layerIdx >= 0; layerIdx--)
     {
+        CanvasLayer *currentLayer = stack->layers.at(layerIdx);
+
         QRect bounds;
         uint16_t *layerData = NULL;
 
-        if ((*layersIter)->tiles->empty())
+        if (currentLayer->tiles->empty())
         {
             bounds = QRect(0, 0, 1, 1);
             layerData = new uint16_t[bounds.width() * bounds.height() * 4];
@@ -74,13 +74,13 @@ void saveStackAs(CanvasStack *stack, QString path)
         {
             TileMap::iterator tilesIter;
 
-            tilesIter = (*layersIter)->tiles->begin();
+            tilesIter = currentLayer->tiles->begin();
 
             QRect tileBounds = QRect(tilesIter->first.x(), tilesIter->first.y(), 1, 1);
 
             tilesIter++;
 
-            for (; tilesIter != (*layersIter)->tiles->end(); tilesIter++)
+            for (; tilesIter != currentLayer->tiles->end(); tilesIter++)
             {
                 tileBounds = tileBounds.united(QRect(tilesIter->first.x(), tilesIter->first.y(), 1, 1));
             }
@@ -97,7 +97,7 @@ void saveStackAs(CanvasStack *stack, QString path)
             for (int iy = 0; iy < tileBounds.height(); ++iy)
                 for (int ix = 0; ix < tileBounds.width(); ++ix)
                 {
-                    CanvasTile *tile = (*layersIter)->getTileMaybe(ix + tileBounds.x(), iy + tileBounds.y());
+                    CanvasTile *tile = currentLayer->getTileMaybe(ix + tileBounds.x(), iy + tileBounds.y());
                     uint16_t *rowPtr = layerData + (rowComps * iy * TILE_PIXEL_HEIGHT)
                                                  + (4 * ix * TILE_PIXEL_WIDTH);
                     if (tile)
@@ -146,7 +146,7 @@ void saveStackAs(CanvasStack *stack, QString path)
 
         stackXML.writeStartElement("layer");
         stackXML.writeAttribute("src", layerFileName);
-        stackXML.writeAttribute("name", (*layersIter)->name);
+        stackXML.writeAttribute("name", currentLayer->name);
         stackXML.writeAttribute("visibility", "visible");
         stackXML.writeAttribute("composite-op", "svg:src-over");
         stackXML.writeAttribute("opacity", QString().sprintf("%f", 1.0));
