@@ -11,5 +11,7 @@
         <file>mypaint-tools/watercolor_glazing.myb</file>
         <file>mypaint-tools/large_hard_eraser.myb</file>
         <file>mypaint-tools/kneaded_eraser.myb</file>
+        <file>icons/list-add.png</file>
+        <file>icons/list-remove.png</file>
     </qresource>
 </RCC>
