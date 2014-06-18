@@ -545,8 +545,10 @@ void CanvasWidget::setToolColor(const QColor &color)
 
 void CanvasWidget::openORA(QString path)
 {
-    loadStackFromORA(&ctx->layers, path);
+    ctx->clearUndoHistory();
+    ctx->clearRedoHistory();
     ctx->glTiles.clear();
+    loadStackFromORA(&ctx->layers, path);
     update();
     emit updateLayers();
 }
