@@ -466,6 +466,30 @@ void CanvasWidget::redo()
     emit updateLayers();
 }
 
+void CanvasWidget::pickColorAt(QPoint pos)
+{
+    int ix = tile_indice(pos.x(), TILE_PIXEL_WIDTH);
+    int iy = tile_indice(pos.y(), TILE_PIXEL_HEIGHT);
+    CanvasTile *tile = ctx->layers.layers[ctx->currentLayer]->getTileMaybe(ix, iy);
+
+    if (tile)
+    {
+        int offset = (pos.x() - ix * TILE_PIXEL_WIDTH) +
+                     (pos.y() - iy * TILE_PIXEL_HEIGHT) * TILE_PIXEL_WIDTH;
+        offset *= sizeof(float) * 4;
+
+        float data[4];
+        clEnqueueReadBuffer(SharedOpenCL::getSharedOpenCL()->cmdQueue, tile->unmapHost(), CL_TRUE,
+                            offset, sizeof(float) * 4, data,
+                            0, NULL, NULL);
+        if (data[3] > 0.0f)
+        {
+            setToolColor(QColor::fromRgbF(data[0], data[1], data[2]));
+            emit updateTool();
+        }
+    }
+}
+
 void CanvasWidget::mousePressEvent(QMouseEvent *event)
 {
     if (ctx->inTabletStroke)
@@ -473,7 +497,14 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
 
     QPointF pos = event->localPos() / viewScale;
 
-    startStroke(pos, 1.0f);
+    if (event->modifiers() && Qt::ControlModifier)
+    {
+        pickColorAt(pos.toPoint());
+    }
+    else
+    {
+        startStroke(pos, 1.0f);
+    }
 
     event->accept();
 }
@@ -510,8 +541,15 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
 
     if (eventType == QEvent::TabletPress)
     {
-        startStroke(point, event->pressure());
-        ctx->inTabletStroke = true;
+        if (event->modifiers() && Qt::ControlModifier)
+        {
+            pickColorAt(point.toPoint());
+        }
+        else
+        {
+            startStroke(point, event->pressure());
+            ctx->inTabletStroke = true;
+        }
     }
     else if (eventType == QEvent::TabletRelease)
     {
@@ -541,6 +579,11 @@ void CanvasWidget::setToolSizeFactor(float multipler)
 void CanvasWidget::setToolColor(const QColor &color)
 {
     toolColor = color;
+}
+
+QColor CanvasWidget::getToolColor()
+{
+    return toolColor;
 }
 
 void CanvasWidget::openORA(QString path)

@@ -14,6 +14,7 @@ public:
     int heightForWidth(int w) const;
     QSizePolicy sizePolicy() const;
 
+    void setColor(const QColor &color);
     QColor getColor() const;
 
 protected:

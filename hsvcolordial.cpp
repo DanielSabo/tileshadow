@@ -63,6 +63,19 @@ QSizePolicy HSVColorDial::sizePolicy() const
     return result;
 }
 
+void HSVColorDial::setColor(const QColor &color)
+{
+    Q_D(HSVColorDial);
+    d->h = color.hueF();
+    d->s = color.saturationF();
+    d->v = color.valueF();
+
+    emit updateColor(QColor::fromHsvF(d->h, d->s, d->v));
+
+    d->renderedInnerBox.reset();
+    update();
+}
+
 QColor HSVColorDial::getColor() const
 {
     return QColor::fromHsvF(d_ptr->h, d_ptr->s, d_ptr->v);

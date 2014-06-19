@@ -15,6 +15,7 @@ public:
 
     void setToolSizeFactor(float multipler);
     void setToolColor(const QColor &color);
+    QColor getToolColor();
     void setActiveTool(const QString &toolName);
     void startStroke(QPointF pos, float pressure);
     void strokeTo(QPointF pos, float pressure);
@@ -54,9 +55,12 @@ private:
     float viewScale;
     int lastNewLayerNumber;
 
+    void pickColorAt(QPoint pos);
+
 signals:
     void updateStats();
     void updateLayers();
+    void updateTool();
 
 public slots:
     void undo();

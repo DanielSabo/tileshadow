@@ -85,6 +85,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(canvas, SIGNAL(updateStats()), this, SLOT(canvasStats()));
     connect(canvas, SIGNAL(updateLayers()), this, SLOT(updateLayers()));
+    connect(canvas, SIGNAL(updateTool()), this, SLOT(updateTool()));
 
     {
         //FIXME: This belongs in the UI file
@@ -150,6 +151,15 @@ void MainWindow::updateLayers()
     layersList->setCurrentRow((layersList->count() - 1) - canvas->getActiveLayer());
 
     freezeLayerList = false;
+}
+
+void MainWindow::updateTool()
+{
+    blockSignals(true);
+    HSVColorDial *dial = findChild<HSVColorDial*>("toolColorDial");
+    if (dial)
+        dial->setColor(canvas->getToolColor());
+    blockSignals(false);
 }
 
 void MainWindow::layerListSelection(int row)

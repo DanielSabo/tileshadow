@@ -56,6 +56,7 @@ public slots:
     void layerListAdd();
     void layerListRemove();
     void updateLayers();
+    void updateTool();
     void colorDialChanged(QColor const &color);
 };
 
