@@ -182,6 +182,18 @@ void MainWindow::layerListRemove()
     canvas->removeLayer(canvas->getActiveLayer());
 }
 
+void MainWindow::layerListMoveUp()
+{
+    int activeLayerIdx = canvas->getActiveLayer();
+    canvas->moveLayer(activeLayerIdx, activeLayerIdx + 1);
+}
+
+void MainWindow::layerListMoveDown()
+{
+    int activeLayerIdx = canvas->getActiveLayer();
+    canvas->moveLayer(activeLayerIdx, activeLayerIdx - 1);
+}
+
 void MainWindow::canvasStats()
 {
     updateStatus();

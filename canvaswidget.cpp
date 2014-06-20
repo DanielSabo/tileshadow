@@ -401,6 +401,49 @@ void CanvasWidget::removeLayer(int layerIndex)
     emit updateLayers();
 }
 
+void CanvasWidget::moveLayer(int currentIndex, int targetIndex)
+{
+    /* Move the layer at currentIndex to targetIndex, the layers at targetIndex and
+     * above will be shifted up to accommodate it.
+     */
+
+    if (currentIndex < 0 || currentIndex >= ctx->layers.layers.size())
+        return;
+    if (ctx->layers.layers.size() == 1)
+        return;
+    if (targetIndex < 0)
+        targetIndex = 0;
+    if (targetIndex >= ctx->layers.layers.size())
+        targetIndex = ctx->layers.layers.size() - 1;
+
+    if (currentIndex == targetIndex)
+        return;
+
+    QList<CanvasLayer *> newLayers;
+
+    for (int i = 0; i < ctx->layers.layers.size(); ++i)
+        if (i != currentIndex)
+            newLayers.append(ctx->layers.layers.at(i));
+    newLayers.insert(targetIndex, ctx->layers.layers.at(currentIndex));
+
+    // Generate undo
+    ctx->clearRedoHistory();
+    CanvasUndoLayers *undoEvent = new CanvasUndoLayers(&ctx->layers, ctx->currentLayer);
+    ctx->undoHistory.prepend(undoEvent);
+
+    // Replace the stack's list with the reordered one
+    ctx->layers.layers = newLayers;
+    ctx->currentLayer = targetIndex;
+    ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
+
+    TileSet layerTiles = ctx->currentLayerCopy->getTileSet();
+    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+
+    update();
+
+    emit updateLayers();
+}
+
 QList<QString> CanvasWidget::getLayerList()
 {
     QList<QString> result;

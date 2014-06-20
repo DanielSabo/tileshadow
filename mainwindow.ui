@@ -201,9 +201,15 @@
              </property>
              <item>
               <widget class="QPushButton" name="delLayerButton">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>0</height>
+                </size>
+               </property>
                <property name="maximumSize">
                 <size>
-                 <width>16777215</width>
+                 <width>32</width>
                  <height>32</height>
                 </size>
                </property>
@@ -226,7 +232,7 @@
               <widget class="QPushButton" name="addLayerButton">
                <property name="maximumSize">
                 <size>
-                 <width>16777215</width>
+                 <width>32</width>
                  <height>32</height>
                 </size>
                </property>
@@ -236,6 +242,52 @@
                <property name="icon">
                 <iconset resource="Resources.qrc">
                  <normaloff>:/icons/list-add.png</normaloff>:/icons/list-add.png</iconset>
+               </property>
+               <property name="iconSize">
+                <size>
+                 <width>22</width>
+                 <height>22</height>
+                </size>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="upLayerButton">
+               <property name="maximumSize">
+                <size>
+                 <width>32</width>
+                 <height>32</height>
+                </size>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="icon">
+                <iconset resource="Resources.qrc">
+                 <normaloff>:/icons/up.png</normaloff>:/icons/up.png</iconset>
+               </property>
+               <property name="iconSize">
+                <size>
+                 <width>22</width>
+                 <height>22</height>
+                </size>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="downLayerButton">
+               <property name="maximumSize">
+                <size>
+                 <width>32</width>
+                 <height>32</height>
+                </size>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="icon">
+                <iconset resource="Resources.qrc">
+                 <normaloff>:/icons/down.png</normaloff>:/icons/down.png</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -680,6 +732,38 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>upLayerButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>layerListMoveUp()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>473</x>
+     <y>231</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>280</x>
+     <y>200</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>downLayerButton</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>layerListMoveDown()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>527</x>
+     <y>231</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>280</x>
+     <y>200</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>showOpenCLInfo()</slot>
@@ -697,5 +781,7 @@
   <slot>actionOpenFile()</slot>
   <slot>actionUndo()</slot>
   <slot>actionRedo()</slot>
+  <slot>layerListMoveUp()</slot>
+  <slot>layerListMoveDown()</slot>
  </slots>
 </ui>

@@ -28,6 +28,7 @@ public:
     void setActiveLayer(int layerIndex);
     void addLayerAbove(int layerIndex);
     void removeLayer(int layerIndex);
+    void moveLayer(int currentIndex, int targetIndex);
     QList<QString> getLayerList();
 
     void openORA(QString path);
