@@ -57,6 +57,7 @@ public slots:
     void layerListRemove();
     void layerListMoveUp();
     void layerListMoveDown();
+    void layerListNameEdited(QListWidgetItem *item);
     void updateLayers();
     void updateTool();
     void colorDialChanged(QColor const &color);

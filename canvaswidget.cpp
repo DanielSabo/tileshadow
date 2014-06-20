@@ -444,6 +444,15 @@ void CanvasWidget::moveLayer(int currentIndex, int targetIndex)
     emit updateLayers();
 }
 
+void CanvasWidget::renameLayer(int layerIndex, QString name)
+{
+    if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
+        return;
+    ctx->layers.layers[layerIndex]->name = name;
+
+    emit updateLayers();
+}
+
 QList<QString> CanvasWidget::getLayerList()
 {
     QList<QString> result;

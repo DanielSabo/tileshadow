@@ -29,6 +29,7 @@ public:
     void addLayerAbove(int layerIndex);
     void removeLayer(int layerIndex);
     void moveLayer(int currentIndex, int targetIndex);
+    void renameLayer(int layerIndex, QString name);
     QList<QString> getLayerList();
 
     void openORA(QString path);

@@ -79,6 +79,8 @@ MainWindow::MainWindow(QWidget *parent) :
     statusBar = findChild<QStatusBar*>("statusBar");
     statusBar->hide();
     layersList = findChild<QListWidget*>("layerList");
+    //FIXME: Connect in UI file
+    connect(layersList, SIGNAL(itemChanged(QListWidgetItem *)), this, SLOT(layerListNameEdited(QListWidgetItem *)));
     updateTitle();
     updateStatus();
     updateLayers();
@@ -146,10 +148,20 @@ void MainWindow::updateLayers()
     layersList->clear();
     foreach(QString layerName, canvasLayers)
     {
-        layersList->addItem(layerName);
+        QListWidgetItem *item = new QListWidgetItem(layerName);
+        item->setFlags(item->flags() | Qt::ItemIsEditable);
+        layersList->addItem(item);
     }
     layersList->setCurrentRow((layersList->count() - 1) - canvas->getActiveLayer());
 
+    freezeLayerList = false;
+}
+
+void MainWindow::layerListNameEdited(QListWidgetItem * item)
+{
+    freezeLayerList = true;
+    int layerIdx = (layersList->count() - 1) - layersList->row(item);
+    canvas->renameLayer(layerIdx, item->text());
     freezeLayerList = false;
 }
 
