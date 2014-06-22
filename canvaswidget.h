@@ -17,6 +17,7 @@ public:
     void setToolColor(const QColor &color);
     QColor getToolColor();
     void setActiveTool(const QString &toolName);
+    QString getActiveTool();
     void startStroke(QPointF pos, float pressure);
     void strokeTo(QPointF pos, float pressure);
     void endStroke();

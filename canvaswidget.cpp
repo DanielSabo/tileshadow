@@ -621,6 +621,12 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
 void CanvasWidget::setActiveTool(const QString &toolName)
 {
     activeBrush = toolName;
+    emit updateTool();
+}
+
+QString CanvasWidget::getActiveTool()
+{
+    return activeBrush;
 }
 
 void CanvasWidget::setToolSizeFactor(float multipler)

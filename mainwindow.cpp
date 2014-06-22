@@ -57,12 +57,14 @@ void MainWindow::reloadTools()
         asciiTitleCase(buttonName);
 
         QPushButton *button = new QPushButton(buttonName);
+        button->setCheckable(true);
         button->setProperty("toolName", brushfile);
         connect(button, SIGNAL(clicked()), this, SLOT(setActiveTool()));
         toolbox_layout->insertWidget(i, button);
     }
 
     QPushButton *button = new QPushButton("Debug");
+    button->setCheckable(true);
     button->setProperty("toolName", QString("debug"));
     connect(button, SIGNAL(clicked()), this, SLOT(setActiveTool()));
     toolbox_layout->insertWidget(0, button);
@@ -171,6 +173,16 @@ void MainWindow::updateTool()
     HSVColorDial *dial = findChild<HSVColorDial*>("toolColorDial");
     if (dial)
         dial->setColor(canvas->getToolColor());
+
+    QList<QPushButton *>toolButtons = ui->toolbox->findChildren<QPushButton *>();
+    QString activeTool = canvas->getActiveTool();
+    for (int i = 0; i < toolButtons.size(); ++i) {
+        QPushButton *button = toolButtons[i];
+        if (button->property("toolName").toString() == activeTool)
+            button->setChecked(true);
+        else
+            button->setChecked(false);
+    }
     blockSignals(false);
 }
 
