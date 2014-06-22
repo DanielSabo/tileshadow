@@ -219,8 +219,8 @@ void CanvasWidget::paintGL()
     float tileWidth  = ((2.0f * TILE_PIXEL_WIDTH) / (widgetWidth)) * viewScale;
     float tileHeight = ((2.0f * TILE_PIXEL_HEIGHT) / (widgetHeight)) * viewScale;
 
-    glFuncs->glClearColor(0.2, 0.2, 0.4, 1.0);
-    glFuncs->glClear(GL_COLOR_BUFFER_BIT);
+//    glFuncs->glClearColor(0.2, 0.2, 0.4, 1.0);
+//    glFuncs->glClear(GL_COLOR_BUFFER_BIT);
 
     glFuncs->glUseProgram(ctx->program);
 
