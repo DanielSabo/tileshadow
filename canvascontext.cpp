@@ -17,16 +17,7 @@ CanvasContext::~CanvasContext()
 {
     clearUndoHistory();
     clearRedoHistory();
-
-    GLTileMap::iterator iter;
-
-    for (iter = glTiles.begin(); iter != glTiles.end(); ++iter)
-    {
-        GLuint tileBuffer = iter->second;
-
-        if (tileBuffer)
-            glFuncs->glDeleteBuffers(1, &tileBuffer);
-    }
+    clearTiles();
 
     if (vertexBuffer)
         glFuncs->glDeleteBuffers(1, &vertexBuffer);
@@ -42,6 +33,19 @@ CanvasContext::~CanvasContext()
 
     if (program)
         glFuncs->glDeleteProgram(program);
+}
+
+void CanvasContext::clearTiles()
+{
+    GLTileMap::iterator iter;
+    for (iter = glTiles.begin(); iter != glTiles.end(); ++iter)
+    {
+        GLuint tileBuffer = iter->second;
+
+        if (tileBuffer)
+            glFuncs->glDeleteBuffers(1, &tileBuffer);
+    }
+    glTiles.clear();
 }
 
 GLuint CanvasContext::getGLBuf(int x, int y)
@@ -71,13 +75,7 @@ GLuint CanvasContext::getGLBuf(int x, int y)
 
 void CanvasContext::closeTileAt(int x, int y)
 {
-    GLuint tileBuffer;
-    GLTileMap::iterator found = glTiles.find(QPoint(x, y));
-
-    if (found != glTiles.end())
-        tileBuffer = found->second;
-    else
-        return;
+    GLuint tileBuffer = getGLBuf(x, y);
 
     if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
     {
@@ -114,7 +112,7 @@ void CanvasContext::closeTileAt(int x, int y)
     }
 }
 
-void CanvasContext::closeTiles(void)
+void CanvasContext::closeTiles()
 {
     if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
         glFinish();
@@ -127,7 +125,6 @@ void CanvasContext::closeTiles(void)
     }
 
     dirtyTiles.clear();
-
 
     if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
         clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);

@@ -80,9 +80,10 @@ public:
 
     GLuint getGLBuf(int x, int y);
     void closeTileAt(int x, int y);
-    void closeTiles(void);
+    void closeTiles();
     void clearUndoHistory();
     void clearRedoHistory();
+    void clearTiles();
 };
 
 #endif // CANVASCONTEXT_H

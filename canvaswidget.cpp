@@ -642,7 +642,7 @@ void CanvasWidget::openORA(QString path)
 {
     ctx->clearUndoHistory();
     ctx->clearRedoHistory();
-    ctx->glTiles.clear();
+    ctx->clearTiles();
     loadStackFromORA(&ctx->layers, path);
     update();
     emit updateLayers();
