@@ -32,18 +32,14 @@ void asciiTitleCase(QString &instr)
 
 void MainWindow::reloadTools()
 {
-    QWidget *toolbox = findChild<QWidget *>("toolbox");
-    if (!toolbox)
-        return;
-
-    QList<QWidget *>toolButtons = toolbox->findChildren<QWidget *>();
+    QList<QWidget *>toolButtons = ui->toolbox->findChildren<QWidget *>();
     for (int i = 0; i < toolButtons.size(); ++i) {
         delete toolButtons[i];
     }
 
     QStringList brushFiles = QDir(":/mypaint-tools/").entryList();
 
-    QBoxLayout *toolbox_layout = qobject_cast<QBoxLayout *>(toolbox->layout());
+    QBoxLayout *toolbox_layout = qobject_cast<QBoxLayout *>(ui->toolbox->layout());
     if (!toolbox_layout)
         return;
 
@@ -77,10 +73,11 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    canvas = findChild<CanvasWidget*>("mainCanvas");
-    statusBar = findChild<QStatusBar*>("statusBar");
+    canvas = ui->mainCanvas;
+    statusBar = ui->statusBar;
     statusBar->hide();
-    layersList = findChild<QListWidget*>("layerList");
+    layersList = ui->layerList;
+
     //FIXME: Connect in UI file
     connect(layersList, SIGNAL(itemChanged(QListWidgetItem *)), this, SLOT(layerListNameEdited(QListWidgetItem *)));
     updateTitle();
@@ -91,13 +88,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(canvas, SIGNAL(updateLayers()), this, SLOT(updateLayers()));
     connect(canvas, SIGNAL(updateTool()), this, SLOT(updateTool()));
 
-    {
-        //FIXME: This belongs in the UI file
-        HSVColorDial *dial = findChild<HSVColorDial*>("toolColorDial");
-        if (dial)
-            connect(dial, SIGNAL(updateColor(QColor const &)), this, SLOT(colorDialChanged(QColor const &)));
-        this->colorDialChanged(dial->getColor());
-    }
+    //FIXME: This belongs in the UI file
+    connect(ui->toolColorDial, SIGNAL(updateColor(QColor const &)), this, SLOT(colorDialChanged(QColor const &)));
+    this->colorDialChanged(ui->toolColorDial->getColor());
 
     // Resize here because the big widget is unwieldy in the designer
     resize(700,400);
@@ -170,9 +163,7 @@ void MainWindow::layerListNameEdited(QListWidgetItem * item)
 void MainWindow::updateTool()
 {
     blockSignals(true);
-    HSVColorDial *dial = findChild<HSVColorDial*>("toolColorDial");
-    if (dial)
-        dial->setColor(canvas->getToolColor());
+    ui->toolColorDial->setColor(canvas->getToolColor());
 
     QList<QPushButton *>toolButtons = ui->toolbox->findChildren<QPushButton *>();
     QString activeTool = canvas->getActiveTool();
