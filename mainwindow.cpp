@@ -214,6 +214,32 @@ void MainWindow::canvasStats()
     updateStatus();
 }
 
+
+void MainWindow::keyReleaseEvent(QKeyEvent *event)
+{
+#ifdef Q_OS_MAC
+    /* As of QT 5.2 single key shortcuts are not handled correctly (QTBUG-33015), the following
+     * hacks around that by searching the main windows action list for shortcuts coresponding
+     * to any unhandled key events.
+     */
+    if ((event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)) != 0)
+        return;
+
+    QKeySequence shortcutKey = QKeySequence(event->key() + event->modifiers());
+
+    QList<QAction *>windowActions = findChildren<QAction *>();
+    for (QList<QAction *>::Iterator iter = windowActions.begin(); iter != windowActions.end(); ++iter)
+    {
+        QAction *action = *iter;
+        if (action->shortcut() == shortcutKey && action->isEnabled())
+        {
+            action->trigger();
+            break;
+        }
+    }
+#endif
+}
+
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     if (!infoWindow.isNull())

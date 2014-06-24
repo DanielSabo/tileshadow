@@ -10,6 +10,9 @@
     <height>401</height>
    </rect>
   </property>
+  <property name="focusPolicy">
+   <enum>Qt::WheelFocus</enum>
+  </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
@@ -477,7 +480,7 @@
     <string>Undo</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Z</string>
+    <string>Z</string>
    </property>
   </action>
   <action name="actionRedo">
@@ -485,7 +488,7 @@
     <string>Redo</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+Shift+Z</string>
+    <string>Shift+Z</string>
    </property>
   </action>
  </widget>
