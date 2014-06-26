@@ -174,6 +174,16 @@ void MainWindow::updateTool()
         else
             button->setChecked(false);
     }
+
+    float sizeFactor = canvas->getToolSizeFactor();
+
+    if (sizeFactor > 1.0f)
+        ui->toolSizeSlider->setValue((sizeFactor - 1.0f) * 10.0f);
+    else if (sizeFactor < 1.0f)
+        ui->toolSizeSlider->setValue(-(((1.0f / sizeFactor) - 1.0f) * 10.0f));
+    else
+        ui->toolSizeSlider->setValue(1.0f);
+
     blockSignals(false);
 }
 
@@ -299,6 +309,18 @@ void MainWindow::actionRedo()
     canvas->redo();
 }
 
+void MainWindow::actionToolSizeIncrease()
+{
+    float size = canvas->getToolSizeFactor() * 2;
+    canvas->setToolSizeFactor(size);
+}
+
+void MainWindow::actionToolSizeDecrease()
+{
+    float size = canvas->getToolSizeFactor() / 2;
+    canvas->setToolSizeFactor(size);
+}
+
 void MainWindow::setActiveTool()
 {
     QVariant toolNameProp = sender()->property("toolName");
@@ -332,7 +354,9 @@ void MainWindow::sizeSliderMoved(int value)
         sizeMultiplyer = 1.0f;
     }
 
+    blockSignals(true);
     canvas->setToolSizeFactor(sizeMultiplyer);
+    blockSignals(false);
 }
 
 void MainWindow::zoomIn()

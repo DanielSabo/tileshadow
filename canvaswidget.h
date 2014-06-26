@@ -15,6 +15,7 @@ public:
     virtual  ~CanvasWidget();
 
     void setToolSizeFactor(float multipler);
+    float getToolSizeFactor();
     void setToolColor(const QColor &color);
     QColor getToolColor();
     void setActiveTool(const QString &toolName);

@@ -491,6 +491,22 @@
     <string>Shift+Z</string>
    </property>
   </action>
+  <action name="actionIncrease_Tool_Size">
+   <property name="text">
+    <string>Increase Tool Size</string>
+   </property>
+   <property name="shortcut">
+    <string>F</string>
+   </property>
+  </action>
+  <action name="actionDecrease_Tool_Size">
+   <property name="text">
+    <string>Decrease Tool Size</string>
+   </property>
+   <property name="shortcut">
+    <string>D</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -767,6 +783,38 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionIncrease_Tool_Size</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>actionToolSizeIncrease()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>280</x>
+     <y>200</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionDecrease_Tool_Size</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>actionToolSizeDecrease()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>280</x>
+     <y>200</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>showOpenCLInfo()</slot>
@@ -786,5 +834,7 @@
   <slot>actionRedo()</slot>
   <slot>layerListMoveUp()</slot>
   <slot>layerListMoveDown()</slot>
+  <slot>actionToolSizeIncrease()</slot>
+  <slot>actionToolSizeDecrease()</slot>
  </slots>
 </ui>

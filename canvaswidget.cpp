@@ -724,9 +724,18 @@ QString CanvasWidget::getActiveTool()
 
 void CanvasWidget::setToolSizeFactor(float multipler)
 {
+    multipler = max(min(multipler, 10.0f), 0.25f);
     toolSizeFactor = multipler;
     if (!activeTool.isNull())
         activeTool->setSizeMod(toolSizeFactor);
+
+    emit updateTool();
+    update();
+}
+
+float CanvasWidget::getToolSizeFactor()
+{
+    return toolSizeFactor;
 }
 
 void CanvasWidget::setToolColor(const QColor &color)

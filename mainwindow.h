@@ -51,6 +51,8 @@ public slots:
     void actionSaveAs();
     void actionUndo();
     void actionRedo();
+    void actionToolSizeIncrease();
+    void actionToolSizeDecrease();
     void canvasStats();
     void showStatusBar(bool visible);
     void layerListSelection(int row);
