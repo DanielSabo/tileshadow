@@ -14,6 +14,7 @@ public:
     TileSet strokeTo(QPointF point, float pressure);
 
     bool fromJsonFile(const QString &path);
+    bool fromJsonDoc(const QJsonDocument &doc);
     void fromDefaults();
 
     void multiplySize(float mult);

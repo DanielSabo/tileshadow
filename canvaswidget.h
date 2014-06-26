@@ -5,6 +5,7 @@
 #include <QColor>
 #include "boxcartimer.h"
 
+class BaseTool;
 class CanvasContext;
 class CanvasWidget : public QGLWidget
 {
@@ -52,7 +53,8 @@ protected:
 private:
     CanvasContext *ctx;
 
-    QString activeBrush;
+    QString activeToolName;
+    QScopedPointer<BaseTool> activeTool;
     float toolSizeFactor;
     QColor toolColor;
     float viewScale;

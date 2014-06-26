@@ -10,9 +10,6 @@
 #include <CL/cl_gl.h>
 #endif
 
-void StrokeContext::multiplySize(float mult) {}
-void StrokeContext::setColor(const QColor &color) {}
-
 CanvasContext::~CanvasContext()
 {
     clearUndoHistory();

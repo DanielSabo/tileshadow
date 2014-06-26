@@ -65,60 +65,74 @@ bool MyPaintStrokeContext::fromJsonFile(const QString &path)
         return false;
     }
 
-    QJsonDocument brushJsonDoc = QJsonDocument::fromJson(source);
+    return fromJsonDoc(QJsonDocument::fromJson(source));
+}
 
-    if (!brushJsonDoc.isObject())
+bool MyPaintStrokeContext::fromJsonDoc(const QJsonDocument &doc)
+{
+    try
     {
-        qWarning() << "JSON parse failed " << __LINE__;
-        return false;
-    }
-
-    QJsonObject brushObj = brushJsonDoc.object();
-    QJsonValue  val = brushObj.value("version");
-    if (brushObj.value("version").toDouble(-1) != 3)
-    {
-        qWarning() << "JSON parse failed " << __LINE__;
-        return false;
-    }
-
-    val = brushObj.value("settings");
-    if (val.isObject())
-    {
-        QJsonObject settingsObj = val.toObject();
-        QJsonObject::iterator iter;
-
-        for (iter = settingsObj.begin(); iter != settingsObj.end(); ++iter)
+        if (!doc.isObject())
         {
-            QString     settingName = iter.key();
-            QJsonObject settingObj  = iter.value().toObject();
+            throw QString("MyPaint brush error, JSON parse failed");
+        }
 
-            MyPaintBrushSetting settingID = mypaint_brush_setting_from_cname(settingName.toUtf8().constData());
-            double baseValue = settingObj.value("base_value").toDouble(0);
-            mypaint_brush_set_base_value(priv->brush, settingID, baseValue);
+        QJsonObject brushObj = doc.object();
+        QJsonValue  val = brushObj.value("version");
+        int         brushVersion = brushObj.value("version").toDouble(-1);
+        if (brushVersion != 3)
+        {
+            throw QString("MyPaint brush error, unknown version (") + QString(brushVersion) + ")";
+        }
 
-            QJsonObject inputsObj = settingObj.value("inputs").toObject();
-            QJsonObject::iterator inputIter;
+        val = brushObj.value("settings");
+        if (val.isObject())
+        {
+            QJsonObject settingsObj = val.toObject();
+            QJsonObject::iterator iter;
 
-            for (inputIter = inputsObj.begin(); inputIter != inputsObj.end(); ++inputIter)
+            for (iter = settingsObj.begin(); iter != settingsObj.end(); ++iter)
             {
-                QString    inputName  = inputIter.key();
-                QJsonArray inputArray = inputIter.value().toArray();
+                QString     settingName = iter.key();
+                QJsonObject settingObj  = iter.value().toObject();
 
-                MyPaintBrushInput inputID = mypaint_brush_input_from_cname(inputName.toUtf8().constData());
-                int number_of_mapping_points = inputArray.size();
+                MyPaintBrushSetting settingID = mypaint_brush_setting_from_cname(settingName.toUtf8().constData());
+                double baseValue = settingObj.value("base_value").toDouble(0);
+                mypaint_brush_set_base_value(priv->brush, settingID, baseValue);
 
-                mypaint_brush_set_mapping_n (priv->brush, settingID, inputID, number_of_mapping_points);
+                QJsonObject inputsObj = settingObj.value("inputs").toObject();
+                QJsonObject::iterator inputIter;
 
-                for (int i = 0; i < number_of_mapping_points; ++i)
+                for (inputIter = inputsObj.begin(); inputIter != inputsObj.end(); ++inputIter)
                 {
-                    QJsonArray point = inputArray.at(i).toArray();
-                    float x = point.at(0).toDouble();
-                    float y = point.at(1).toDouble();
+                    QString    inputName  = inputIter.key();
+                    QJsonArray inputArray = inputIter.value().toArray();
 
-                    mypaint_brush_set_mapping_point(priv->brush, settingID, inputID, i, x, y);
+                    MyPaintBrushInput inputID = mypaint_brush_input_from_cname(inputName.toUtf8().constData());
+                    int number_of_mapping_points = inputArray.size();
+
+                    mypaint_brush_set_mapping_n (priv->brush, settingID, inputID, number_of_mapping_points);
+
+                    for (int i = 0; i < number_of_mapping_points; ++i)
+                    {
+                        QJsonArray point = inputArray.at(i).toArray();
+                        float x = point.at(0).toDouble();
+                        float y = point.at(1).toDouble();
+
+                        mypaint_brush_set_mapping_point(priv->brush, settingID, inputID, i, x, y);
+                    }
                 }
             }
         }
+    }
+    catch (QString err)
+    {
+        qWarning() << err;
+        mypaint_brush_from_defaults(priv->brush);
+        mypaint_brush_set_base_value(priv->brush, MYPAINT_BRUSH_SETTING_COLOR_H, 0.0);
+        mypaint_brush_set_base_value(priv->brush, MYPAINT_BRUSH_SETTING_COLOR_S, 1.0);
+        mypaint_brush_set_base_value(priv->brush, MYPAINT_BRUSH_SETTING_COLOR_V, 1.0);
+        return false;
     }
 
     return true;

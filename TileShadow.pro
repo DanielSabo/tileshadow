@@ -38,7 +38,10 @@ SOURCES += main.cpp\
     tileset.cpp \
     ora.cpp \
     hsvcolordial.cpp \
-    canvasundoevent.cpp
+    canvasundoevent.cpp \
+    basetool.cpp \
+    mypainttool.cpp \
+    tiledebugtool.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -55,7 +58,10 @@ HEADERS  += mainwindow.h \
     tileset.h \
     ora.h \
     hsvcolordial.h \
-    canvasundoevent.h
+    canvasundoevent.h \
+    basetool.h \
+    mypainttool.h \
+    tiledebugtool.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \

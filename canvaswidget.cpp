@@ -2,7 +2,9 @@
 #include "canvaswidget-opencl.h"
 #include "canvastile.h"
 #include "canvascontext.h"
-#include "basicstrokecontext.h"
+#include "basetool.h"
+#include "tiledebugtool.h"
+#include "mypainttool.h"
 #include "ora.h"
 #include <iostream>
 #include <map>
@@ -13,8 +15,6 @@
 #include <QOpenGLFunctions_3_2_Core>
 
 using namespace std;
-
-#include "mypaintstrokecontext.h"
 
 void _check_gl_error(const char *file, int line);
 #define check_gl_error() _check_gl_error(__FILE__,__LINE__)
@@ -117,12 +117,13 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
     mouseEventRate(10),
     frameRate(10),
     ctx(NULL),
-    activeBrush("debug"),
     toolSizeFactor(1.0f),
     toolColor(QColor::fromRgbF(0.0, 0.0, 0.0)),
     viewScale(1.0f),
     lastNewLayerNumber(0)
 {
+    //FIXME: Creating the tool may do OpenCL things that require a valid context
+    setActiveTool("debug");
 }
 
 CanvasWidget::~CanvasWidget()
@@ -250,27 +251,12 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
     if (ctx->layers.layers.empty())
         return;
 
+    if (activeTool.isNull())
+        return;
+
     CanvasLayer *targetLayer = ctx->layers.layers.at(ctx->currentLayer);
 
-    if (activeBrush.endsWith(".myb"))
-    {
-        MyPaintStrokeContext *mypaint = new MyPaintStrokeContext(ctx, targetLayer);
-        if (mypaint->fromJsonFile(QString(":/mypaint-tools/") + activeBrush))
-            ctx->stroke.reset(mypaint);
-        else
-            delete mypaint;
-    }
-    else if (activeBrush == QString("debug"))
-        ctx->stroke.reset(new BasicStrokeContext(ctx, targetLayer));
-
-    if (ctx->stroke.isNull())
-    {
-        qWarning() << "Unknown tool set \'" << activeBrush << "\', using debug";
-        ctx->stroke.reset(new BasicStrokeContext(ctx, targetLayer));
-    }
-
-    ctx->stroke->multiplySize(toolSizeFactor);
-    ctx->stroke->setColor(toolColor);
+    ctx->stroke.reset(activeTool->newStroke(ctx, targetLayer));
 
     TileSet changedTiles = ctx->stroke->startStroke(pos, pressure);
 
@@ -620,23 +606,48 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
 
 void CanvasWidget::setActiveTool(const QString &toolName)
 {
-    activeBrush = toolName;
+    activeToolName = toolName;
+
+    if (toolName.endsWith(".myb"))
+    {
+        activeTool.reset(new MyPaintTool(QString(":/mypaint-tools/") + toolName));
+    }
+    else if (toolName == QString("debug"))
+    {
+        activeTool.reset(new TileDebugTool());
+    }
+    else
+    {
+        qWarning() << "Unknown tool set \'" << toolName << "\', using debug";
+        activeTool.reset(new TileDebugTool());
+    }
+
+    if (!activeTool.isNull())
+    {
+        activeTool->setSizeMod(toolSizeFactor);
+        activeTool->setColor(toolColor);
+    }
+
     emit updateTool();
 }
 
 QString CanvasWidget::getActiveTool()
 {
-    return activeBrush;
+    return activeToolName;
 }
 
 void CanvasWidget::setToolSizeFactor(float multipler)
 {
     toolSizeFactor = multipler;
+    if (!activeTool.isNull())
+        activeTool->setSizeMod(toolSizeFactor);
 }
 
 void CanvasWidget::setToolColor(const QColor &color)
 {
     toolColor = color;
+    if (!activeTool.isNull())
+        activeTool->setColor(toolColor);
 }
 
 QColor CanvasWidget::getToolColor()

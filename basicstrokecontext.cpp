@@ -5,6 +5,13 @@
 #include <QSet>
 #include <QList>
 
+
+BasicStrokeContext::BasicStrokeContext(CanvasContext *ctx, CanvasLayer *layer, float radius)
+    : StrokeContext(ctx, layer), radius(radius)
+{
+
+}
+
 void BasicStrokeContext::drawDab(QPointF point, TileSet &modTiles)
 {
     cl_int intRadius = radius;
@@ -123,7 +130,6 @@ TileSet BasicStrokeContext::strokeTo(QPointF point, float pressure)
     }
     return modTiles;
 }
-
 
 void BasicStrokeContext::multiplySize(float mult)
 {
