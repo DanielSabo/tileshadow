@@ -98,6 +98,35 @@ static GLuint compileFile (QOpenGLFunctions_3_2_Core &gl,
     return shader;
 }
 
+static GLuint buildProgram (QOpenGLFunctions_3_2_Core &gl,
+                            GLuint vertShader,
+                            GLuint fragShader)
+{
+    if (!vertShader || !fragShader)
+        return 0;
+
+    GLuint program = glFuncs->glCreateProgram();
+    glFuncs->glAttachShader(program, vertShader);
+    glFuncs->glAttachShader(program, fragShader);
+    glFuncs->glBindFragDataLocation(program, 0, "fragColor");
+    glFuncs->glLinkProgram(program);
+
+    if (!getProgramInt(program, GL_LINK_STATUS)) {
+        GLint logSize = getProgramInt(program, GL_INFO_LOG_LENGTH);
+        char* logMsg = new char[logSize];
+        glFuncs->glGetProgramInfoLog(program, logSize, NULL, logMsg);
+
+        qWarning() << "Failed to link shader";
+        qWarning() << logMsg;
+
+        delete[] logMsg;
+        glFuncs->glDeleteProgram(program);
+        program = 0;
+    }
+
+    return program;
+}
+
 static const QGLFormat &getFormatSingleton()
 {
     static QGLFormat *single = NULL;
@@ -120,8 +149,11 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
     toolSizeFactor(1.0f),
     toolColor(QColor::fromRgbF(0.0, 0.0, 0.0)),
     viewScale(1.0f),
+    showToolCursor(true),
     lastNewLayerNumber(0)
 {
+    setMouseTracking(true);
+
     //FIXME: Creating the tool may do OpenCL things that require a valid context
     setActiveTool("debug");
 }
@@ -143,36 +175,17 @@ void CanvasWidget::initializeGL()
 
     ctx = new CanvasContext(glFuncs);
 
+    /* Build canvas shaders */
     ctx->vertexShader = compileFile(*glFuncs, ":/CanvasShader.vert", GL_VERTEX_SHADER);
     ctx->fragmentShader = compileFile(*glFuncs, ":/CanvasShader.frag", GL_FRAGMENT_SHADER);
+    ctx->program = buildProgram (*glFuncs, ctx->vertexShader, ctx->fragmentShader);
 
-    if (ctx->vertexShader && ctx->fragmentShader)
+    if (ctx->program)
     {
-        GLuint program = glFuncs->glCreateProgram();
-        glFuncs->glAttachShader(program, ctx->vertexShader);
-        glFuncs->glAttachShader(program, ctx->fragmentShader);
-        glFuncs->glBindFragDataLocation(program, 0, "fragColor");
-        glFuncs->glLinkProgram(program);
-
-        if (!getProgramInt(program, GL_LINK_STATUS)) {
-            GLint logSize = getProgramInt(program, GL_INFO_LOG_LENGTH);
-            char* logMsg = new char[logSize];
-            glFuncs->glGetProgramInfoLog(program, logSize, NULL, logMsg);
-
-            qWarning() << "Failed to link shader";
-            qWarning() << logMsg;
-
-            delete[] logMsg;
-            glFuncs->glDeleteProgram(program);
-            program = 0;
-        }
-
-        ctx->program = program;
         ctx->locationTileOrigin = glFuncs->glGetUniformLocation(ctx->program, "tileOrigin");
         ctx->locationTileSize   = glFuncs->glGetUniformLocation(ctx->program, "tileSize");
         ctx->locationTileImage  = glFuncs->glGetUniformLocation(ctx->program, "tileImage");
         ctx->locationTilePixels = glFuncs->glGetUniformLocation(ctx->program, "tilePixels");
-
     }
 
     glFuncs->glGenBuffers(1, &ctx->vertexBuffer);
@@ -192,6 +205,43 @@ void CanvasWidget::initializeGL()
     glFuncs->glEnableVertexAttribArray(0);
     glFuncs->glVertexAttribPointer( 0, 2, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL);
 
+    /* Build cursor */
+    {
+        GLuint cursorVert = compileFile(*glFuncs, ":/CursorCircle.vert", GL_VERTEX_SHADER);
+        GLuint cursorFrag = compileFile(*glFuncs, ":/CursorCircle.frag", GL_FRAGMENT_SHADER);
+
+        ctx->cursorProgram = buildProgram(*glFuncs, cursorVert, cursorFrag);
+
+        if (ctx->cursorProgram)
+        {
+            ctx->cursorProgramDimensions = glFuncs->glGetUniformLocation(ctx->cursorProgram, "dimensions");
+            ctx->cursorProgramPixelRadius = glFuncs->glGetUniformLocation(ctx->cursorProgram, "pixelRadius");
+        }
+
+        float cursorVertData[] = {
+            -1.0f, -1.0f,
+            1.0f,  -1.0f,
+            1.0f,  1.0f,
+            -1.0f, 1.0f,
+        };
+
+        glFuncs->glGenBuffers(1, &ctx->cursorVertexBuffer);
+        glFuncs->glGenVertexArrays(1, &ctx->cursorVertexArray);
+        glFuncs->glBindVertexArray(ctx->cursorVertexArray);
+        glFuncs->glBindBuffer(GL_ARRAY_BUFFER, ctx->cursorVertexBuffer);
+
+        glFuncs->glBufferData(GL_ARRAY_BUFFER, sizeof(cursorVertData), cursorVertData, GL_STATIC_DRAW);
+
+        glFuncs->glEnableVertexAttribArray(0);
+        glFuncs->glVertexAttribPointer( 0, 2, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL);
+
+        if (cursorVert)
+            glFuncs->glDeleteShader(cursorVert);
+        if (cursorFrag)
+            glFuncs->glDeleteShader(cursorFrag);
+    }
+
+    /* Set up widget */
     SharedOpenCL::getSharedOpenCL();
 
     ctx->layers.newLayerAt(0, QString().sprintf("Layer %02d", ++lastNewLayerNumber));
@@ -242,6 +292,25 @@ void CanvasWidget::paintGL()
             glFuncs->glUniform2f(ctx->locationTileOrigin, offsetX, offsetY);
             glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
+
+    if (!activeTool.isNull() && showToolCursor)
+    {
+        float toolSize = activeTool->getPixelRadius() * 2.0f * viewScale;
+        if (toolSize < 2.0f)
+            toolSize = 2.0f;
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        QPoint cursorPos = mapFromGlobal(QCursor::pos());
+        glFuncs->glUseProgram(ctx->cursorProgram);
+        glFuncs->glUniform4f(ctx->cursorProgramDimensions,
+                             (float(cursorPos.x()) / widgetWidth * 2.0f) - 1.0f,
+                             1.0f - (float(cursorPos.y()) / widgetHeight * 2.0f),
+                             toolSize / widgetWidth, toolSize / widgetHeight);
+        glFuncs->glUniform1f(ctx->cursorProgramPixelRadius, toolSize / 2.0f);
+        glFuncs->glBindVertexArray(ctx->cursorVertexArray);
+        glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        glDisable(GL_BLEND);
+    }
 }
 
 void CanvasWidget::startStroke(QPointF pos, float pressure)
@@ -567,6 +636,8 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
     strokeTo(pos, 1.0f);
 
     event->accept();
+
+    update();
 }
 
 void CanvasWidget::tabletEvent(QTabletEvent *event)
@@ -602,6 +673,18 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
         return;
 
     event->accept();
+}
+
+void CanvasWidget::leaveEvent(QEvent * event)
+{
+    showToolCursor = false;
+    update();
+}
+
+void CanvasWidget::enterEvent(QEvent * event)
+{
+    showToolCursor = true;
+    update();
 }
 
 void CanvasWidget::setActiveTool(const QString &toolName)

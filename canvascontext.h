@@ -55,6 +55,12 @@ public:
     GLuint vertexBuffer;
     GLuint vertexArray;
 
+    GLuint cursorProgram;
+    GLuint cursorProgramDimensions;
+    GLuint cursorProgramPixelRadius;
+    GLuint cursorVertexBuffer;
+    GLuint cursorVertexArray;
+
     int tileWidth;
     int tileHeight;
 

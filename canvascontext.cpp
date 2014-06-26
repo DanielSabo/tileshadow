@@ -30,6 +30,15 @@ CanvasContext::~CanvasContext()
 
     if (program)
         glFuncs->glDeleteProgram(program);
+
+    if (cursorProgram)
+        glFuncs->glDeleteProgram(cursorProgram);
+
+    if (cursorVertexBuffer)
+        glFuncs->glDeleteBuffers(1, &cursorVertexBuffer);
+
+    if (cursorVertexArray)
+        glFuncs->glDeleteVertexArrays(1, &cursorVertexArray);
 }
 
 void CanvasContext::clearTiles()

@@ -21,9 +21,13 @@ public:
     QJsonDocument originalDoc;
     QJsonDocument currentDoc;
 
+    float cursorRadius;
+
     float getBrushValue(QString name);
     void setBrushValue(QString name, float value);
     float getOriginalBrushValue(QString name);
+
+    void updateRadius();
 };
 
 void MyPaintToolPrivate::setBrushValue(QString name, float value)
@@ -46,6 +50,15 @@ float MyPaintToolPrivate::getOriginalBrushValue(QString name)
 float MyPaintToolPrivate::getBrushValue(QString name)
 {
     return currentDoc.object()["settings"].toObject()[name].toObject()["base_value"].toDouble();
+}
+
+void MyPaintToolPrivate::updateRadius()
+{
+    cursorRadius = getBrushValue("radius_logarithmic");
+    cursorRadius = exp(cursorRadius);
+    cursorRadius = cursorRadius + 2 * cursorRadius * getBrushValue("offset_by_random");
+//    cursorRadius = cursorRadius + 2 * cursorRadius * getBrushValue("offset_by_speed");
+//    cursorRadius = cursorRadius + 2 * cursorRadius * getBrushValue("offset_by_speed_slowness");
 }
 
 MyPaintTool::MyPaintTool(const QString &path) : priv(new MyPaintToolPrivate())
@@ -79,6 +92,8 @@ MyPaintTool::MyPaintTool(const QString &path) : priv(new MyPaintToolPrivate())
     {
         qWarning() << (path + ":") << err;
     }
+
+    priv->updateRadius();
 }
 
 MyPaintTool::~MyPaintTool()
@@ -89,6 +104,7 @@ MyPaintTool::~MyPaintTool()
 void MyPaintTool::reset()
 {
     priv->currentDoc = priv->originalDoc;
+    priv->updateRadius();
 }
 
 void MyPaintTool::setSizeMod(float mult)
@@ -103,12 +119,12 @@ void MyPaintTool::setSizeMod(float mult)
         radius = 6.0f;
 
     priv->setBrushValue("radius_logarithmic", radius);
+    priv->updateRadius();
 }
 
 float MyPaintTool::getPixelRadius()
 {
-    float radius = priv->getBrushValue("radius_logarithmic");
-    return exp(radius);
+    return priv->cursorRadius;
 }
 
 void MyPaintTool::setColor(const QColor &color)

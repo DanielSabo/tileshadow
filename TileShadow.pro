@@ -81,7 +81,9 @@ OTHER_FILES += \
     CanvasShader.frag \
     CanvasShader.vert \
     BaseKernels.cl \
-    MyPaintKernels.cl
+    MyPaintKernels.cl \
+    CursorCircle.frag \
+    CursorCircle.vert
 
 RESOURCES += \
     Resources.qrc

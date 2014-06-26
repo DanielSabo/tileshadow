@@ -49,6 +49,8 @@ protected:
     void mouseReleaseEvent(QMouseEvent * event);
     void mouseMoveEvent(QMouseEvent * event);
     void tabletEvent(QTabletEvent *event);
+    void leaveEvent(QEvent *event);
+    void enterEvent(QEvent *event);
 
 private:
     CanvasContext *ctx;
@@ -58,6 +60,7 @@ private:
     float toolSizeFactor;
     QColor toolColor;
     float viewScale;
+    bool showToolCursor;
     int lastNewLayerNumber;
 
     void pickColorAt(QPoint pos);
