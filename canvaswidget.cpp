@@ -503,6 +503,9 @@ void CanvasWidget::renameLayer(int layerIndex, QString name)
 {
     if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
         return;
+
+    ctx->undoHistory.prepend(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
+
     ctx->layers.layers[layerIndex]->name = name;
 
     emit updateLayers();
