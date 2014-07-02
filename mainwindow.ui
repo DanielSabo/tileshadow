@@ -402,9 +402,17 @@
     <addaction name="actionUndo"/>
     <addaction name="actionRedo"/>
    </widget>
+   <widget class="QMenu" name="menuTool">
+    <property name="title">
+     <string>Tool</string>
+    </property>
+    <addaction name="actionIncrease_Tool_Size"/>
+    <addaction name="actionDecrease_Tool_Size"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuView"/>
+   <addaction name="menuTool"/>
    <addaction name="menuSystem"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
