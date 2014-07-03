@@ -10,61 +10,7 @@
 #include <QStatusBar>
 #include <QFileDialog>
 #include <hsvcolordial.h>
-
-void asciiTitleCase(QString &instr)
-{
-    bool lastspace = true;
-    for (int i = 0; i < instr.size(); i++)
-    {
-        if (instr[i].isSpace())
-        {
-            lastspace = true;
-            continue;
-        }
-
-        if (lastspace)
-        {
-            instr[i] = instr[i].toUpper();
-            lastspace = false;
-        }
-    }
-}
-
-void MainWindow::reloadTools()
-{
-    QList<QWidget *>toolButtons = ui->toolbox->findChildren<QWidget *>();
-    for (int i = 0; i < toolButtons.size(); ++i) {
-        delete toolButtons[i];
-    }
-
-    QStringList brushFiles = QDir(":/mypaint-tools/").entryList();
-
-    QBoxLayout *toolbox_layout = qobject_cast<QBoxLayout *>(ui->toolbox->layout());
-    if (!toolbox_layout)
-        return;
-
-    for (int i = 0; i < brushFiles.size(); ++i)
-    {
-        QString brushfile = brushFiles.at(i);
-        QString buttonName = brushfile;
-        buttonName.truncate(buttonName.length() - 4);
-        //buttonName.replace(QChar('-'), " ");
-        buttonName.replace(QChar('_'), " ");
-        asciiTitleCase(buttonName);
-
-        QPushButton *button = new QPushButton(buttonName);
-        button->setCheckable(true);
-        button->setProperty("toolName", brushfile);
-        connect(button, SIGNAL(clicked()), this, SLOT(setActiveTool()));
-        toolbox_layout->insertWidget(i, button);
-    }
-
-    QPushButton *button = new QPushButton("Debug");
-    button->setCheckable(true);
-    button->setProperty("toolName", QString("debug"));
-    connect(button, SIGNAL(clicked()), this, SLOT(setActiveTool()));
-    toolbox_layout->insertWidget(0, button);
-}
+#include <toollistwidget.h>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -77,6 +23,15 @@ MainWindow::MainWindow(QWidget *parent) :
     statusBar = ui->statusBar;
     statusBar->hide();
     layersList = ui->layerList;
+
+    {
+        QBoxLayout *sidebarLayout = qobject_cast<QBoxLayout *>(ui->sidebar->layout());
+        Q_ASSERT(sidebarLayout);
+        ToolListWidget *toolList = new ToolListWidget();
+        toolList->setCanvas(canvas);
+        toolList->reloadTools();
+        sidebarLayout->insertWidget(sidebarLayout->count() - 1, toolList);
+    }
 
     //FIXME: Connect in UI file
     connect(layersList, SIGNAL(itemChanged(QListWidgetItem *)), this, SLOT(layerListNameEdited(QListWidgetItem *)));
@@ -95,7 +50,6 @@ MainWindow::MainWindow(QWidget *parent) :
     // Resize here because the big widget is unwieldy in the designer
     resize(700,400);
 
-    reloadTools();
     canvas->setActiveTool("default.myb");
 }
 
@@ -164,16 +118,6 @@ void MainWindow::updateTool()
 {
     blockSignals(true);
     ui->toolColorDial->setColor(canvas->getToolColor());
-
-    QList<QPushButton *>toolButtons = ui->toolbox->findChildren<QPushButton *>();
-    QString activeTool = canvas->getActiveTool();
-    for (int i = 0; i < toolButtons.size(); ++i) {
-        QPushButton *button = toolButtons[i];
-        if (button->property("toolName").toString() == activeTool)
-            button->setChecked(true);
-        else
-            button->setChecked(false);
-    }
 
     float sizeFactor = canvas->getToolSizeFactor();
 
@@ -319,17 +263,6 @@ void MainWindow::actionToolSizeDecrease()
 {
     float size = canvas->getToolSizeFactor() / 2;
     canvas->setToolSizeFactor(size);
-}
-
-void MainWindow::setActiveTool()
-{
-    QVariant toolNameProp = sender()->property("toolName");
-    if (toolNameProp.type() == QVariant::String)
-    {
-        canvas->setActiveTool(toolNameProp.toString());
-    }
-    else
-        qWarning() << sender()->objectName() << " has no toolName property.";
 }
 
 void MainWindow::colorDialChanged(QColor const &color)

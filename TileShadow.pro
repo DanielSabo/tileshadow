@@ -41,7 +41,8 @@ SOURCES += main.cpp\
     canvasundoevent.cpp \
     basetool.cpp \
     mypainttool.cpp \
-    tiledebugtool.cpp
+    tiledebugtool.cpp \
+    toollistwidget.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -61,7 +62,8 @@ HEADERS  += mainwindow.h \
     canvasundoevent.h \
     basetool.h \
     mypainttool.h \
-    tiledebugtool.h
+    tiledebugtool.h \
+    toollistwidget.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \

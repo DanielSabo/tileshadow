@@ -33,12 +33,10 @@ private:
     QListWidget *layersList;
     bool freezeLayerList;
 
-    void reloadTools();
     void updateTitle();
     void updateStatus();
 
 private slots:
-    void setActiveTool();
     void sizeSliderMoved(int value);
     void zoomIn();
     void zoomOut();
