@@ -11,6 +11,7 @@
 #include <QFileDialog>
 #include "hsvcolordial.h"
 #include "toollistwidget.h"
+#include "layerlistwidget.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -22,25 +23,24 @@ MainWindow::MainWindow(QWidget *parent) :
     canvas = ui->mainCanvas;
     statusBar = ui->statusBar;
     statusBar->hide();
-    layersList = ui->layerList;
 
     {
         QBoxLayout *sidebarLayout = qobject_cast<QBoxLayout *>(ui->sidebar->layout());
         Q_ASSERT(sidebarLayout);
+        LayerListWidget *layerList = new LayerListWidget();
+        layerList->setCanvas(canvas);
+        sidebarLayout->insertWidget(sidebarLayout->count() - 1, layerList);
+
         ToolListWidget *toolList = new ToolListWidget();
         toolList->setCanvas(canvas);
         toolList->reloadTools();
         sidebarLayout->insertWidget(sidebarLayout->count() - 1, toolList);
     }
 
-    //FIXME: Connect in UI file
-    connect(layersList, SIGNAL(itemChanged(QListWidgetItem *)), this, SLOT(layerListNameEdited(QListWidgetItem *)));
     updateTitle();
     updateStatus();
-    updateLayers();
 
     connect(canvas, SIGNAL(updateStats()), this, SLOT(canvasStats()));
-    connect(canvas, SIGNAL(updateLayers()), this, SLOT(updateLayers()));
     connect(canvas, SIGNAL(updateTool()), this, SLOT(updateTool()));
 
     //FIXME: This belongs in the UI file
@@ -88,32 +88,6 @@ void MainWindow::updateStatus()
         QString().sprintf("FPS: %.02f Events/sec: %.02f", canvas->frameRate.getRate(), canvas->mouseEventRate.getRate()));
 }
 
-void MainWindow::updateLayers()
-{
-    freezeLayerList = true;
-
-    QList<QString> canvasLayers = canvas->getLayerList();
-
-    layersList->clear();
-    foreach(QString layerName, canvasLayers)
-    {
-        QListWidgetItem *item = new QListWidgetItem(layerName);
-        item->setFlags(item->flags() | Qt::ItemIsEditable);
-        layersList->addItem(item);
-    }
-    layersList->setCurrentRow((layersList->count() - 1) - canvas->getActiveLayer());
-
-    freezeLayerList = false;
-}
-
-void MainWindow::layerListNameEdited(QListWidgetItem * item)
-{
-    freezeLayerList = true;
-    int layerIdx = (layersList->count() - 1) - layersList->row(item);
-    canvas->renameLayer(layerIdx, item->text());
-    freezeLayerList = false;
-}
-
 void MainWindow::updateTool()
 {
     blockSignals(true);
@@ -129,38 +103,6 @@ void MainWindow::updateTool()
         ui->toolSizeSlider->setValue(1.0f);
 
     blockSignals(false);
-}
-
-void MainWindow::layerListSelection(int row)
-{
-    /* Don't update the selection while the list is changing */
-    if (freezeLayerList)
-        return;
-
-    int layerIdx = (layersList->count() - 1) - row;
-    canvas->setActiveLayer(layerIdx);
-}
-
-void MainWindow::layerListAdd()
-{
-    canvas->addLayerAbove(canvas->getActiveLayer());
-}
-
-void MainWindow::layerListRemove()
-{
-    canvas->removeLayer(canvas->getActiveLayer());
-}
-
-void MainWindow::layerListMoveUp()
-{
-    int activeLayerIdx = canvas->getActiveLayer();
-    canvas->moveLayer(activeLayerIdx, activeLayerIdx + 1);
-}
-
-void MainWindow::layerListMoveDown()
-{
-    int activeLayerIdx = canvas->getActiveLayer();
-    canvas->moveLayer(activeLayerIdx, activeLayerIdx - 1);
 }
 
 void MainWindow::canvasStats()

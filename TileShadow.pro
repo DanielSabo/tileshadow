@@ -42,7 +42,8 @@ SOURCES += main.cpp\
     basetool.cpp \
     mypainttool.cpp \
     tiledebugtool.cpp \
-    toollistwidget.cpp
+    toollistwidget.cpp \
+    layerlistwidget.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -63,11 +64,13 @@ HEADERS  += mainwindow.h \
     basetool.h \
     mypainttool.h \
     tiledebugtool.h \
-    toollistwidget.h
+    toollistwidget.h \
+    layerlistwidget.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \
-    benchmarkdialog.ui
+    benchmarkdialog.ui \
+    layerlistwidget.ui
 
 win32 {
     INCLUDEPATH += "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v5.5\include"
