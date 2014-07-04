@@ -9,8 +9,8 @@
 #include <QCloseEvent>
 #include <QStatusBar>
 #include <QFileDialog>
-#include <hsvcolordial.h>
-#include <toollistwidget.h>
+#include "hsvcolordial.h"
+#include "toollistwidget.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
