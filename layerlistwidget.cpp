@@ -19,7 +19,7 @@ LayerListWidget::LayerListWidget(QWidget *parent) :
     connect(ui->upLayerButton,   SIGNAL(clicked()), this, SLOT(layerListMoveUp()));
 
     connect(ui->layerList, SIGNAL(currentRowChanged(int)), this, SLOT(layerListSelection(int)));
-    connect(ui->layerList, SIGNAL(itemChanged(QListWidgetItem *)), this, SLOT(layerListNameEdited(QListWidgetItem *)));
+    connect(ui->layerList, SIGNAL(itemChanged(QListWidgetItem *)), this, SLOT(layerListItemEdited(QListWidgetItem *)));
 }
 
 LayerListWidget::~LayerListWidget()
@@ -53,15 +53,20 @@ void LayerListWidget::updateLayers()
     if (!canvas)
         return;
 
+    if (freezeLayerList)
+        return;
+
     freezeLayerList = true;
 
-    QList<QString> canvasLayers = canvas->getLayerList();
+    QList<CanvasWidget::LayerInfo> canvasLayers = canvas->getLayerList();
 
     ui->layerList->clear();
-    foreach(QString layerName, canvasLayers)
+    int i = canvasLayers.count() - 1;
+    foreach(CanvasWidget::LayerInfo info, canvasLayers)
     {
-        QListWidgetItem *item = new QListWidgetItem(layerName);
-        item->setFlags(item->flags() | Qt::ItemIsEditable);
+        QListWidgetItem *item = new QListWidgetItem(info.name);
+        item->setFlags(item->flags() | Qt::ItemIsEditable | Qt::ItemIsUserCheckable);
+        item->setCheckState(info.visible ? Qt::Checked : Qt::Unchecked);
         ui->layerList->addItem(item);
     }
     ui->layerList->setCurrentRow((ui->layerList->count() - 1) - canvas->getActiveLayer());
@@ -69,7 +74,9 @@ void LayerListWidget::updateLayers()
     freezeLayerList = false;
 }
 
-void LayerListWidget::layerListNameEdited(QListWidgetItem * item)
+#include <QDebug>
+
+void LayerListWidget::layerListItemEdited(QListWidgetItem * item)
 {
     if (!canvas)
         return;
@@ -77,6 +84,7 @@ void LayerListWidget::layerListNameEdited(QListWidgetItem * item)
     freezeLayerList = true;
     int layerIdx = (ui->layerList->count() - 1) - ui->layerList->row(item);
     canvas->renameLayer(layerIdx, item->text());
+    canvas->setLayerVisible(layerIdx, item->checkState() == Qt::Checked);
     freezeLayerList = false;
 }
 

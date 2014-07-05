@@ -514,15 +514,49 @@ void CanvasWidget::renameLayer(int layerIndex, QString name)
     emit updateLayers();
 }
 
-QList<QString> CanvasWidget::getLayerList()
+void CanvasWidget::setLayerVisible(int layerIndex, bool visible)
 {
-    QList<QString> result;
+    if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
+        return;
+
+    if (ctx->layers.layers[layerIndex]->visible == visible)
+        return;
+
+    ctx->undoHistory.prepend(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
+
+    ctx->layers.layers[layerIndex]->visible = visible;
+
+    TileSet layerTiles = ctx->layers.layers[layerIndex]->getTileSet();
+
+    if(!layerTiles.empty())
+    {
+        ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+        emit update();
+    }
+
+    emit updateLayers();
+}
+
+bool CanvasWidget::getLayerVisible(int layerIndex)
+{
+    if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
+        return false;
+
+    return ctx->layers.layers[layerIndex]->visible;
+}
+
+QList<CanvasWidget::LayerInfo> CanvasWidget::getLayerList()
+{
+    QList<LayerInfo> result;
 
     if (!ctx)
         return result;
 
     for (int i = ctx->layers.layers.size() - 1; i >= 0; --i)
-        result.append(ctx->layers.layers[i]->name);
+    {
+        CanvasLayer *layer = ctx->layers.layers[i];
+        result.append((LayerInfo){layer->name, layer->visible});
+    }
 
     return result;
 }

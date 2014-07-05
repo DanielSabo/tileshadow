@@ -147,7 +147,10 @@ void saveStackAs(CanvasStack *stack, QString path)
         stackXML.writeStartElement("layer");
         stackXML.writeAttribute("src", layerFileName);
         stackXML.writeAttribute("name", currentLayer->name);
-        stackXML.writeAttribute("visibility", "visible");
+        if (currentLayer->visible)
+            stackXML.writeAttribute("visibility", "visible");
+        else
+            stackXML.writeAttribute("visibility", "hidden");
         stackXML.writeAttribute("composite-op", "svg:src-over");
         stackXML.writeAttribute("opacity", QString().sprintf("%f", 1.0));
         stackXML.writeAttribute("x", QString().sprintf("%d", bounds.x()));
@@ -297,6 +300,7 @@ void loadStackFromORA(CanvasStack *stack, QString path)
             int y = 0;
             QString name;
             QString src;
+            bool visible = true;
 
             if (attributes.hasAttribute("x"))
                 x = attributes.value("x").toDouble();
@@ -309,6 +313,9 @@ void loadStackFromORA(CanvasStack *stack, QString path)
 
             if (attributes.hasAttribute("src"))
                 src = attributes.value("src").toString();
+
+            if (attributes.hasAttribute("visibility"))
+                visible = attributes.value("visibility").toString() == QString("visible");
 
             if (src.isEmpty())
                 continue;
@@ -341,6 +348,7 @@ void loadStackFromORA(CanvasStack *stack, QString path)
             if (maybeLayer)
             {
                 maybeLayer->name = name;
+                maybeLayer->visible = visible;
                 resultLayers.prepend(maybeLayer);
             }
 

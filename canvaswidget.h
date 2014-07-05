@@ -14,6 +14,12 @@ public:
     explicit CanvasWidget(QWidget *parent = 0);
     virtual  ~CanvasWidget();
 
+    struct LayerInfo
+    {
+        QString name;
+        bool visible;
+    };
+
     void setToolSizeFactor(float multipler);
     float getToolSizeFactor();
     void setToolColor(const QColor &color);
@@ -33,7 +39,9 @@ public:
     void removeLayer(int layerIndex);
     void moveLayer(int currentIndex, int targetIndex);
     void renameLayer(int layerIndex, QString name);
-    QList<QString> getLayerList();
+    void setLayerVisible(int layerIndex, bool visible);
+    bool getLayerVisible(int layerIndex);
+    QList<LayerInfo> getLayerList();
 
     void openORA(QString path);
     void saveAsORA(QString path);

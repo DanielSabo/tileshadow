@@ -2,7 +2,10 @@
 #include "canvastile.h"
 #include "canvascontext.h"
 
-CanvasLayer::CanvasLayer(QString name) : name(name), tiles(new TileMap, _deleteTileMap)
+CanvasLayer::CanvasLayer(QString name)
+    : name(name),
+      visible(true),
+      tiles(new TileMap, _deleteTileMap)
 {
 }
 
@@ -14,6 +17,7 @@ CanvasLayer *CanvasLayer::deepCopy()
 {
     CanvasLayer *result = new CanvasLayer();
     result->name = name;
+    result->visible = visible;
 
     for (TileMap::iterator iter = tiles->begin(); iter != tiles->end(); ++iter)
     {

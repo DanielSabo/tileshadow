@@ -32,7 +32,7 @@ public slots:
     void layerListRemove();
     void layerListMoveUp();
     void layerListMoveDown();
-    void layerListNameEdited(QListWidgetItem *item);
+    void layerListItemEdited(QListWidgetItem *item);
     void updateLayers();
 
     void canvasDestroyed(QObject *obj);

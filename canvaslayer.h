@@ -14,6 +14,7 @@ public:
     ~CanvasLayer();
 
     QString name;
+    bool visible;
 
     QSharedPointer<TileMap> tiles;
 

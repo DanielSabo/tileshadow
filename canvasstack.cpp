@@ -100,7 +100,11 @@ CanvasTile *CanvasStack::getTileAt(int x, int y)
         result = NULL;
     else if (layerCount == 1)
     {
-        CanvasTile *auxTile = layers.at(0)->getTileMaybe(x, y);
+        CanvasTile *auxTile = NULL;
+        CanvasLayer *layer = layers.at(0);
+
+        if (layer->visible)
+            auxTile = layer->getTileMaybe(x, y);
 
         if (auxTile)
         {
@@ -116,7 +120,12 @@ CanvasTile *CanvasStack::getTileAt(int x, int y)
 
         for (int currentLayer = 0; currentLayer < layerCount; currentLayer++)
         {
-            CanvasTile *auxTile = layers.at(currentLayer)->getTileMaybe(x, y);
+            CanvasTile *auxTile = NULL;
+            CanvasLayer *layer = layers.at(currentLayer);
+
+            if (layer->visible)
+                auxTile = layer->getTileMaybe(x, y);
+
             if (auxTile)
             {
                 if (!inTile)
