@@ -37,7 +37,6 @@ private:
     void updateStatus();
 
 private slots:
-    void sizeSliderMoved(int value);
     void zoomIn();
     void zoomOut();
 
@@ -54,7 +53,6 @@ public slots:
     void canvasStats();
     void showStatusBar(bool visible);
     void updateTool();
-    void colorDialChanged(QColor const &color);
 };
 
 #endif // MAINWINDOW_H

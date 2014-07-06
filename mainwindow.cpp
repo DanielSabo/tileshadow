@@ -10,6 +10,7 @@
 #include <QStatusBar>
 #include <QFileDialog>
 #include "hsvcolordial.h"
+#include "toolsettingswidget.h"
 #include "toollistwidget.h"
 #include "layerlistwidget.h"
 
@@ -27,6 +28,11 @@ MainWindow::MainWindow(QWidget *parent) :
     {
         QBoxLayout *sidebarLayout = qobject_cast<QBoxLayout *>(ui->sidebar->layout());
         Q_ASSERT(sidebarLayout);
+
+        ToolSettingsWidget *toolSettings = new ToolSettingsWidget();
+        toolSettings->setCanvas(canvas);
+        sidebarLayout->insertWidget(sidebarLayout->count() - 1, toolSettings);
+
         LayerListWidget *layerList = new LayerListWidget();
         layerList->setCanvas(canvas);
         sidebarLayout->insertWidget(sidebarLayout->count() - 1, layerList);
@@ -43,14 +49,11 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(canvas, SIGNAL(updateStats()), this, SLOT(canvasStats()));
     connect(canvas, SIGNAL(updateTool()), this, SLOT(updateTool()));
 
-    //FIXME: This belongs in the UI file
-    connect(ui->toolColorDial, SIGNAL(updateColor(QColor const &)), this, SLOT(colorDialChanged(QColor const &)));
-    this->colorDialChanged(ui->toolColorDial->getColor());
-
     // Resize here because the big widget is unwieldy in the designer
     resize(700,400);
 
     canvas->setActiveTool("default.myb");
+    canvas->setToolColor(QColor(255, 0, 0));
 }
 
 MainWindow::~MainWindow()
@@ -90,19 +93,6 @@ void MainWindow::updateStatus()
 
 void MainWindow::updateTool()
 {
-    blockSignals(true);
-    ui->toolColorDial->setColor(canvas->getToolColor());
-
-    float sizeFactor = canvas->getToolSizeFactor();
-
-    if (sizeFactor > 1.0f)
-        ui->toolSizeSlider->setValue((sizeFactor - 1.0f) * 10.0f);
-    else if (sizeFactor < 1.0f)
-        ui->toolSizeSlider->setValue(-(((1.0f / sizeFactor) - 1.0f) * 10.0f));
-    else
-        ui->toolSizeSlider->setValue(1.0f);
-
-    blockSignals(false);
 }
 
 void MainWindow::canvasStats()
@@ -205,33 +195,6 @@ void MainWindow::actionToolSizeDecrease()
 {
     float size = canvas->getToolSizeFactor() / 2;
     canvas->setToolSizeFactor(size);
-}
-
-void MainWindow::colorDialChanged(QColor const &color)
-{
-    canvas->setToolColor(color);
-}
-
-void MainWindow::sizeSliderMoved(int value)
-{
-    float sizeMultiplyer;
-
-    if (value > 0)
-    {
-        sizeMultiplyer = value / 10.0f + 1.0f;
-    }
-    else if (value < 0)
-    {
-        sizeMultiplyer = 1.0f / (-value / 10.0f + 1.0f);
-    }
-    else
-    {
-        sizeMultiplyer = 1.0f;
-    }
-
-    blockSignals(true);
-    canvas->setToolSizeFactor(sizeMultiplyer);
-    blockSignals(false);
 }
 
 void MainWindow::zoomIn()

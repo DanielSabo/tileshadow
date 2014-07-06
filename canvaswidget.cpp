@@ -780,6 +780,8 @@ void CanvasWidget::setToolColor(const QColor &color)
     toolColor = color;
     if (!activeTool.isNull())
         activeTool->setColor(toolColor);
+
+    emit updateTool();
 }
 
 QColor CanvasWidget::getToolColor()

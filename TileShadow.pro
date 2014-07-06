@@ -43,7 +43,8 @@ SOURCES += main.cpp\
     mypainttool.cpp \
     tiledebugtool.cpp \
     toollistwidget.cpp \
-    layerlistwidget.cpp
+    layerlistwidget.cpp \
+    toolsettingswidget.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -65,7 +66,9 @@ HEADERS  += mainwindow.h \
     mypainttool.h \
     tiledebugtool.h \
     toollistwidget.h \
-    layerlistwidget.h
+    layerlistwidget.h \
+    toolsettingswidget.h \
+    toolsettingswidget_p.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \
