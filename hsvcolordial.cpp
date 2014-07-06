@@ -70,6 +70,11 @@ void HSVColorDial::setColor(const QColor &color)
     d->s = color.saturationF();
     d->v = color.valueF();
 
+    while (d->h < 0.0f)
+        d->h += 1.0f;
+    while (d->h > 1.0f)
+        d->h -= 1.0f;
+
     emit updateColor(QColor::fromHsvF(d->h, d->s, d->v));
 
     d->renderedInnerBox.reset();
