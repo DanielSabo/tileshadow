@@ -9,6 +9,7 @@
 #include <QCloseEvent>
 #include <QStatusBar>
 #include <QFileDialog>
+#include <QSettings>
 #include "hsvcolordial.h"
 #include "toolsettingswidget.h"
 #include "toollistwidget.h"
@@ -49,7 +50,13 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(canvas, SIGNAL(updateTool()), this, SLOT(updateTool()));
 
     // Resize here because the big widget is unwieldy in the designer
-    resize(700,400);
+
+    QSettings appSettings;
+
+    if (appSettings.contains("MainWindow/geometry"))
+        restoreGeometry(appSettings.value("MainWindow/geometry").toByteArray());
+    else
+        resize(700, 400);
 
     canvas->setActiveTool("default.myb");
     canvas->setToolColor(QColor(255, 0, 0));
@@ -127,6 +134,8 @@ void MainWindow::keyReleaseEvent(QKeyEvent *event)
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+    QSettings().setValue("MainWindow/geometry", saveGeometry());
+
     if (!infoWindow.isNull())
         infoWindow->close();
     if (!benchmarkWindow.isNull())
@@ -149,7 +158,7 @@ void MainWindow::showOpenCLInfo()
 
 void MainWindow::actionQuit()
 {
-    QApplication::quit();
+    close();
 }
 
 void MainWindow::actionOpenFile()
