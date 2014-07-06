@@ -1,9 +1,10 @@
 #include "toollistwidget.h"
-#include "ui_toollistwidget.h"
 
-#include <QDebug>
+#include <QVBoxLayout>
 #include <QDir>
 #include <QPushButton>
+
+#include <QDebug>
 
 #include "canvaswidget.h"
 
