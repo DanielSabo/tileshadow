@@ -30,8 +30,6 @@ private:
     QScopedPointer<BenchmarkDialog> benchmarkWindow;
     CanvasWidget *canvas;
     QStatusBar *statusBar;
-    QListWidget *layersList;
-    bool freezeLayerList;
 
     void updateTitle();
     void updateStatus();
