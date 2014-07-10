@@ -46,8 +46,8 @@ MainWindow::MainWindow(QWidget *parent) :
     updateTitle();
     updateStatus();
 
-    connect(canvas, SIGNAL(updateStats()), this, SLOT(canvasStats()));
-    connect(canvas, SIGNAL(updateTool()), this, SLOT(updateTool()));
+    connect(canvas, &CanvasWidget::updateStats, this, &MainWindow::canvasStats);
+    connect(canvas, &CanvasWidget::updateTool, this, &MainWindow::updateTool);
 
     // Resize here because the big widget is unwieldy in the designer
 
