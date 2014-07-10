@@ -69,16 +69,17 @@ MainWindow::~MainWindow()
 
 void MainWindow::updateTitle()
 {
-    QString title = QApplication::applicationDisplayName();
+    QString title = QStringLiteral("Drawing");
     float scale = canvas->getScale();
 
     if (scale >= 1.0)
-        title = title + " " + QString::number(scale * 100, 'f', 0) + "%";
+        title += " - " + QString::number(scale * 100, 'f', 0) + "%";
     else
-        title = title + " " + QString::number(scale * 100, 'f', 2) + "%";
+        title += " - " + QString::number(scale * 100, 'f', 2) + "%";
 
     setWindowTitle(title);
 }
+
 
 void MainWindow::showStatusBar(bool s)
 {
@@ -147,8 +148,6 @@ void MainWindow::showOpenCLInfo()
 {
     if (infoWindow.isNull())
         infoWindow.reset(new SystemInfoDialog ());
-
-    infoWindow->setWindowTitle(QApplication::applicationDisplayName() + " - System Information");
 
     if (infoWindow->isVisible())
         infoWindow->raise();
@@ -239,10 +238,7 @@ double drawBenchmarkCircle(CanvasWidget *canvas, float radius, float centerX, fl
 void MainWindow::runCircleBenchmark()
 {
     if (benchmarkWindow.isNull())
-        {
-            benchmarkWindow.reset(new BenchmarkDialog (this));
-            benchmarkWindow->setWindowTitle(QApplication::applicationDisplayName() + " - Benchmark");
-        }
+        benchmarkWindow.reset(new BenchmarkDialog (this));
 
     if (benchmarkWindow->isVisible())
         benchmarkWindow->raise();

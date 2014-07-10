@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>System Information</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_3">
    <property name="spacing">
@@ -46,7 +46,7 @@
         <x>0</x>
         <y>0</y>
         <width>476</width>
-        <height>209</height>
+        <height>212</height>
        </rect>
       </property>
       <property name="sizePolicy">
