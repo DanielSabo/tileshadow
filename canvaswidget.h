@@ -7,6 +7,7 @@
 
 class BaseTool;
 class CanvasContext;
+class CanvasUndoEvent;
 class CanvasWidget : public QGLWidget
 {
     Q_OBJECT
@@ -32,6 +33,9 @@ public:
 
     float getScale();
     void  setScale(float newScale);
+
+    bool getModified();
+    void setModified(bool state);
 
     int getActiveLayer();
     void setActiveLayer(int layerIndex);
@@ -71,6 +75,7 @@ private:
     float viewScale;
     bool showToolCursor;
     int lastNewLayerNumber;
+    bool modified;
 
     void pickColorAt(QPoint pos);
 
@@ -78,6 +83,7 @@ signals:
     void updateStats();
     void updateLayers();
     void updateTool();
+    void canvasModified();
 
 public slots:
     void undo();

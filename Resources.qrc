@@ -15,6 +15,7 @@
         <file>icons/list-remove.png</file>
         <file>icons/down.png</file>
         <file>icons/up.png</file>
+        <file>icons/image-x-generic.png</file>
         <file>CursorCircle.frag</file>
         <file>CursorCircle.vert</file>
     </qresource>

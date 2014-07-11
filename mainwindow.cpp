@@ -9,6 +9,7 @@
 #include <QCloseEvent>
 #include <QStatusBar>
 #include <QFileDialog>
+#include <QMessageBox>
 #include <QSettings>
 #include "hsvcolordial.h"
 #include "toolsettingswidget.h"
@@ -48,6 +49,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(canvas, &CanvasWidget::updateStats, this, &MainWindow::canvasStats);
     connect(canvas, &CanvasWidget::updateTool, this, &MainWindow::updateTool);
+    connect(canvas, &CanvasWidget::canvasModified, this, &MainWindow::canvasModified);
 
     // Resize here because the big widget is unwieldy in the designer
 
@@ -60,6 +62,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     canvas->setActiveTool("default.myb");
     canvas->setToolColor(QColor(255, 0, 0));
+
+    setWindowIcon(QIcon(":icons/image-x-generic.png"));
 }
 
 MainWindow::~MainWindow()
@@ -69,7 +73,14 @@ MainWindow::~MainWindow()
 
 void MainWindow::updateTitle()
 {
-    QString title = QStringLiteral("Drawing");
+    QString title;
+    setWindowModified(canvas->getModified());
+
+    if (windowFilePath().isEmpty())
+        title = QStringLiteral("Unsaved Drawing[*]");
+    else
+        title = QFileInfo(windowFilePath()).fileName() + "[*]";
+
     float scale = canvas->getScale();
 
     if (scale >= 1.0)
@@ -135,6 +146,12 @@ void MainWindow::keyReleaseEvent(QKeyEvent *event)
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+    if (!promptSave())
+    {
+        event->ignore();
+        return;
+    }
+
     QSettings().setValue("MainWindow/geometry", saveGeometry());
 
     if (!infoWindow.isNull())
@@ -162,24 +179,81 @@ void MainWindow::actionQuit()
 
 void MainWindow::actionOpenFile()
 {
+    if (!promptSave())
+        return;
+
     QString filename = QFileDialog::getOpenFileName(this, "Open", QDir::homePath(), "OpenRaster (*.ora)");
 
     if (filename.isEmpty())
         return;
 
     canvas->openORA(filename);
+    setWindowFilePath(filename);
+    updateTitle();
+}
+
+void MainWindow::actionSave()
+{
+    doSave(windowFilePath());
+}
+
+bool MainWindow::doSave(QString filename)
+{
+    if (filename.isEmpty())
+    {
+        filename = QFileDialog::getSaveFileName(this, "Save As...",
+                                                QDir::homePath() + QDir::toNativeSeparators("/untitled.ora"),
+                                                "OpenRaster (*.ora)");
+
+        if (filename.isEmpty())
+            return false;
+    }
+
+    canvas->saveAsORA(filename);
+    setWindowFilePath(filename);
+    updateTitle();
+
+    return true;
+}
+
+/* Prompt the user to save before continuing, return true if
+ * the operation should continue (they saved or discarded).
+ */
+bool MainWindow::promptSave()
+{
+    if (canvas->getModified())
+    {
+        QMessageBox savePrompt(this);
+        savePrompt.setIcon(QMessageBox::Warning);
+        if (windowFilePath().isEmpty())
+            savePrompt.setText(tr("There are unsaved changes, are you sure you want to discard this drawing?"));
+        else
+        {
+            QString promptText = tr("There are unsaved changes to \"%1\". Are you sure you want to discard this drawing?")
+                                    .arg(QFileInfo(windowFilePath()).fileName());
+            savePrompt.setText(promptText);
+        }
+        savePrompt.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
+        savePrompt.setDefaultButton(QMessageBox::Save);
+
+        int result = savePrompt.exec();
+        if (result == QMessageBox::Save)
+        {
+            if (!doSave(windowFilePath()))
+                return false;
+        }
+        else if (result != QMessageBox::Discard)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void MainWindow::actionSaveAs()
 {
-    QString filename = QFileDialog::getSaveFileName(this, "Save As...",
-                                                    QDir::homePath() + QDir::toNativeSeparators("/untitled.ora"),
-                                                    "OpenRaster (*.ora)");
-
-    if (filename.isEmpty())
-        return;
-
-    canvas->saveAsORA(filename);
+    doSave(QString());
 }
 
 void MainWindow::actionUndo()
@@ -213,6 +287,11 @@ void MainWindow::zoomIn()
 void MainWindow::zoomOut()
 {
     canvas->setScale(canvas->getScale() * 0.5);
+    updateTitle();
+}
+
+void MainWindow::canvasModified()
+{
     updateTitle();
 }
 

@@ -150,12 +150,15 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
     toolColor(QColor::fromRgbF(0.0, 0.0, 0.0)),
     viewScale(1.0f),
     showToolCursor(true),
-    lastNewLayerNumber(0)
+    lastNewLayerNumber(0),
+    modified(false)
 {
     setMouseTracking(true);
 
     //FIXME: Creating the tool may do OpenCL things that require a valid context
     setActiveTool("debug");
+
+    connect(this, &CanvasWidget::updateLayers, this, &CanvasWidget::canvasModified);
 }
 
 CanvasWidget::~CanvasWidget()
@@ -247,6 +250,7 @@ void CanvasWidget::initializeGL()
     ctx->layers.newLayerAt(0, QString().sprintf("Layer %02d", ++lastNewLayerNumber));
     ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
 
+    modified = false;
     emit updateLayers();
 }
 
@@ -335,6 +339,8 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
         ctx->strokeModifiedTiles.insert(changedTiles.begin(), changedTiles.end());
         update();
     }
+    modified = true;
+    emit canvasModified();
 }
 
 void CanvasWidget::strokeTo(QPointF pos, float pressure)
@@ -380,6 +386,8 @@ void CanvasWidget::endStroke()
     ctx->clearRedoHistory(); //FIXME: This should probably happen at the start of the stroke
     ctx->undoHistory.prepend(undoEvent);
     ctx->strokeModifiedTiles.clear();
+    modified = true;
+    emit canvasModified();
 }
 
 float CanvasWidget::getScale()
@@ -426,6 +434,7 @@ void CanvasWidget::addLayerAbove(int layerIndex)
     ctx->layers.newLayerAt(layerIndex + 1, QString().sprintf("Layer %02d", ++lastNewLayerNumber));
     ctx->currentLayer = layerIndex + 1;
     ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
+    modified = true;
     emit updateLayers();
 }
 
@@ -452,7 +461,7 @@ void CanvasWidget::removeLayer(int layerIndex)
     }
 
     update();
-
+    modified = true;
     emit updateLayers();
 }
 
@@ -495,7 +504,7 @@ void CanvasWidget::moveLayer(int currentIndex, int targetIndex)
     ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
 
     update();
-
+    modified = true;
     emit updateLayers();
 }
 
@@ -510,7 +519,7 @@ void CanvasWidget::renameLayer(int layerIndex, QString name)
     ctx->undoHistory.prepend(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
     ctx->layers.layers[layerIndex]->name = name;
-
+    modified = true;
     emit updateLayers();
 }
 
@@ -534,6 +543,7 @@ void CanvasWidget::setLayerVisible(int layerIndex, bool visible)
         emit update();
     }
 
+    modified = true;
     emit updateLayers();
 }
 
@@ -584,6 +594,7 @@ void CanvasWidget::undo()
     ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
 
     update();
+    modified = true;
     emit updateLayers();
 }
 
@@ -610,7 +621,18 @@ void CanvasWidget::redo()
     ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
 
     update();
+    modified = true;
     emit updateLayers();
+}
+
+bool CanvasWidget::getModified()
+{
+    return modified;
+}
+
+void CanvasWidget::setModified(bool state)
+{
+    modified = true;
 }
 
 void CanvasWidget::pickColorAt(QPoint pos)
@@ -797,10 +819,13 @@ void CanvasWidget::openORA(QString path)
     loadStackFromORA(&ctx->layers, path);
     setActiveLayer(0); // Needed to sync up the undo layer
     update();
+    modified = false;
     emit updateLayers();
 }
 
 void CanvasWidget::saveAsORA(QString path)
 {
     saveStackAs(&ctx->layers, path);
+    modified = false;
+    emit canvasModified();
 }

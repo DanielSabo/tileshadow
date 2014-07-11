@@ -33,16 +33,20 @@ private:
 
     void updateTitle();
     void updateStatus();
+    bool doSave(QString filename);
+    bool promptSave();
 
 private slots:
     void zoomIn();
     void zoomOut();
+    void canvasModified();
 
 public slots:
     void showOpenCLInfo();
     void runCircleBenchmark();
     void actionQuit();
     void actionOpenFile();
+    void actionSave();
     void actionSaveAs();
     void actionUndo();
     void actionRedo();
