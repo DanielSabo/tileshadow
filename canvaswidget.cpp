@@ -795,6 +795,7 @@ void CanvasWidget::openORA(QString path)
     ctx->clearRedoHistory();
     ctx->clearTiles();
     loadStackFromORA(&ctx->layers, path);
+    setActiveLayer(0); // Needed to sync up the undo layer
     update();
     emit updateLayers();
 }
