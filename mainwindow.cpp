@@ -23,8 +23,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     canvas = ui->mainCanvas;
-    statusBar = ui->statusBar;
-    statusBar->hide();
+    statusBar()->hide();
 
     {
         QBoxLayout *sidebarLayout = qobject_cast<QBoxLayout *>(ui->sidebar->layout());
@@ -92,20 +91,20 @@ void MainWindow::updateTitle()
 }
 
 
-void MainWindow::showStatusBar(bool s)
+void MainWindow::showStatusBar(bool show)
 {
-    if(s)
-        statusBar->show();
+    if (show)
+        statusBar()->show();
     else
-        statusBar->hide();
+        statusBar()->hide();
 }
 
 void MainWindow::updateStatus()
 {
-    if (!statusBar->isVisible())
+    if (!statusBar()->isVisible())
         return;
 
-    statusBar->showMessage(
+    statusBar()->showMessage(
         QString().sprintf("FPS: %.02f Events/sec: %.02f", canvas->frameRate.getRate(), canvas->mouseEventRate.getRate()));
 }
 
