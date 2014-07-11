@@ -359,9 +359,7 @@ void loadStackFromORA(CanvasStack *stack, QString path)
     if (!resultLayers.empty())
     {
         // FIXME: This should probably just return the list
-        while(!stack->layers.empty())
-            delete stack->layers.takeAt(0);
-        stack->tiles.clear();
+        stack->clearLayers();
         stack->layers = resultLayers;
     }
 }
