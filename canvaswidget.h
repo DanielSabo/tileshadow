@@ -47,6 +47,7 @@ public:
     bool getLayerVisible(int layerIndex);
     QList<LayerInfo> getLayerList();
 
+    void newDrawing();
     void openORA(QString path);
     void saveAsORA(QString path);
 

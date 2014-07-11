@@ -177,6 +177,16 @@ void MainWindow::actionQuit()
     close();
 }
 
+void MainWindow::actionNewFile()
+{
+    if (!promptSave())
+        return;
+
+    canvas->newDrawing();
+    setWindowFilePath("");
+    updateTitle();
+}
+
 void MainWindow::actionOpenFile()
 {
     if (!promptSave())

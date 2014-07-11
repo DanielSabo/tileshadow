@@ -45,6 +45,7 @@ public slots:
     void showOpenCLInfo();
     void runCircleBenchmark();
     void actionQuit();
+    void actionNewFile();
     void actionOpenFile();
     void actionSave();
     void actionSaveAs();

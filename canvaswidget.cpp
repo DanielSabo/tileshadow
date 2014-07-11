@@ -247,11 +247,7 @@ void CanvasWidget::initializeGL()
     /* Set up widget */
     SharedOpenCL::getSharedOpenCL();
 
-    ctx->layers.newLayerAt(0, QString().sprintf("Layer %02d", ++lastNewLayerNumber));
-    ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
-
-    modified = false;
-    emit updateLayers();
+    newDrawing();
 }
 
 void CanvasWidget::resizeGL(int w, int h)
@@ -811,13 +807,28 @@ QColor CanvasWidget::getToolColor()
     return toolColor;
 }
 
+void CanvasWidget::newDrawing()
+{
+    ctx->clearUndoHistory();
+    ctx->clearRedoHistory();
+    ctx->clearTiles();
+    lastNewLayerNumber = 0;
+    ctx->layers.clearLayers();
+    ctx->layers.newLayerAt(0, QString().sprintf("Layer %02d", ++lastNewLayerNumber));
+    setActiveLayer(0); // Sync up the undo layer
+    update();
+    modified = false;
+    emit updateLayers();
+}
+
 void CanvasWidget::openORA(QString path)
 {
     ctx->clearUndoHistory();
     ctx->clearRedoHistory();
     ctx->clearTiles();
+    lastNewLayerNumber = 0;
     loadStackFromORA(&ctx->layers, path);
-    setActiveLayer(0); // Needed to sync up the undo layer
+    setActiveLayer(0); // Sync up the undo layer
     update();
     modified = false;
     emit updateLayers();
