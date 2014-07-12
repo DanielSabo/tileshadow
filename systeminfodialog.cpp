@@ -1,6 +1,7 @@
 #include "systeminfodialog.h"
 #include "ui_systeminfodialog.h"
 
+#include <cstdio>
 #include <QOpenGLFunctions_3_2_Core>
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
