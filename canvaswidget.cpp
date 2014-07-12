@@ -247,6 +247,8 @@ void CanvasWidget::initializeGL()
     /* Set up widget */
     SharedOpenCL::getSharedOpenCL();
 
+    ctx->updateBackgroundTile();
+
     newDrawing();
 }
 

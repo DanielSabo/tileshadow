@@ -90,7 +90,7 @@ void clBlendInPlace(CanvasTile *inTile, CanvasTile *auxTile)
                            0, NULL, NULL);
 }
 
-CanvasTile *CanvasStack::getTileAt(int x, int y)
+CanvasTile *CanvasStack::getTileMaybe(int x, int y)
 {
     int layerCount = layers.size();
 
@@ -171,7 +171,7 @@ TileSet CanvasStack::getTileSet()
 
 float *CanvasStack::openTileAt(int x, int y)
 {
-    CanvasTile *result = getTileAt(x, y);
+    CanvasTile *result = getTileMaybe(x, y);
 
     if (!result)
         result = backgroundTile;
@@ -181,7 +181,7 @@ float *CanvasStack::openTileAt(int x, int y)
 
 cl_mem CanvasStack::clOpenTileAt(int x, int y)
 {
-    CanvasTile *result = getTileAt(x, y);
+    CanvasTile *result = getTileMaybe(x, y);
 
     if (!result)
         result = backgroundTileCL;

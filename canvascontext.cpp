@@ -39,6 +39,9 @@ CanvasContext::~CanvasContext()
 
     if (cursorVertexArray)
         glFuncs->glDeleteVertexArrays(1, &cursorVertexArray);
+
+    if (backgroundGLTile)
+        glFuncs->glDeleteBuffers(1, &backgroundGLTile);
 }
 
 void CanvasContext::clearTiles()
@@ -54,34 +57,77 @@ void CanvasContext::clearTiles()
     glTiles.clear();
 }
 
+void CanvasContext::updateBackgroundTile()
+{
+    if (!backgroundGLTile)
+    {
+        glFuncs->glGenBuffers(1, &backgroundGLTile);
+    }
+
+    glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, backgroundGLTile);
+    glFuncs->glBufferData(GL_TEXTURE_BUFFER,
+                          sizeof(float) * TILE_COMP_TOTAL,
+                          layers.backgroundTile->mapHost(),
+                          GL_STATIC_DRAW);
+}
+
 GLuint CanvasContext::getGLBuf(int x, int y)
 {
     GLTileMap::iterator found = glTiles.find(QPoint(x, y));
 
     if (found != glTiles.end())
-        return found->second;
-
-    // Generate the tile
-    GLuint glTile = 0;
-    glFuncs->glGenBuffers(1, &glTile);
-    glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, glTile);
-    glFuncs->glBufferData(GL_TEXTURE_BUFFER,
-                          sizeof(float) * TILE_COMP_TOTAL,
-                          NULL,
-                          GL_DYNAMIC_DRAW);
-    glTiles[QPoint(x, y)] = glTile;
+    {
+        if (found->second)
+            return found->second;
+        else
+            return backgroundGLTile;
+    }
 
     closeTileAt(x, y);
 
     // Call clFinish here because we closed a tile outside of closeTiles()
     clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
 
-    return glTile;
+    GLuint tileBuffer = glTiles[QPoint(x, y)];
+
+    return tileBuffer ? tileBuffer : backgroundGLTile;
 }
 
 void CanvasContext::closeTileAt(int x, int y)
 {
-    GLuint tileBuffer = getGLBuf(x, y);
+    CanvasTile *tile = layers.getTileMaybe(x, y);
+
+    GLTileMap::iterator found = glTiles.find(QPoint(x, y));
+
+    GLuint tileBuffer = 0;
+
+    if (found != glTiles.end() && found->second != 0)
+    {
+        if (tile)
+            tileBuffer = found->second;
+        else
+        {
+            glFuncs->glDeleteBuffers(1, &found->second);
+            found->second = 0;
+        }
+    }
+    else if (tile)
+    {
+        glFuncs->glGenBuffers(1, &tileBuffer);
+        glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, tileBuffer);
+        glFuncs->glBufferData(GL_TEXTURE_BUFFER,
+                              sizeof(float) * TILE_COMP_TOTAL,
+                              NULL,
+                              GL_DYNAMIC_DRAW);
+        glTiles[QPoint(x, y)] = tileBuffer;
+    }
+    else
+    {
+        glTiles[QPoint(x, y)] = 0;
+    }
+
+    if (!tile)
+        return;
 
     if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
     {
@@ -99,7 +145,7 @@ void CanvasContext::closeTileAt(int x, int y)
 
         err = clEnqueueAcquireGLObjects(cmdQueue, 1, &output, 0, NULL, NULL);
 
-        err = clEnqueueCopyBuffer(cmdQueue, layers.clOpenTileAt(x, y), output,
+        err = clEnqueueCopyBuffer(cmdQueue, tile->unmapHost(), output,
                                   0, 0, sizeof(float) * TILE_COMP_TOTAL,
                                   0, NULL, NULL);
 
@@ -113,7 +159,7 @@ void CanvasContext::closeTileAt(int x, int y)
         glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, tileBuffer);
         glFuncs->glBufferData(GL_TEXTURE_BUFFER,
                               sizeof(float) * TILE_COMP_TOTAL,
-                              layers.openTileAt(x, y),
+                              tile->mapHost(),
                               GL_STREAM_DRAW);
     }
 }

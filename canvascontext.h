@@ -38,7 +38,8 @@ public:
                       tileWidth(0),
                       tileHeight(0),
                       inTabletStroke(false),
-                      currentLayer(0) {}
+                      currentLayer(0),
+                      backgroundGLTile(0) {}
     ~CanvasContext();
 
     QOpenGLFunctions_3_2_Core *glFuncs;
@@ -76,6 +77,7 @@ public:
 
     typedef std::map<QPoint, GLuint, _TilePointCompare> GLTileMap;
 
+    GLuint backgroundGLTile;
     GLTileMap glTiles;
     TileSet dirtyTiles;
     TileSet strokeModifiedTiles;
@@ -86,6 +88,7 @@ public:
     void clearUndoHistory();
     void clearRedoHistory();
     void clearTiles();
+    void updateBackgroundTile();
 };
 
 #endif // CANVASCONTEXT_H
