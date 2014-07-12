@@ -169,11 +169,6 @@ void saveStackAs(CanvasStack *stack, QString path)
     oraZipWriter.addFile("mimetype", mimetypeData);
 }
 
-static CanvasLayer *layerFromPNGData(QByteArray data, int xOffset, int yOffset)
-{
-    return NULL;
-}
-
 static CanvasLayer *layerFromLinear(uint16_t *layerData, QRect bounds)
 {
     QRect tileBounds;
