@@ -13,7 +13,7 @@ CanvasLayer::~CanvasLayer()
 {
 }
 
-CanvasLayer *CanvasLayer::deepCopy()
+CanvasLayer *CanvasLayer::deepCopy() const
 {
     CanvasLayer *result = new CanvasLayer();
     result->name = name;
@@ -27,7 +27,7 @@ CanvasLayer *CanvasLayer::deepCopy()
     return result;
 }
 
-TileSet CanvasLayer::getTileSet()
+TileSet CanvasLayer::getTileSet() const
 {
     TileMap::iterator iter;
     TileSet result;
@@ -40,7 +40,7 @@ TileSet CanvasLayer::getTileSet()
     return result;
 }
 
-CanvasTile *CanvasLayer::getTileMaybe(int x, int y)
+CanvasTile *CanvasLayer::getTileMaybe(int x, int y) const
 {
     TileMap::iterator found = tiles->find(QPoint(x, y));
 

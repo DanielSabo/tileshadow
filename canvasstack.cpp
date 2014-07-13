@@ -155,9 +155,9 @@ CanvasTile *CanvasStack::getTileMaybe(int x, int y)
     return result;
 }
 
-TileSet CanvasStack::getTileSet()
+TileSet CanvasStack::getTileSet() const
 {
-    QList<CanvasLayer *>::iterator layersIter;
+    QList<CanvasLayer *>::const_iterator layersIter;
     TileSet result;
 
     for (layersIter = layers.begin(); layersIter != layers.end(); layersIter++)

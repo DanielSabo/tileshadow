@@ -18,15 +18,15 @@ public:
 
     QSharedPointer<TileMap> tiles;
 
-    TileSet getTileSet();
+    TileSet getTileSet() const;
 
     float *openTileAt(int x, int y);
     cl_mem clOpenTileAt(int x, int y);
 
     CanvasTile *getTile(int x, int y);
-    CanvasTile *getTileMaybe(int x, int y);
+    CanvasTile *getTileMaybe(int x, int y) const;
 
-    CanvasLayer *deepCopy();
+    CanvasLayer *deepCopy() const;
 };
 
 #endif // CANVASLAYER_H
