@@ -61,7 +61,6 @@ void LayerListWidget::updateLayers()
     QList<CanvasWidget::LayerInfo> canvasLayers = canvas->getLayerList();
 
     ui->layerList->clear();
-    int i = canvasLayers.count() - 1;
     foreach(CanvasWidget::LayerInfo info, canvasLayers)
     {
         QListWidgetItem *item = new QListWidgetItem(info.name);
