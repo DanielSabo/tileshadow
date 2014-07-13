@@ -360,6 +360,17 @@ static cl_context createSharedContext()
     return 0;
 }
 
+static cl_kernel buildOrWarn(cl_program prog, const char *name)
+{
+    cl_int err = CL_SUCCESS;
+    cl_kernel kernel = clCreateKernel (prog, name, &err);
+
+    if (err != CL_SUCCESS)
+        qWarning() << "Could not find base kernel \"" << name << "\" (" << err << ")";
+
+    return kernel;
+}
+
 SharedOpenCL::SharedOpenCL()
 {
     cl_int err = CL_SUCCESS;
@@ -426,26 +437,9 @@ SharedOpenCL::SharedOpenCL()
 
     if (baseKernelProg)
     {
-        circleKernel = clCreateKernel (baseKernelProg, "circle", &err);
-
-        if (err != CL_SUCCESS)
-        {
-            qWarning() << "Could not find base kernel \"" << "circle" << "\" (" << err << ")";
-        }
-
-        fillKernel = clCreateKernel (baseKernelProg, "fill", &err);;
-
-        if (err != CL_SUCCESS)
-        {
-            qWarning() << "Could not find base kernel \"" << "fill" << "\" (" << err << ")";
-        }
-
-        blendKernel_over = clCreateKernel (baseKernelProg, "tileSVGOver", &err);;
-
-        if (err != CL_SUCCESS)
-        {
-            qWarning() << "Could not find base kernel \"" << "tileSVGOver" << "\" (" << err << ")";
-        }
+        circleKernel = buildOrWarn(baseKernelProg, "circle");
+        fillKernel = buildOrWarn(baseKernelProg, "fill");
+        blendKernel_over = buildOrWarn(baseKernelProg, "tileSVGOver");
 
         clReleaseProgram (baseKernelProg);
     }
@@ -453,26 +447,9 @@ SharedOpenCL::SharedOpenCL()
     cl_program myPaintKernelsProg = compileFile(this, ":/MyPaintKernels.cl");
     if (myPaintKernelsProg)
     {
-        mypaintDabKernel = clCreateKernel (myPaintKernelsProg, "mypaint_dab", &err);
-
-        if (err != CL_SUCCESS)
-        {
-            qWarning() << "Could not find MyPaint kernel \"" << "mypaint_dab" << "\" (" << err << ")";
-        }
-
-        mypaintGetColorKernelPart1 = clCreateKernel (myPaintKernelsProg, "mypaint_color_query_part1", &err);
-
-        if (err != CL_SUCCESS)
-        {
-            qWarning() << "Could not find MyPaint kernel \"" << "mypaint_color_query_part1" << "\" (" << err << ")";
-        }
-
-        mypaintGetColorKernelPart2 = clCreateKernel (myPaintKernelsProg, "mypaint_color_query_part2", &err);
-
-        if (err != CL_SUCCESS)
-        {
-            qWarning() << "Could not find MyPaint kernel \"" << "mypaint_color_query_part2" << "\" (" << err << ")";
-        }
+        mypaintDabKernel = buildOrWarn(myPaintKernelsProg, "mypaint_dab");
+        mypaintGetColorKernelPart1 = buildOrWarn(myPaintKernelsProg, "mypaint_color_query_part1");
+        mypaintGetColorKernelPart2 = buildOrWarn(myPaintKernelsProg, "mypaint_color_query_part2");
 
         clReleaseProgram (myPaintKernelsProg);
     }
