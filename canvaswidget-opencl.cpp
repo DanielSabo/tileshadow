@@ -440,6 +440,10 @@ SharedOpenCL::SharedOpenCL()
         circleKernel = buildOrWarn(baseKernelProg, "circle");
         fillKernel = buildOrWarn(baseKernelProg, "fill");
         blendKernel_over = buildOrWarn(baseKernelProg, "tileSVGOver");
+        blendKernel_multiply = buildOrWarn(baseKernelProg, "tileSVGMultipy");
+        blendKernel_colorDodge = buildOrWarn(baseKernelProg, "tileSVGMColorDodge");
+        blendKernel_colorBurn = buildOrWarn(baseKernelProg, "tileSVGColorBurn");
+        blendKernel_screen = buildOrWarn(baseKernelProg, "tileSVGScreen");
 
         clReleaseProgram (baseKernelProg);
     }

@@ -2,6 +2,7 @@
 #include "ui_layerlistwidget.h"
 
 #include <QListWidget>
+#include <QComboBox>
 
 #include "canvaswidget.h"
 
@@ -13,6 +14,12 @@ LayerListWidget::LayerListWidget(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    ui->layerModeComboBox->addItem(tr("Normal"), QVariant(BlendMode::Over));
+    ui->layerModeComboBox->addItem(tr("Multiply"), QVariant(BlendMode::Multiply));
+    ui->layerModeComboBox->addItem(tr("Dodge"), QVariant(BlendMode::ColorDodge));
+    ui->layerModeComboBox->addItem(tr("Burn"), QVariant(BlendMode::ColorBurn));
+    ui->layerModeComboBox->addItem(tr("Screen"), QVariant(BlendMode::Screen));
+
     connect(ui->addLayerButton,  SIGNAL(clicked()), this, SLOT(layerListAdd()));
     connect(ui->delLayerButton,  SIGNAL(clicked()), this, SLOT(layerListRemove()));
     connect(ui->downLayerButton, SIGNAL(clicked()), this, SLOT(layerListMoveDown()));
@@ -20,6 +27,8 @@ LayerListWidget::LayerListWidget(QWidget *parent) :
 
     connect(ui->layerList, SIGNAL(currentRowChanged(int)), this, SLOT(layerListSelection(int)));
     connect(ui->layerList, SIGNAL(itemChanged(QListWidgetItem *)), this, SLOT(layerListItemEdited(QListWidgetItem *)));
+
+    connect(ui->layerModeComboBox, SIGNAL(activated(int)), this, SLOT(layerModeActivated(int)));
 }
 
 LayerListWidget::~LayerListWidget()
@@ -70,10 +79,30 @@ void LayerListWidget::updateLayers()
     }
     ui->layerList->setCurrentRow((ui->layerList->count() - 1) - canvas->getActiveLayer());
 
+    BlendMode::Mode currentMode = BlendMode::Over;
+
+    if (canvasLayers.size())
+        currentMode = canvas->getLayerMode(canvas->getActiveLayer());
+
+    ui->layerModeComboBox->setCurrentIndex(ui->layerModeComboBox->findData(QVariant(currentMode)));
+
     freezeLayerList = false;
 }
 
-#include <QDebug>
+void LayerListWidget::layerModeActivated(int index)
+{
+    /* Don't update the selection while the list is changing */
+    if (freezeLayerList)
+        return;
+
+    freezeLayerList = true;
+    BlendMode::Mode newMode = BlendMode::Mode(ui->layerModeComboBox->itemData(index).toInt());
+    ui->layerModeComboBox->setCurrentIndex(index);
+
+    int layerIdx = (ui->layerList->count() - 1) - ui->layerList->currentIndex().row();
+    canvas->setLayerMode(layerIdx, newMode);
+    freezeLayerList = false;
+}
 
 void LayerListWidget::layerListItemEdited(QListWidgetItem * item)
 {

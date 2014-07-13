@@ -5,6 +5,7 @@
 CanvasLayer::CanvasLayer(QString name)
     : name(name),
       visible(true),
+      mode(BlendMode::Over),
       tiles(new TileMap, _deleteTileMap)
 {
 }
@@ -18,6 +19,7 @@ CanvasLayer *CanvasLayer::deepCopy() const
     CanvasLayer *result = new CanvasLayer();
     result->name = name;
     result->visible = visible;
+    result->mode = mode;
 
     for (TileMap::iterator iter = tiles->begin(); iter != tiles->end(); ++iter)
     {

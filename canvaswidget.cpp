@@ -553,6 +553,38 @@ bool CanvasWidget::getLayerVisible(int layerIndex)
     return ctx->layers.layers[layerIndex]->visible;
 }
 
+void CanvasWidget::setLayerMode(int layerIndex, BlendMode::Mode mode)
+{
+    if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
+        return;
+
+    if (ctx->layers.layers[layerIndex]->mode == mode)
+        return;
+
+    ctx->undoHistory.prepend(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
+
+    ctx->layers.layers[layerIndex]->mode = mode;
+
+    TileSet layerTiles = ctx->layers.layers[layerIndex]->getTileSet();
+
+    if(!layerTiles.empty())
+    {
+        ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+        emit update();
+    }
+
+    modified = true;
+    emit updateLayers();
+}
+
+BlendMode::Mode CanvasWidget::getLayerMode(int layerIndex)
+{
+    if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
+        return BlendMode::Over;
+
+    return ctx->layers.layers[layerIndex]->mode;
+}
+
 QList<CanvasWidget::LayerInfo> CanvasWidget::getLayerList()
 {
     QList<LayerInfo> result;
@@ -563,7 +595,7 @@ QList<CanvasWidget::LayerInfo> CanvasWidget::getLayerList()
     for (int i = ctx->layers.layers.size() - 1; i >= 0; --i)
     {
         CanvasLayer *layer = ctx->layers.layers[i];
-        result.append((LayerInfo){layer->name, layer->visible});
+        result.append((LayerInfo){layer->name, layer->visible, layer->mode});
     }
 
     return result;

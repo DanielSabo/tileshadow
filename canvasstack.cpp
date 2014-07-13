@@ -73,13 +73,31 @@ void cpuBlendInPlace(CanvasTile *inTile, CanvasTile *auxTile)
     }
 }
 
-void clBlendInPlace(CanvasTile *inTile, CanvasTile *auxTile)
+void clBlendInPlace(CanvasTile *inTile, CanvasTile *auxTile, BlendMode::Mode mode)
 {
     const size_t global_work_size[1] = {TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT};
     cl_mem inMem  = inTile->unmapHost();
     cl_mem auxMem = auxTile->unmapHost();
 
-    cl_kernel kernel = SharedOpenCL::getSharedOpenCL()->blendKernel_over;
+    cl_kernel kernel;
+
+    switch (mode) {
+    case BlendMode::Multiply:
+        kernel = SharedOpenCL::getSharedOpenCL()->blendKernel_multiply;
+        break;
+    case BlendMode::ColorDodge:
+        kernel = SharedOpenCL::getSharedOpenCL()->blendKernel_colorDodge;
+        break;
+    case BlendMode::ColorBurn:
+        kernel = SharedOpenCL::getSharedOpenCL()->blendKernel_colorBurn;
+        break;
+    case BlendMode::Screen:
+        kernel = SharedOpenCL::getSharedOpenCL()->blendKernel_screen;
+        break;
+    default:
+        kernel = SharedOpenCL::getSharedOpenCL()->blendKernel_over;
+        break;
+    }
 
     clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&inMem);
     clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&inMem);
@@ -109,7 +127,7 @@ CanvasTile *CanvasStack::getTileMaybe(int x, int y)
         if (auxTile)
         {
             result = backgroundTileCL->copy();
-            clBlendInPlace(result, auxTile);
+            clBlendInPlace(result, auxTile, layer->mode);
         }
         else
             result = NULL;
@@ -130,7 +148,7 @@ CanvasTile *CanvasStack::getTileMaybe(int x, int y)
             {
                 if (!inTile)
                     inTile = backgroundTileCL->copy();
-                clBlendInPlace(inTile, auxTile);
+                clBlendInPlace(inTile, auxTile, layer->mode);
             }
         }
 

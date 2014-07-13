@@ -4,6 +4,7 @@
 #include <QGLWidget>
 #include <QColor>
 #include "boxcartimer.h"
+#include "blendmodes.h"
 
 class BaseTool;
 class CanvasContext;
@@ -19,6 +20,7 @@ public:
     {
         QString name;
         bool visible;
+        BlendMode::Mode mode;
     };
 
     void setToolSizeFactor(float multipler);
@@ -45,6 +47,8 @@ public:
     void renameLayer(int layerIndex, QString name);
     void setLayerVisible(int layerIndex, bool visible);
     bool getLayerVisible(int layerIndex);
+    void setLayerMode(int layerIndex, BlendMode::Mode mode);
+    BlendMode::Mode getLayerMode(int layerIndex);
     QList<LayerInfo> getLayerList();
 
     void newDrawing();

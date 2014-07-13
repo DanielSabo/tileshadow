@@ -48,6 +48,10 @@ public:
     cl_kernel fillKernel;
 
     cl_kernel blendKernel_over;
+    cl_kernel blendKernel_multiply;
+    cl_kernel blendKernel_colorDodge;
+    cl_kernel blendKernel_colorBurn;
+    cl_kernel blendKernel_screen;
 
     cl_kernel mypaintDabKernel;
     cl_kernel mypaintGetColorKernelPart1;

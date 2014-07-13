@@ -3,6 +3,7 @@
 
 #include <QSharedPointer>
 #include "canvaswidget-opencl.h"
+#include "blendmodes.h"
 #include "tileset.h"
 
 class CanvasTile;
@@ -15,6 +16,7 @@ public:
 
     QString name;
     bool visible;
+    BlendMode::Mode mode;
 
     QSharedPointer<TileMap> tiles;
 

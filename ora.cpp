@@ -13,6 +13,36 @@
 
 #include "lodepng.h"
 
+static QString blendModeToOraOp(BlendMode::Mode mode)
+{
+    if (mode == BlendMode::Over)
+        return QStringLiteral("svg:src-over");
+    if (mode == BlendMode::Multiply)
+        return QStringLiteral("svg:multiply");
+    if (mode == BlendMode::ColorBurn)
+        return QStringLiteral("svg:color-burn");
+    if (mode == BlendMode::ColorDodge)
+        return QStringLiteral("svg:color-dodge");
+    if (mode == BlendMode::Screen)
+        return QStringLiteral("svg:screen");
+    return QStringLiteral("svg:src-over");
+}
+
+static BlendMode::Mode oraOpToMode(QString opName)
+{
+    if (opName == "svg:src-over")
+        return BlendMode::Over;
+    if (opName == "svg:multiply")
+        return BlendMode::Multiply;
+    if (opName == "svg:color-burn")
+        return BlendMode::ColorBurn;
+    if (opName == "svg:color-dodge")
+        return BlendMode::ColorDodge;
+    if (opName == "svg:screen")
+        return BlendMode::Screen;
+    return BlendMode::Over;
+}
+
 void saveStackAs(CanvasStack *stack, QString path)
 {
     /* FIXME: This should use something like QSaveFile but QZip is not compatible */
@@ -151,7 +181,7 @@ void saveStackAs(CanvasStack *stack, QString path)
             stackXML.writeAttribute("visibility", "visible");
         else
             stackXML.writeAttribute("visibility", "hidden");
-        stackXML.writeAttribute("composite-op", "svg:src-over");
+        stackXML.writeAttribute("composite-op", blendModeToOraOp(currentLayer->mode));
         stackXML.writeAttribute("opacity", QString().sprintf("%f", 1.0));
         stackXML.writeAttribute("x", QString().sprintf("%d", bounds.x()));
         stackXML.writeAttribute("y", QString().sprintf("%d", bounds.y()));
@@ -293,6 +323,7 @@ void loadStackFromORA(CanvasStack *stack, QString path)
 
             int x = 0;
             int y = 0;
+            QString mode;
             QString name;
             QString src;
             bool visible = true;
@@ -311,6 +342,9 @@ void loadStackFromORA(CanvasStack *stack, QString path)
 
             if (attributes.hasAttribute("visibility"))
                 visible = attributes.value("visibility").toString() == QString("visible");
+
+            if (attributes.hasAttribute("composite-op"))
+                mode = attributes.value("composite-op").toString();
 
             if (src.isEmpty())
                 continue;
@@ -344,6 +378,7 @@ void loadStackFromORA(CanvasStack *stack, QString path)
             {
                 maybeLayer->name = name;
                 maybeLayer->visible = visible;
+                maybeLayer->mode = oraOpToMode(mode);
                 resultLayers.prepend(maybeLayer);
             }
 

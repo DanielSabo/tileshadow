@@ -35,6 +35,8 @@ public slots:
     void layerListItemEdited(QListWidgetItem *item);
     void updateLayers();
 
+    void layerModeActivated(int index);
+
     void canvasDestroyed(QObject *obj);
 };
 

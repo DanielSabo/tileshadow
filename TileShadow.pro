@@ -68,7 +68,8 @@ HEADERS  += mainwindow.h \
     toollistwidget.h \
     layerlistwidget.h \
     toolsettingswidget.h \
-    toolsettingswidget_p.h
+    toolsettingswidget_p.h \
+    blendmodes.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \
