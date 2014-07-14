@@ -6,6 +6,7 @@
 #include "tiledebugtool.h"
 #include "mypainttool.h"
 #include "ora.h"
+#include <cmath>
 #include <iostream>
 #include <map>
 #include <list>
@@ -151,7 +152,8 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
     viewScale(1.0f),
     showToolCursor(true),
     lastNewLayerNumber(0),
-    modified(false)
+    modified(false),
+    canvasOrigin(0, 0)
 {
     setMouseTracking(true);
 
@@ -264,13 +266,27 @@ void CanvasWidget::paintGL()
 
     ctx->closeTiles();
 
-    int ix, iy;
-
     int widgetWidth  = width();
     int widgetHeight = height();
 
-    float tileWidth  = ((2.0f * TILE_PIXEL_WIDTH) / (widgetWidth)) * viewScale;
-    float tileHeight = ((2.0f * TILE_PIXEL_HEIGHT) / (widgetHeight)) * viewScale;
+    // fragmentWidth/Height is the size of a canvas pixel in GL coordinates
+    float fragmentWidth = (2.0f / widgetWidth) * viewScale;
+    float fragmentHeight = (2.0f / widgetHeight) * viewScale;
+
+    float tileWidth  = TILE_PIXEL_WIDTH * fragmentWidth;
+    float tileHeight = TILE_PIXEL_HEIGHT * fragmentHeight;
+
+    float fragmentOriginX = canvasOrigin.x() / viewScale;
+    float fragmentOriginY = canvasOrigin.y() / viewScale;
+
+    int originTileX = tile_indice(fragmentOriginX, TILE_PIXEL_WIDTH);
+    int originTileY = tile_indice(fragmentOriginY, TILE_PIXEL_HEIGHT);
+
+    float tileShiftX = (fragmentOriginX - originTileX * TILE_PIXEL_WIDTH) * fragmentWidth;
+    float tileShiftY = (fragmentOriginY - originTileY * TILE_PIXEL_HEIGHT) * fragmentHeight;
+
+    int tileCountX = ceil((2.0f + tileShiftX) / tileWidth);
+    int tileCountY = ceil((2.0f + tileShiftY) / tileHeight);
 
 //    glFuncs->glClearColor(0.2, 0.2, 0.4, 1.0);
 //    glFuncs->glClear(GL_COLOR_BUFFER_BIT);
@@ -283,13 +299,13 @@ void CanvasWidget::paintGL()
     glFuncs->glUniform2f(ctx->locationTilePixels, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT);
     glFuncs->glBindVertexArray(ctx->vertexArray);
 
-    for (ix = 0; ix * TILE_PIXEL_WIDTH * viewScale < widgetWidth; ++ix)
-        for (iy = 0; iy * TILE_PIXEL_HEIGHT * viewScale < widgetHeight; ++iy)
+    for (int ix = 0; ix < tileCountX; ++ix)
+        for (int iy = 0; iy < tileCountY; ++iy)
         {
-            float offsetX = (ix * tileWidth) - 1.0f;
-            float offsetY = 1.0f - ((iy + 1) * tileHeight);
+            float offsetX = (ix * tileWidth) - 1.0f - tileShiftX;
+            float offsetY = 1.0f - ((iy + 1) * tileHeight) + tileShiftY;
 
-            GLuint tileBuffer = ctx->getGLBuf(ix, iy);
+            GLuint tileBuffer = ctx->getGLBuf(ix + originTileX, iy + originTileY);
             glFuncs->glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, tileBuffer);
             glFuncs->glUniform2f(ctx->locationTileOrigin, offsetX, offsetY);
             glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
@@ -395,7 +411,19 @@ float CanvasWidget::getScale()
 
 void CanvasWidget::setScale(float newScale)
 {
-    viewScale = qBound(0.25f, newScale, 4.0f);
+    newScale = qBound(0.25f, newScale, 4.0f);
+
+    if (newScale == viewScale)
+        return;
+
+    // If the mouse is over the canvas, keep it over the same pixel after the zoom
+    // as it was before. Otherwise keep the center of the canvas in the same position.
+    QPoint centerPoint = mapFromGlobal(QCursor::pos());
+    if (!rect().contains(centerPoint))
+        centerPoint = QPoint(size().width(), size().height()) / 2;
+
+    canvasOrigin = (canvasOrigin + centerPoint) * (newScale / viewScale) - centerPoint;
+    viewScale = newScale;
     update();
 }
 
@@ -694,7 +722,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
     if (ctx->inTabletStroke)
         return;
 
-    QPointF pos = event->localPos() / viewScale;
+    QPointF pos = (event->localPos() + canvasOrigin) / viewScale;
 
     if ((event->button() == 1) &&
         (event->modifiers() & Qt::ControlModifier))
@@ -724,7 +752,7 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
     if (ctx->inTabletStroke)
         return;
 
-    QPointF pos = event->localPos() / viewScale;
+    QPointF pos = (event->localPos() + canvasOrigin) / viewScale;
 
     strokeTo(pos, 1.0f);
 
@@ -737,8 +765,8 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
 {
     QEvent::Type eventType = event->type();
 
-    float xshift = event->hiResGlobalX() - event->globalX();
-    float yshift = event->hiResGlobalY() - event->globalY();
+    float xshift = event->hiResGlobalX() - event->globalX() + canvasOrigin.x();
+    float yshift = event->hiResGlobalY() - event->globalY() + canvasOrigin.y();
     QPointF point = QPointF(event->x() + xshift, event->y() + yshift) / viewScale;
 
     if (eventType == QEvent::TabletPress)
@@ -766,6 +794,13 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
         return;
 
     event->accept();
+}
+
+void CanvasWidget::wheelEvent(QWheelEvent *event)
+{
+    mouseEventRate.addEvents(1);
+    canvasOrigin += event->pixelDelta();
+    update();
 }
 
 void CanvasWidget::leaveEvent(QEvent * event)
@@ -851,6 +886,7 @@ void CanvasWidget::newDrawing()
     ctx->layers.clearLayers();
     ctx->layers.newLayerAt(0, QString().sprintf("Layer %02d", ++lastNewLayerNumber));
     setActiveLayer(0); // Sync up the undo layer
+    canvasOrigin = QPoint(0, 0);
     update();
     modified = false;
     emit updateLayers();
@@ -864,6 +900,7 @@ void CanvasWidget::openORA(QString path)
     lastNewLayerNumber = 0;
     loadStackFromORA(&ctx->layers, path);
     setActiveLayer(0); // Sync up the undo layer
+    canvasOrigin = QPoint(0, 0);
     update();
     modified = false;
     emit updateLayers();

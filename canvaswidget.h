@@ -67,6 +67,7 @@ protected:
     void mouseReleaseEvent(QMouseEvent * event);
     void mouseMoveEvent(QMouseEvent * event);
     void tabletEvent(QTabletEvent *event);
+    void wheelEvent(QWheelEvent *);
     void leaveEvent(QEvent *event);
     void enterEvent(QEvent *event);
 
@@ -81,6 +82,7 @@ private:
     bool showToolCursor;
     int lastNewLayerNumber;
     bool modified;
+    QPoint canvasOrigin;
 
     void pickColorAt(QPoint pos);
 
