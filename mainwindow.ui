@@ -91,7 +91,7 @@
      <x>0</x>
      <y>0</y>
      <width>561</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -321,7 +321,7 @@
    <sender>actionZoom_In</sender>
    <signal>triggered()</signal>
    <receiver>MainWindow</receiver>
-   <slot>zoomIn()</slot>
+   <slot>actionZoomIn()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>-1</x>
@@ -337,7 +337,7 @@
    <sender>actionZoom_Out</sender>
    <signal>triggered()</signal>
    <receiver>MainWindow</receiver>
-   <slot>zoomOut()</slot>
+   <slot>actionZoomOut()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>-1</x>
@@ -500,8 +500,8 @@
   <slot>setActiveTool()</slot>
   <slot>runCircleBenchmark()</slot>
   <slot>sizeSliderMoved(int)</slot>
-  <slot>zoomIn()</slot>
-  <slot>zoomOut()</slot>
+  <slot>actionZoomIn()</slot>
+  <slot>actionZoomOut()</slot>
   <slot>showStatusBar(bool)</slot>
   <slot>layerListSelection(int)</slot>
   <slot>layerListAdd()</slot>

@@ -36,8 +36,6 @@ private:
     bool promptSave();
 
 private slots:
-    void zoomIn();
-    void zoomOut();
     void canvasModified();
 
 public slots:
@@ -50,6 +48,8 @@ public slots:
     void actionSaveAs();
     void actionUndo();
     void actionRedo();
+    void actionZoomIn();
+    void actionZoomOut();
     void actionToolSizeIncrease();
     void actionToolSizeDecrease();
     void canvasStats();

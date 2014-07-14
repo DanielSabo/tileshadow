@@ -287,13 +287,13 @@ void MainWindow::actionToolSizeDecrease()
     canvas->setToolSizeFactor(size);
 }
 
-void MainWindow::zoomIn()
+void MainWindow::actionZoomIn()
 {
     canvas->setScale(canvas->getScale() * 2);
     updateTitle();
 }
 
-void MainWindow::zoomOut()
+void MainWindow::actionZoomOut()
 {
     canvas->setScale(canvas->getScale() * 0.5);
     updateTitle();
