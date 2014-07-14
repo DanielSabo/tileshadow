@@ -664,7 +664,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
 
     QPointF pos = event->localPos() / viewScale;
 
-    if (event->modifiers() && Qt::ControlModifier)
+    if (event->modifiers() & Qt::ControlModifier)
     {
         pickColorAt(pos.toPoint());
     }
@@ -710,7 +710,7 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
 
     if (eventType == QEvent::TabletPress)
     {
-        if (event->modifiers() && Qt::ControlModifier)
+        if (event->modifiers() & Qt::ControlModifier)
         {
             pickColorAt(point.toPoint());
         }
