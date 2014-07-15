@@ -22,7 +22,8 @@ public:
     ~MainWindow();
 
     void closeEvent(QCloseEvent *event);
-    void keyReleaseEvent(QKeyEvent *);
+    void keyPressEvent(QKeyEvent *event);
+    void keyReleaseEvent(QKeyEvent *event);
 
 private:
     Ui::MainWindow *ui;

@@ -717,6 +717,41 @@ void CanvasWidget::pickColorAt(QPoint pos)
     }
 }
 
+void CanvasWidget::keyPressEvent(QKeyEvent *event)
+{
+}
+
+void CanvasWidget::keyReleaseEvent(QKeyEvent *event)
+{
+    if (event->modifiers() == Qt::NoModifier)
+    {
+        if (event->key() == Qt::Key_Up)
+        {
+            canvasOrigin.ry() -= 128;
+            event->accept();
+            update();
+        }
+        else if (event->key() == Qt::Key_Down)
+        {
+            canvasOrigin.ry() += 128;
+            event->accept();
+            update();
+        }
+        else if (event->key() == Qt::Key_Left)
+        {
+            canvasOrigin.rx() -= 128;
+            event->accept();
+            update();
+        }
+        else if (event->key() == Qt::Key_Right)
+        {
+            canvasOrigin.rx() += 128;
+            event->accept();
+            update();
+        }
+    }
+}
+
 void CanvasWidget::mousePressEvent(QMouseEvent *event)
 {
     if (ctx->inTabletStroke)

@@ -118,6 +118,11 @@ void MainWindow::canvasStats()
 }
 
 
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+    canvas->keyPressEvent(event);
+}
+
 void MainWindow::keyReleaseEvent(QKeyEvent *event)
 {
 #ifdef Q_OS_MAC
@@ -125,22 +130,24 @@ void MainWindow::keyReleaseEvent(QKeyEvent *event)
      * hacks around that by searching the main windows action list for shortcuts coresponding
      * to any unhandled key events.
      */
-    if ((event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)) != 0)
-        return;
-
-    QKeySequence shortcutKey = QKeySequence(event->key() + event->modifiers());
-
-    QList<QAction *>windowActions = findChildren<QAction *>();
-    for (QList<QAction *>::Iterator iter = windowActions.begin(); iter != windowActions.end(); ++iter)
+    if ((event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)) == 0)
     {
-        QAction *action = *iter;
-        if (action->shortcut() == shortcutKey && action->isEnabled())
+        QKeySequence shortcutKey = QKeySequence(event->key() + event->modifiers());
+
+        QList<QAction *>windowActions = findChildren<QAction *>();
+        for (QList<QAction *>::Iterator iter = windowActions.begin(); iter != windowActions.end(); ++iter)
         {
-            action->trigger();
-            break;
+            QAction *action = *iter;
+            if (action->shortcut() == shortcutKey && action->isEnabled())
+            {
+                action->trigger();
+                return;
+            }
         }
     }
 #endif
+
+    canvas->keyReleaseEvent(event);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
