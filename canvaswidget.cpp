@@ -723,7 +723,7 @@ void CanvasWidget::keyPressEvent(QKeyEvent *event)
 
 void CanvasWidget::keyReleaseEvent(QKeyEvent *event)
 {
-    if (event->modifiers() == Qt::NoModifier)
+    if ((event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier | Qt::ShiftModifier)) == 0)
     {
         if (event->key() == Qt::Key_Up)
         {
