@@ -664,11 +664,12 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
 
     QPointF pos = event->localPos() / viewScale;
 
-    if (event->modifiers() & Qt::ControlModifier)
+    if ((event->button() == 1) &&
+        (event->modifiers() & Qt::ControlModifier))
     {
         pickColorAt(pos.toPoint());
     }
-    else
+    else if (event->button() == 1)
     {
         startStroke(pos, 1.0f);
     }
