@@ -43,6 +43,7 @@ public:
     void setActiveLayer(int layerIndex);
     void addLayerAbove(int layerIndex);
     void removeLayer(int layerIndex);
+    void duplicateLayer(int layerIndex);
     void moveLayer(int currentIndex, int targetIndex);
     void renameLayer(int layerIndex, QString name);
     void setLayerVisible(int layerIndex, bool visible);

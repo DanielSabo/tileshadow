@@ -30,6 +30,7 @@ public slots:
     void layerListSelection(int row);
     void layerListAdd();
     void layerListRemove();
+    void layerListDuplicate();
     void layerListMoveUp();
     void layerListMoveDown();
     void layerListItemEdited(QListWidgetItem *item);

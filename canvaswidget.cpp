@@ -549,6 +549,26 @@ void CanvasWidget::renameLayer(int layerIndex, QString name)
     emit updateLayers();
 }
 
+void CanvasWidget::duplicateLayer(int layerIndex)
+{
+    if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
+        return;
+
+    ctx->clearRedoHistory();
+    CanvasUndoLayers *undoEvent = new CanvasUndoLayers(&ctx->layers, ctx->currentLayer);
+    ctx->undoHistory.prepend(undoEvent);
+
+    CanvasLayer *oldLayer = ctx->layers.layers[layerIndex];
+    CanvasLayer *newLayer = oldLayer->deepCopy();
+    newLayer->name = oldLayer->name + " Copy";
+
+    ctx->layers.layers.insert(layerIndex + 1, newLayer);
+    ctx->currentLayer = layerIndex + 1;
+    ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
+    modified = true;
+    emit updateLayers();
+}
+
 void CanvasWidget::setLayerVisible(int layerIndex, bool visible)
 {
     if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())

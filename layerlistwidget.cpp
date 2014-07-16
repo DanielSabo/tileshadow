@@ -22,6 +22,7 @@ LayerListWidget::LayerListWidget(QWidget *parent) :
 
     connect(ui->addLayerButton,  SIGNAL(clicked()), this, SLOT(layerListAdd()));
     connect(ui->delLayerButton,  SIGNAL(clicked()), this, SLOT(layerListRemove()));
+    connect(ui->dupLayerButton,  SIGNAL(clicked()), this, SLOT(layerListDuplicate()));
     connect(ui->downLayerButton, SIGNAL(clicked()), this, SLOT(layerListMoveDown()));
     connect(ui->upLayerButton,   SIGNAL(clicked()), this, SLOT(layerListMoveUp()));
 
@@ -143,6 +144,14 @@ void LayerListWidget::layerListRemove()
         return;
 
     canvas->removeLayer(canvas->getActiveLayer());
+}
+
+void LayerListWidget::layerListDuplicate()
+{
+    if (!canvas)
+        return;
+
+    canvas->duplicateLayer(canvas->getActiveLayer());
 }
 
 void LayerListWidget::layerListMoveUp()
