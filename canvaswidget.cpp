@@ -565,6 +565,11 @@ void CanvasWidget::duplicateLayer(int layerIndex)
     ctx->layers.layers.insert(layerIndex + 1, newLayer);
     ctx->currentLayer = layerIndex + 1;
     ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
+
+    TileSet layerTiles = newLayer->getTileSet();
+    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+
+    update();
     modified = true;
     emit updateLayers();
 }
