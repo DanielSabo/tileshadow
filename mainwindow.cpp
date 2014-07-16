@@ -128,9 +128,6 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::keyReleaseEvent(QKeyEvent *event)
 {
-    if(!hasFocus())
-        return;
-
 #ifdef Q_OS_MAC
     /* As of QT 5.2 single key shortcuts are not handled correctly (QTBUG-33015), the following
      * hacks around that by searching the main windows action list for shortcuts coresponding
@@ -152,6 +149,9 @@ void MainWindow::keyReleaseEvent(QKeyEvent *event)
         }
     }
 #endif
+
+    if(!hasFocus())
+        return;
 
     canvas->keyReleaseEvent(event);
 }
