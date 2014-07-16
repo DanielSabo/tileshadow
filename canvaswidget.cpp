@@ -343,6 +343,9 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
 
     CanvasLayer *targetLayer = ctx->layers.layers.at(ctx->currentLayer);
 
+    if (!targetLayer->visible)
+        return;
+
     ctx->stroke.reset(activeTool->newStroke(ctx, targetLayer));
 
     TileSet changedTiles = ctx->stroke->startStroke(pos, pressure);
