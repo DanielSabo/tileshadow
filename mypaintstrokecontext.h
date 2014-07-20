@@ -3,6 +3,8 @@
 
 #include "canvascontext.h"
 
+typedef QMap<QString, QPair<float, QMap<QString, QList<QPointF> > > > MyPaintToolSettings;
+
 class MyPaintStrokeContextPrivate;
 class MyPaintStrokeContext : public StrokeContext
 {
@@ -13,8 +15,7 @@ public:
     TileSet startStroke(QPointF point, float pressure);
     TileSet strokeTo(QPointF point, float pressure);
 
-    bool fromJsonFile(const QString &path);
-    bool fromJsonDoc(const QJsonDocument &doc);
+    bool fromSettings(MyPaintToolSettings const &settings);
     void fromDefaults();
 
     void multiplySize(float mult);

@@ -18,8 +18,8 @@ using namespace std;
 class MyPaintToolPrivate
 {
 public:
-    QJsonDocument originalDoc;
-    QJsonDocument currentDoc;
+    MyPaintToolSettings originalSettings;
+    MyPaintToolSettings currentSettings;
 
     float cursorRadius;
 
@@ -32,24 +32,17 @@ public:
 
 void MyPaintToolPrivate::setBrushValue(QString name, float value)
 {
-    QJsonObject doc      = currentDoc.object();
-    QJsonObject settings = doc.value("settings").toObject();
-    QJsonObject setting  = settings.value(name).toObject();
-    setting["base_value"] = QJsonValue(value);
-
-    settings.insert(name, setting);
-    doc.insert("settings", settings);
-    currentDoc = QJsonDocument(doc);
+    currentSettings[name].first = value;
 }
 
 float MyPaintToolPrivate::getOriginalBrushValue(QString name)
 {
-    return originalDoc.object()["settings"].toObject()[name].toObject()["base_value"].toDouble();
+    return originalSettings[name].first;
 }
 
 float MyPaintToolPrivate::getBrushValue(QString name)
 {
-    return currentDoc.object()["settings"].toObject()[name].toObject()["base_value"].toDouble();
+    return currentSettings[name].first;
 }
 
 void MyPaintToolPrivate::updateRadius()
@@ -65,6 +58,8 @@ MyPaintTool::MyPaintTool(const QString &path) : priv(new MyPaintToolPrivate())
 {
     try
     {
+        MyPaintToolSettings settings;
+
         QFile file(path);
 
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
@@ -85,14 +80,62 @@ MyPaintTool::MyPaintTool(const QString &path) : priv(new MyPaintToolPrivate())
             throw QString("MyPaint brush error, JSON parse failed");
         }
 
-        priv->originalDoc = brushJsonDoc;
-        priv->currentDoc = priv->originalDoc;
+        QJsonObject brushObj = brushJsonDoc.object();
+        QJsonValue  val = brushObj.value("version");
+        int         brushVersion = brushObj.value("version").toDouble(-1);
+        if (brushVersion != 3)
+        {
+            throw QString("MyPaint brush error, unknown version (") + QString(brushVersion) + ")";
+        }
+
+        val = brushObj.value("settings");
+        if (val.isObject())
+        {
+            QJsonObject settingsObj = val.toObject();
+            QJsonObject::iterator iter;
+
+            for (iter = settingsObj.begin(); iter != settingsObj.end(); ++iter)
+            {
+                QString     settingName = iter.key();
+                QJsonObject settingObj  = iter.value().toObject();
+
+                settings[settingName].first = settingObj.value("base_value").toDouble(0);
+
+                QJsonObject inputsObj = settingObj.value("inputs").toObject();
+                QJsonObject::iterator inputIter;
+
+                for (inputIter = inputsObj.begin(); inputIter != inputsObj.end(); ++inputIter)
+                {
+                    QString    inputName  = inputIter.key();
+                    QJsonArray inputArray = inputIter.value().toArray();
+
+                    QList<QPointF> mappingPoints;
+
+                    int number_of_mapping_points = inputArray.size();
+
+                    for (int i = 0; i < number_of_mapping_points; ++i)
+                    {
+                        QJsonArray point = inputArray.at(i).toArray();
+                        float x = point.at(0).toDouble();
+                        float y = point.at(1).toDouble();
+
+                        mappingPoints.append(QPointF(x, y));
+                    }
+
+                    settings[settingName].second[inputName] = mappingPoints;
+                }
+            }
+        }
+
+        priv->originalSettings = settings;
     }
     catch (QString err)
     {
         qWarning() << (path + ":") << err;
+        priv->originalSettings = MyPaintToolSettings();
     }
 
+    priv->currentSettings = priv->originalSettings;
     priv->updateRadius();
 }
 
@@ -103,7 +146,7 @@ MyPaintTool::~MyPaintTool()
 
 void MyPaintTool::reset()
 {
-    priv->currentDoc = priv->originalDoc;
+    priv->currentSettings = priv->originalSettings;
     priv->updateRadius();
 }
 
@@ -138,7 +181,7 @@ StrokeContext *MyPaintTool::newStroke(CanvasContext *ctx, CanvasLayer *layer)
 {
     MyPaintStrokeContext *stroke = new MyPaintStrokeContext(ctx, layer);
 
-    stroke->fromJsonDoc(priv->currentDoc);
+    stroke->fromSettings(priv->currentSettings);
 
     return stroke;
 }
