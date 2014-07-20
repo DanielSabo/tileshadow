@@ -63,6 +63,8 @@ MainWindow::MainWindow(QWidget *parent) :
     canvas->setToolColor(QColor(255, 0, 0));
 
     setWindowIcon(QIcon(":icons/image-x-generic.png"));
+
+    setFocus();
 }
 
 MainWindow::~MainWindow()
