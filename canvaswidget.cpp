@@ -162,6 +162,7 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
     setActiveTool("debug");
 
     colorPickCursor = QCursor(QPixmap(":/cursors/eyedropper.png"));
+    moveViewCursor = QCursor(QPixmap(":/cursors/move-view.png"));
 
     connect(this, &CanvasWidget::updateLayers, this, &CanvasWidget::canvasModified);
 }
@@ -802,17 +803,33 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
             action = CanvasAction::MouseStroke;
         }
     }
+    else if (event->button() == 2)
+    {
+        if (action == CanvasAction::None &&
+            event->modifiers() == 0)
+        {
+            action = CanvasAction::MoveView;
+            actionOrigin = event->pos();
+            setCursor(moveViewCursor);
+        }
+    }
 
     event->accept();
 }
 
 void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (action != CanvasAction::MouseStroke)
-        return;
-    action = CanvasAction::None;
+    if (action == CanvasAction::MouseStroke && event->button() == 1)
+    {
+        endStroke();
+        action = CanvasAction::None;
+    }
+    else if (action == CanvasAction::MoveView && event->button() == 2)
+    {
+        action = CanvasAction::None;
+        unsetCursor();
+    }
 
-    endStroke();
 
     event->accept();
 }
@@ -826,6 +843,12 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
         QPointF pos = (event->localPos() + canvasOrigin) / viewScale;
 
         strokeTo(pos, 1.0f);
+    }
+    else if (action == CanvasAction::MoveView)
+    {
+        QPoint dPos = event->pos() - actionOrigin;
+        actionOrigin = event->pos();
+        canvasOrigin -= dPos;
     }
 
     event->accept();

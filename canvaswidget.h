@@ -14,7 +14,8 @@ namespace CanvasAction
         None,
         MouseStroke,
         TabletStroke,
-        ColorPick
+        ColorPick,
+        MoveView
     } Action;
 }
 
@@ -100,12 +101,14 @@ private:
     int lastNewLayerNumber;
     bool modified;
     QPoint canvasOrigin;
+    QPoint actionOrigin;
 
     void updateModifiers(QInputEvent *event);
 
     void pickColorAt(QPoint pos);
 
     QCursor colorPickCursor;
+    QCursor moveViewCursor;
 signals:
     void updateStats();
     void updateLayers();
