@@ -19,5 +19,6 @@
         <file>icons/image-x-generic.png</file>
         <file>CursorCircle.frag</file>
         <file>CursorCircle.vert</file>
+        <file>cursors/eyedropper.png</file>
     </qresource>
 </RCC>

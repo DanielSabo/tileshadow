@@ -147,6 +147,7 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
     mouseEventRate(10),
     frameRate(10),
     ctx(NULL),
+    action(CanvasAction::None),
     toolSizeFactor(1.0f),
     toolColor(QColor::fromRgbF(0.0, 0.0, 0.0)),
     viewScale(1.0f),
@@ -159,6 +160,8 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
 
     //FIXME: Creating the tool may do OpenCL things that require a valid context
     setActiveTool("debug");
+
+    colorPickCursor = QCursor(QPixmap(":/cursors/eyedropper.png"));
 
     connect(this, &CanvasWidget::updateLayers, this, &CanvasWidget::canvasModified);
 }
@@ -747,10 +750,13 @@ void CanvasWidget::pickColorAt(QPoint pos)
 
 void CanvasWidget::keyPressEvent(QKeyEvent *event)
 {
+    updateModifiers(event);
 }
 
 void CanvasWidget::keyReleaseEvent(QKeyEvent *event)
 {
+    updateModifiers(event);
+
     if ((event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier | Qt::ShiftModifier)) == 0)
     {
         if (event->key() == Qt::Key_Up)
@@ -782,19 +788,19 @@ void CanvasWidget::keyReleaseEvent(QKeyEvent *event)
 
 void CanvasWidget::mousePressEvent(QMouseEvent *event)
 {
-    if (ctx->inTabletStroke)
-        return;
-
     QPointF pos = (event->localPos() + canvasOrigin) / viewScale;
 
-    if ((event->button() == 1) &&
-        (event->modifiers() & Qt::ControlModifier))
+    if (event->button() == 1)
     {
-        pickColorAt(pos.toPoint());
-    }
-    else if (event->button() == 1)
-    {
-        startStroke(pos, 1.0f);
+        if (action == CanvasAction::ColorPick)
+        {
+            pickColorAt(pos.toPoint());
+        }
+        else if (action == CanvasAction::None)
+        {
+            startStroke(pos, 1.0f);
+            action = CanvasAction::MouseStroke;
+        }
     }
 
     event->accept();
@@ -802,8 +808,9 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
 
 void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (ctx->inTabletStroke)
+    if (action != CanvasAction::MouseStroke)
         return;
+    action = CanvasAction::None;
 
     endStroke();
 
@@ -812,12 +819,14 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
 
 void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
 {
-    if (ctx->inTabletStroke)
-        return;
+    updateModifiers(event);
 
-    QPointF pos = (event->localPos() + canvasOrigin) / viewScale;
+    if (action == CanvasAction::MouseStroke)
+    {
+        QPointF pos = (event->localPos() + canvasOrigin) / viewScale;
 
-    strokeTo(pos, 1.0f);
+        strokeTo(pos, 1.0f);
+    }
 
     event->accept();
 
@@ -834,24 +843,30 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
 
     if (eventType == QEvent::TabletPress)
     {
-        if (event->modifiers() & Qt::ControlModifier)
+        if (action == CanvasAction::ColorPick)
         {
             pickColorAt(point.toPoint());
         }
-        else
+        else if (action == CanvasAction::None)
         {
             startStroke(point, event->pressure());
-            ctx->inTabletStroke = true;
+            action = CanvasAction::TabletStroke;
         }
     }
     else if (eventType == QEvent::TabletRelease)
     {
-        ctx->inTabletStroke = false;
-        endStroke();
+        if (action == CanvasAction::TabletStroke)
+        {
+            action = CanvasAction::None;
+            endStroke();
+        }
     }
     else if (eventType == QEvent::TabletMove)
     {
-        strokeTo(point, event->pressure());
+        updateModifiers(event);
+
+        if (action == CanvasAction::TabletStroke)
+            strokeTo(point, event->pressure());
     }
     else
         return;
@@ -876,6 +891,38 @@ void CanvasWidget::enterEvent(QEvent * event)
 {
     showToolCursor = true;
     update();
+}
+
+void CanvasWidget::updateModifiers(QInputEvent *event)
+{
+    Qt::KeyboardModifiers modState;
+
+    if (event->type() == QEvent::KeyPress ||
+        event->type() == QEvent::KeyRelease)
+    {
+        QKeyEvent *keyEv = static_cast<QKeyEvent *>(event);
+
+        // QKeyEvent overrides the non-virtual modifiers() method, as of Qt 5.2
+        // this does not return the same values as the function on QInputEvent.
+        modState = keyEv->modifiers();
+    }
+    else
+    {
+        modState = event->modifiers();
+    }
+
+    if ((action == CanvasAction::None) &&
+        (modState == Qt::ControlModifier))
+    {
+        action = CanvasAction::ColorPick;
+        setCursor(colorPickCursor);
+    }
+    else if ((action == CanvasAction::ColorPick) &&
+             (modState != Qt::ControlModifier))
+    {
+        action = CanvasAction::None;
+        unsetCursor();
+    }
 }
 
 void CanvasWidget::setActiveTool(const QString &toolName)

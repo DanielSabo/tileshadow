@@ -2,9 +2,21 @@
 #define CANVASWIDGET_H
 
 #include <QGLWidget>
+#include <QInputEvent>
 #include <QColor>
 #include "boxcartimer.h"
 #include "blendmodes.h"
+
+namespace CanvasAction
+{
+    typedef enum
+    {
+        None,
+        MouseStroke,
+        TabletStroke,
+        ColorPick
+    } Action;
+}
 
 class BaseTool;
 class CanvasContext;
@@ -78,6 +90,7 @@ protected:
 private:
     CanvasContext *ctx;
 
+    CanvasAction::Action action;
     QString activeToolName;
     QScopedPointer<BaseTool> activeTool;
     float toolSizeFactor;
@@ -88,8 +101,11 @@ private:
     bool modified;
     QPoint canvasOrigin;
 
+    void updateModifiers(QInputEvent *event);
+
     void pickColorAt(QPoint pos);
 
+    QCursor colorPickCursor;
 signals:
     void updateStats();
     void updateLayers();
