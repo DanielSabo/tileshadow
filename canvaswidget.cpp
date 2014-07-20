@@ -666,6 +666,9 @@ void CanvasWidget::undo()
     if (ctx->undoHistory.empty())
         return;
 
+    if (!ctx->stroke.isNull())
+        return;
+
     int newActiveLayer = ctx->currentLayer;
 
     CanvasUndoEvent *undoEvent = ctx->undoHistory.first();
@@ -691,6 +694,9 @@ void CanvasWidget::undo()
 void CanvasWidget::redo()
 {
     if (ctx->redoHistory.empty())
+        return;
+
+    if (!ctx->stroke.isNull())
         return;
 
     int newActiveLayer = ctx->currentLayer;
