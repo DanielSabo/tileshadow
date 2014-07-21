@@ -43,7 +43,28 @@ static BlendMode::Mode oraOpToMode(QString opName)
     return BlendMode::Over;
 }
 
-void saveStackAs(CanvasStack *stack, QString path)
+template<typename T> QRect findTileBounds(T const *obj)
+{
+    QRect tileBounds;
+    TileSet objTiles = obj->getTileSet();
+    TileSet::iterator iter;
+
+    if (objTiles.empty())
+        tileBounds = QRect(0, 0, 1, 1);
+    else
+    {
+        tileBounds = QRect(objTiles.begin()->x(), objTiles.begin()->y(), 1, 1);
+    }
+
+    for(iter = objTiles.begin(); iter != objTiles.end(); iter++)
+    {
+        tileBounds = tileBounds.united(QRect(iter->x(), iter->y(), 1, 1));
+    }
+
+    return tileBounds;
+}
+
+void saveStackAs(CanvasStack const *stack, QString path)
 {
     /* FIXME: This should use something like QSaveFile but QZip is not compatible */
     QZipWriter oraZipWriter(path, QIODevice::WriteOnly);
@@ -58,29 +79,10 @@ void saveStackAs(CanvasStack *stack, QString path)
     stackXML.writeStartElement("image");
 
     int layerNum = 0;
-    int imageWidth;
-    int imageHeight;
 
-    {
-        QRect tileBounds;
-        TileSet imageTiles = stack->getTileSet();
-        TileSet::iterator iter;
-
-        if (imageTiles.empty())
-            tileBounds = QRect(0, 0, 1, 1);
-        else
-        {
-            tileBounds = QRect(imageTiles.begin()->x(), imageTiles.begin()->y(), 1, 1);
-        }
-
-        for(iter = imageTiles.begin(); iter != imageTiles.end(); iter++)
-        {
-            tileBounds = tileBounds.united(QRect(iter->x(), iter->y(), 1, 1));
-        }
-
-        imageWidth = tileBounds.width() * TILE_PIXEL_WIDTH;
-        imageHeight = tileBounds.height() * TILE_PIXEL_HEIGHT;
-    }
+    QRect imageTileBounds = findTileBounds<CanvasStack>(stack);
+    int imageWidth = imageTileBounds.width() * TILE_PIXEL_WIDTH;
+    int imageHeight = imageTileBounds.height() * TILE_PIXEL_HEIGHT;
 
     stackXML.writeAttribute("w", QString().sprintf("%d", imageWidth));
     stackXML.writeAttribute("h", QString().sprintf("%d", imageHeight));
@@ -89,7 +91,7 @@ void saveStackAs(CanvasStack *stack, QString path)
 
     for (int layerIdx = stack->layers.size() - 1; layerIdx >= 0; layerIdx--)
     {
-        CanvasLayer *currentLayer = stack->layers.at(layerIdx);
+        CanvasLayer const *currentLayer = stack->layers.at(layerIdx);
 
         QRect bounds;
         uint16_t *layerData = NULL;
@@ -102,18 +104,7 @@ void saveStackAs(CanvasStack *stack, QString path)
         }
         else
         {
-            TileMap::iterator tilesIter;
-
-            tilesIter = currentLayer->tiles->begin();
-
-            QRect tileBounds = QRect(tilesIter->first.x(), tilesIter->first.y(), 1, 1);
-
-            tilesIter++;
-
-            for (; tilesIter != currentLayer->tiles->end(); tilesIter++)
-            {
-                tileBounds = tileBounds.united(QRect(tilesIter->first.x(), tilesIter->first.y(), 1, 1));
-            }
+            QRect tileBounds = findTileBounds<CanvasLayer>(currentLayer);
 
             bounds = QRect(tileBounds.x() * TILE_PIXEL_WIDTH,
                            tileBounds.y() * TILE_PIXEL_HEIGHT,
