@@ -1,6 +1,5 @@
 #include "mypaintstrokecontext.h"
 #include "canvastile.h"
-#include <QElapsedTimer>
 #include <cstring>
 #include <iostream>
 #include <cmath>
@@ -40,7 +39,6 @@ class MyPaintStrokeContextPrivate
 public:
     MyPaintBrush         *brush;
     CanvasMyPaintSurface *surface;
-    QElapsedTimer         timer;
     TileSet               modTiles;
 };
 
@@ -152,33 +150,29 @@ MyPaintStrokeContext::~MyPaintStrokeContext()
 
 TileSet MyPaintStrokeContext::startStroke(QPointF point, float pressure)
 {
-    (void)point; (void)pressure;
-
     mypaint_brush_reset (priv->brush);
     mypaint_brush_new_stroke(priv->brush);
 
     mypaint_brush_stroke_to(priv->brush, (MyPaintSurface *)priv->surface,
                             point.x(), point.y(),
                             0.0f /* pressure */, 0.0f /* xtilt */, 0.0f /* ytilt */,
-                            1000.0f / 60.0f /* deltaTime in ms*/);
+                            1.0f / 60.0f /* deltaTime in seconds */);
 
     mypaint_brush_stroke_to(priv->brush, (MyPaintSurface *)priv->surface,
                             point.x(), point.y(),
                             pressure /* pressure */, 0.0f /* xtilt */, 0.0f /* ytilt */,
-                            1000.0f / 60.0f /* deltaTime in ms*/);
-    priv->timer.start();
+                            1.0f / 60.0f /* deltaTime in seconds */);
     priv->modTiles.clear();
     return TileSet();
 }
 
 
-TileSet MyPaintStrokeContext::strokeTo(QPointF point, float pressure)
+TileSet MyPaintStrokeContext::strokeTo(QPointF point, float pressure, float dt)
 {
-    double dt = priv->timer.restart() / 1000.0;
     mypaint_brush_stroke_to(priv->brush, (MyPaintSurface *)priv->surface,
                             point.x(), point.y(),
                             pressure /* pressure */, 0.0f /* xtilt */, 0.0f /* ytilt */,
-                            dt /* deltaTime in ms*/);
+                            dt / 1000.0f /* deltaTime in seconds */);
 
     TileSet result = priv->modTiles;
     priv->modTiles.clear();

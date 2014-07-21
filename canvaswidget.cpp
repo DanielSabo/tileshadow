@@ -364,13 +364,13 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
     emit canvasModified();
 }
 
-void CanvasWidget::strokeTo(QPointF pos, float pressure)
+void CanvasWidget::strokeTo(QPointF pos, float pressure, float dt)
 {
     mouseEventRate.addEvents(1);
     TileSet changedTiles;
     if (!ctx->stroke.isNull())
     {
-        changedTiles = ctx->stroke->strokeTo(pos, pressure);
+        changedTiles = ctx->stroke->strokeTo(pos, pressure, dt);
     }
 
     if(!changedTiles.empty())
@@ -805,6 +805,8 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
         }
         else if (action == CanvasAction::None)
         {
+            ctx->strokeEventTimestamp = event->timestamp();
+
             startStroke(pos, 1.0f);
             action = CanvasAction::MouseStroke;
         }
@@ -847,8 +849,11 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
     if (action == CanvasAction::MouseStroke)
     {
         QPointF pos = (event->localPos() + canvasOrigin) / viewScale;
+        ulong newTimestamp = event->timestamp();
 
-        strokeTo(pos, 1.0f);
+        strokeTo(pos, 1.0f, float(newTimestamp) - ctx->strokeEventTimestamp);
+
+        ctx->strokeEventTimestamp = newTimestamp;
     }
     else if (action == CanvasAction::MoveView)
     {
@@ -878,6 +883,7 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
         }
         else if (action == CanvasAction::None)
         {
+            ctx->strokeEventTimestamp = event->timestamp();
             startStroke(point, event->pressure());
             action = CanvasAction::TabletStroke;
         }
@@ -895,7 +901,11 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
         updateModifiers(event);
 
         if (action == CanvasAction::TabletStroke)
-            strokeTo(point, event->pressure());
+        {
+            ulong newTimestamp = event->timestamp();
+            strokeTo(point, event->pressure(), float(newTimestamp) - ctx->strokeEventTimestamp);
+            ctx->strokeEventTimestamp = newTimestamp;
+        }
     }
     else
         return;

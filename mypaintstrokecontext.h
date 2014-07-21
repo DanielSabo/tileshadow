@@ -13,7 +13,7 @@ public:
     ~MyPaintStrokeContext();
 
     TileSet startStroke(QPointF point, float pressure);
-    TileSet strokeTo(QPointF point, float pressure);
+    TileSet strokeTo(QPointF point, float pressure, float dt);
 
     bool fromSettings(MyPaintToolSettings const &settings);
     void fromDefaults();

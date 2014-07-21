@@ -9,7 +9,7 @@ public:
     BasicStrokeContext(CanvasContext *ctx, CanvasLayer *layer, float radius);
 
     TileSet startStroke(QPointF point, float pressure);
-    TileSet strokeTo(QPointF point, float pressure);
+    TileSet strokeTo(QPointF point, float pressure, float dt);
     void drawDab(QPointF point, TileSet &modTiles);
 
     void multiplySize(float mult);

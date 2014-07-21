@@ -20,7 +20,7 @@ public:
     virtual ~StrokeContext() {}
 
     virtual TileSet startStroke(QPointF point, float pressure) = 0;
-    virtual TileSet strokeTo(QPointF point, float pressure) = 0;
+    virtual TileSet strokeTo(QPointF point, float pressure, float dt) = 0;
 
     CanvasContext *ctx;
     CanvasLayer   *layer;
@@ -65,6 +65,7 @@ public:
     int tileHeight;
 
     QScopedPointer<StrokeContext> stroke;
+    ulong strokeEventTimestamp; // last stroke event time, in milliseconds
 
     int currentLayer;
     QScopedPointer<CanvasLayer> currentLayerCopy;

@@ -43,7 +43,7 @@ public:
     void setActiveTool(const QString &toolName);
     QString getActiveTool();
     void startStroke(QPointF pos, float pressure);
-    void strokeTo(QPointF pos, float pressure);
+    void strokeTo(QPointF pos, float pressure, float dt);
     void endStroke();
 
     float getScale();

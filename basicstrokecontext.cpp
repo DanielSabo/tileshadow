@@ -69,7 +69,7 @@ TileSet BasicStrokeContext::startStroke(QPointF point, float pressure)
     return modTiles;
 }
 
-TileSet BasicStrokeContext::strokeTo(QPointF point, float pressure)
+TileSet BasicStrokeContext::strokeTo(QPointF point, float pressure, float dt)
 {
     TileSet modTiles;
     (void)pressure;

@@ -329,7 +329,7 @@ double drawBenchmarkCircle(CanvasWidget *canvas, float radius, float centerX, fl
     for (int i = 0; i < numPoints; ++i)
     {
         currentAngle += M_PI * 2.0f / 100.0f;
-        canvas->strokeTo(QPointF(cosf(currentAngle) * radius + centerX, sinf(currentAngle) * radius + centerY), 1.0f);
+        canvas->strokeTo(QPointF(cosf(currentAngle) * radius + centerX, sinf(currentAngle) * radius + centerY), 1.0f, 1000.0f / 60.0f);
     }
     canvas->endStroke();
     clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
