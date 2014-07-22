@@ -7,6 +7,7 @@
 #include <QDebug>
 
 #include "canvaswidget.h"
+#include "toollistpopup.h"
 
 static void asciiTitleCase(QString &instr)
 {
@@ -27,9 +28,17 @@ static void asciiTitleCase(QString &instr)
     }
 }
 
+class ToolListWidgetPrivate
+{
+public:
+    QPushButton *toolPopupButton;
+};
+
 ToolListWidget::ToolListWidget(QWidget *parent) :
     QWidget(parent),
-    canvas(NULL)
+    canvas(NULL),
+    popup(NULL),
+    d_ptr(new ToolListWidgetPrivate)
 {
     QVBoxLayout *layout = new QVBoxLayout();
     layout->setSpacing(3);
@@ -44,8 +53,33 @@ ToolListWidget::~ToolListWidget()
     canvas = NULL;
 }
 
+static QStringList findBrushFiles(QDir const &path)
+{
+    QFileInfoList infoList = path.entryInfoList();
+    QStringList result;
+
+    QFileInfoList directories;
+
+    foreach(QFileInfo info, infoList)
+    {
+        if (info.isDir())
+            directories << info;
+        else if (info.fileName().endsWith(".myb"))
+            result << info.filePath();
+    }
+
+    foreach(QFileInfo info, directories)
+    {
+        result << findBrushFiles(info.filePath());
+    }
+
+    return result;
+}
+
 void ToolListWidget::reloadTools()
 {
+    Q_D(ToolListWidget);
+
     QBoxLayout *toolboxLayout = qobject_cast<QBoxLayout *>(layout());
     Q_ASSERT(toolboxLayout);
 
@@ -54,29 +88,48 @@ void ToolListWidget::reloadTools()
         delete toolButtons[i];
     }
 
-    QStringList brushFiles = QDir(":/mypaint-tools/").entryList();
+    toolList.clear();
+    toolList.append(QPair<QString, QString>("debug", "Debug"));
+
+    QStringList brushFiles = findBrushFiles(QDir(":/mypaint-tools/"));
 
     for (int i = 0; i < brushFiles.size(); ++i)
     {
-        QString brushfile = brushFiles.at(i);
-        QString buttonName = brushfile;
+        QString brushFile = brushFiles.at(i);
+
+        QStringList splitName = brushFile.split("/");
+        splitName.removeFirst();
+        splitName.removeFirst();
+
+        //FIXME: This should use the full path but canvas expects the truncated one
+        brushFile = splitName.join("/");
+        QString buttonName = splitName.join(" - ");
         buttonName.truncate(buttonName.length() - 4);
-        //buttonName.replace(QChar('-'), " ");
         buttonName.replace(QChar('_'), " ");
         asciiTitleCase(buttonName);
-
-        QPushButton *button = new QPushButton(buttonName);
-        button->setProperty("toolName", brushfile);
-        button->setCheckable(true);
-        connect(button, SIGNAL(clicked()), this, SLOT(setActiveTool()));
-        toolboxLayout->insertWidget(i, button);
+        toolList.append(QPair<QString, QString>(brushFile, buttonName));
     }
 
-    QPushButton *button = new QPushButton("Debug");
-    button->setProperty("toolName", QString("debug"));
-    button->setCheckable(true);
-    connect(button, SIGNAL(clicked()), this, SLOT(setActiveTool()));
-    toolboxLayout->insertWidget(0, button);
+    {
+        QPushButton *button = new QPushButton("Tools...");
+        connect(button, SIGNAL(clicked()), this, SLOT(showPopup()));
+        toolboxLayout->addWidget(button);
+        d->toolPopupButton = button;
+    }
+
+#if 0
+    for (int i = 0; i < toolList.size(); ++i)
+    {
+        QString toolPath = toolList.at(i).first;
+        QString name = toolList.at(i).second;
+
+        QPushButton *button = new QPushButton(name);
+        button->setProperty("toolName", QString(toolPath));
+        button->setCheckable(true);
+        connect(button, SIGNAL(clicked()), this, SLOT(setActiveTool()));
+        toolboxLayout->addWidget(button);
+    }
+#endif
 }
 
 void ToolListWidget::setCanvas(CanvasWidget *newCanvas)
@@ -115,16 +168,39 @@ void ToolListWidget::updateTool()
         else
             button->setChecked(false);
     }
+
+    if (popup)
+        popup->setActiveTool(activeTool);
 }
 
 void ToolListWidget::setActiveTool()
 {
-    if (!canvas)
-        return;
-
     QVariant toolNameProp = sender()->property("toolName");
     if (toolNameProp.type() == QVariant::String)
-        canvas->setActiveTool(toolNameProp.toString());
+        pickTool(toolNameProp.toString());
     else
         qWarning() << sender()->objectName() << " has no toolName property.";
+}
+
+void ToolListWidget::pickTool(QString const &toolPath)
+{
+    if (canvas)
+        canvas->setActiveTool(toolPath);
+}
+
+void ToolListWidget::showPopup()
+{
+    Q_D(ToolListWidget);
+
+    if (!popup)
+        popup = new ToolListPopup(this);
+    popup->setToolList(toolList);
+    if (canvas)
+        popup->setActiveTool(canvas->getActiveTool());
+
+    QPoint buttonPos = d->toolPopupButton->mapToGlobal(d->toolPopupButton->pos());
+    int originY = buttonPos.y() + d->toolPopupButton->height() / 2;
+    int originX = mapToGlobal(pos()).x();
+
+    popup->reposition(window()->frameGeometry(), QPoint(originX, originY));
 }

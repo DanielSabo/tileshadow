@@ -45,7 +45,8 @@ SOURCES += main.cpp\
     tiledebugtool.cpp \
     toollistwidget.cpp \
     layerlistwidget.cpp \
-    toolsettingswidget.cpp
+    toolsettingswidget.cpp \
+    toollistpopup.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -71,7 +72,8 @@ HEADERS  += mainwindow.h \
     layerlistwidget.h \
     toolsettingswidget.h \
     toolsettingswidget_p.h \
-    blendmodes.h
+    blendmodes.h \
+    toollistpopup.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \
