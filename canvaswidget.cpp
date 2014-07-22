@@ -14,119 +14,11 @@
 #include <QFile>
 #include <QDebug>
 #include <QOpenGLFunctions_3_2_Core>
+#include "glhelper.h"
 
 using namespace std;
 
-void _check_gl_error(const char *file, int line);
-#define check_gl_error() _check_gl_error(__FILE__,__LINE__)
-
-void _check_gl_error(const char *file, int line) {
-        GLenum err (glGetError());
-
-        while(err!=GL_NO_ERROR) {
-                string error;
-
-                switch(err) {
-                        case GL_INVALID_OPERATION:      error="INVALID_OPERATION";      break;
-                        case GL_INVALID_ENUM:           error="INVALID_ENUM";           break;
-                        case GL_INVALID_VALUE:          error="INVALID_VALUE";          break;
-                        case GL_OUT_OF_MEMORY:          error="OUT_OF_MEMORY";          break;
-                        case GL_INVALID_FRAMEBUFFER_OPERATION:  error="INVALID_FRAMEBUFFER_OPERATION";  break;
-                }
-
-                cerr << "GL_" << error.c_str() <<" - "<<file<<":"<<line<<endl;
-                err=glGetError();
-        }
-}
-
 static QOpenGLFunctions_3_2_Core *glFuncs = NULL;
-
-static inline GLint getShaderInt(GLuint program, GLenum pname)
-{
-    GLint value;
-    glFuncs->glGetShaderiv(program, pname, &value);
-    return value;
-}
-
-static inline GLint getProgramInt(GLuint program, GLenum pname)
-{
-    GLint value;
-    glFuncs->glGetProgramiv(program, pname, &value);
-    return value;
-}
-
-static GLuint compileFile (QOpenGLFunctions_3_2_Core &gl,
-                           const QString &path,
-                           GLenum shaderType)
-{
-    QFile file(path);
-
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-    {
-        qWarning() << "Shader compile failed, couldn't open " << path;
-        return 0;
-    }
-
-    QByteArray source = file.readAll();
-    if (source.isNull())
-    {
-        qWarning() << "Shader compile failed, couldn't read " << path;
-        return 0;
-    }
-
-    GLuint shader = gl.glCreateShader(shaderType);
-
-    const char *source_str = source.data();
-
-    gl.glShaderSource(shader, 1, &source_str, NULL);
-    gl.glCompileShader(shader);
-
-    if (!getShaderInt(shader, GL_COMPILE_STATUS)) {
-        GLint logSize = getShaderInt(shader, GL_INFO_LOG_LENGTH);
-        char* logMsg = new char[logSize];
-        gl.glGetShaderInfoLog(shader, logSize, NULL, logMsg);
-
-        qWarning() << "Shader compile failed, couldn't build " << path;
-        qWarning() << logMsg;
-
-        delete[] logMsg;
-        gl.glDeleteShader(shader);
-        return 0;
-    }
-
-    cout << "Compiled " << path.toUtf8().constData() << endl;
-
-    return shader;
-}
-
-static GLuint buildProgram (QOpenGLFunctions_3_2_Core &gl,
-                            GLuint vertShader,
-                            GLuint fragShader)
-{
-    if (!vertShader || !fragShader)
-        return 0;
-
-    GLuint program = glFuncs->glCreateProgram();
-    glFuncs->glAttachShader(program, vertShader);
-    glFuncs->glAttachShader(program, fragShader);
-    glFuncs->glBindFragDataLocation(program, 0, "fragColor");
-    glFuncs->glLinkProgram(program);
-
-    if (!getProgramInt(program, GL_LINK_STATUS)) {
-        GLint logSize = getProgramInt(program, GL_INFO_LOG_LENGTH);
-        char* logMsg = new char[logSize];
-        glFuncs->glGetProgramInfoLog(program, logSize, NULL, logMsg);
-
-        qWarning() << "Failed to link shader";
-        qWarning() << logMsg;
-
-        delete[] logMsg;
-        glFuncs->glDeleteProgram(program);
-        program = 0;
-    }
-
-    return program;
-}
 
 static const QGLFormat &getFormatSingleton()
 {
@@ -185,9 +77,9 @@ void CanvasWidget::initializeGL()
     ctx = new CanvasContext(glFuncs);
 
     /* Build canvas shaders */
-    ctx->vertexShader = compileFile(*glFuncs, ":/CanvasShader.vert", GL_VERTEX_SHADER);
-    ctx->fragmentShader = compileFile(*glFuncs, ":/CanvasShader.frag", GL_FRAGMENT_SHADER);
-    ctx->program = buildProgram (*glFuncs, ctx->vertexShader, ctx->fragmentShader);
+    ctx->vertexShader = compileGLShaderFile(glFuncs, ":/CanvasShader.vert", GL_VERTEX_SHADER);
+    ctx->fragmentShader = compileGLShaderFile(glFuncs, ":/CanvasShader.frag", GL_FRAGMENT_SHADER);
+    ctx->program = buildGLProgram(glFuncs, ctx->vertexShader, ctx->fragmentShader);
 
     if (ctx->program)
     {
@@ -216,10 +108,9 @@ void CanvasWidget::initializeGL()
 
     /* Build cursor */
     {
-        GLuint cursorVert = compileFile(*glFuncs, ":/CursorCircle.vert", GL_VERTEX_SHADER);
-        GLuint cursorFrag = compileFile(*glFuncs, ":/CursorCircle.frag", GL_FRAGMENT_SHADER);
-
-        ctx->cursorProgram = buildProgram(*glFuncs, cursorVert, cursorFrag);
+        GLuint cursorVert = compileGLShaderFile(glFuncs, ":/CursorCircle.vert", GL_VERTEX_SHADER);
+        GLuint cursorFrag = compileGLShaderFile(glFuncs, ":/CursorCircle.frag", GL_FRAGMENT_SHADER);
+        ctx->cursorProgram = buildGLProgram(glFuncs, cursorVert, cursorFrag);
 
         if (ctx->cursorProgram)
         {

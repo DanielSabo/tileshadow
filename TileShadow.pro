@@ -27,6 +27,7 @@ SOURCES += main.cpp\
     systeminfodialog.cpp \
     canvaswidget.cpp \
     canvaswidget-opencl.cpp \
+    glhelper.cpp \
     mypaintstrokecontext.cpp \
     canvascontext.cpp \
     basicstrokecontext.cpp \
@@ -50,6 +51,7 @@ HEADERS  += mainwindow.h \
     systeminfodialog.h \
     canvaswidget.h \
     canvaswidget-opencl.h \
+    glhelper.h \
     mypaintstrokecontext.h \
     canvascontext.h \
     basicstrokecontext.h \
