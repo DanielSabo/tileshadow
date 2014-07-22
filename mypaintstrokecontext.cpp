@@ -156,7 +156,7 @@ TileSet MyPaintStrokeContext::startStroke(QPointF point, float pressure)
     mypaint_brush_stroke_to(priv->brush, (MyPaintSurface *)priv->surface,
                             point.x(), point.y(),
                             0.0f /* pressure */, 0.0f /* xtilt */, 0.0f /* ytilt */,
-                            1.0f / 60.0f /* deltaTime in seconds */);
+                            1.0f /* deltaTime in seconds */);
 
     mypaint_brush_stroke_to(priv->brush, (MyPaintSurface *)priv->surface,
                             point.x(), point.y(),
