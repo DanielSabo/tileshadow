@@ -4,13 +4,44 @@
         <file>CanvasShader.frag</file>
         <file>BaseKernels.cl</file>
         <file>MyPaintKernels.cl</file>
-        <file>mypaint-tools/2B_pencil.myb</file>
         <file>mypaint-tools/charcoal_04.myb</file>
         <file>mypaint-tools/default.myb</file>
-        <file>mypaint-tools/spray_02.myb</file>
-        <file>mypaint-tools/watercolor_glazing.myb</file>
-        <file>mypaint-tools/large_hard_eraser.myb</file>
-        <file>mypaint-tools/kneaded_eraser.myb</file>
+        <file>mypaint-tools/deevad/2B_pencil.myb</file>
+        <file>mypaint-tools/deevad/4H_pencil.myb</file>
+        <file>mypaint-tools/deevad/airbrush.myb</file>
+        <file>mypaint-tools/deevad/ballpen.myb</file>
+        <file>mypaint-tools/deevad/basic_digital_brush.myb</file>
+        <file>mypaint-tools/deevad/basic_digital_brush_smudging.myb</file>
+        <file>mypaint-tools/deevad/basic_digital_knife.myb</file>
+        <file>mypaint-tools/deevad/basic_digital_knife_smudging.myb</file>
+        <file>mypaint-tools/deevad/blending.myb</file>
+        <file>mypaint-tools/deevad/brush.myb</file>
+        <file>mypaint-tools/deevad/chalk.myb</file>
+        <file>mypaint-tools/deevad/detail_brush_large.myb</file>
+        <file>mypaint-tools/deevad/detail_brush_large_glazing.myb</file>
+        <file>mypaint-tools/deevad/detail_brush_thin.myb</file>
+        <file>mypaint-tools/deevad/detail_brush_thin_glazing.myb</file>
+        <file>mypaint-tools/deevad/fill.myb</file>
+        <file>mypaint-tools/deevad/grainy_blending.myb</file>
+        <file>mypaint-tools/deevad/kneaded_eraser.myb</file>
+        <file>mypaint-tools/deevad/kneaded_eraser_large.myb</file>
+        <file>mypaint-tools/deevad/large_hard_eraser.myb</file>
+        <file>mypaint-tools/deevad/large_watercolor_fringe.myb</file>
+        <file>mypaint-tools/deevad/liner.myb</file>
+        <file>mypaint-tools/deevad/only_water_fringe.myb</file>
+        <file>mypaint-tools/deevad/pen-note.myb</file>
+        <file>mypaint-tools/deevad/pen.myb</file>
+        <file>mypaint-tools/deevad/rigger_brush.myb</file>
+        <file>mypaint-tools/deevad/rigger_brush_thin.myb</file>
+        <file>mypaint-tools/deevad/rough.myb</file>
+        <file>mypaint-tools/deevad/soft-dip-pen.myb</file>
+        <file>mypaint-tools/deevad/sponge_smudging.myb</file>
+        <file>mypaint-tools/deevad/spray.myb</file>
+        <file>mypaint-tools/deevad/spray2.myb</file>
+        <file>mypaint-tools/deevad/thin_hard_eraser.myb</file>
+        <file>mypaint-tools/deevad/thin_watercolor.myb</file>
+        <file>mypaint-tools/deevad/watercolor_expressive.myb</file>
+        <file>mypaint-tools/deevad/watercolor_glazing.myb</file>
         <file>icons/list-add.png</file>
         <file>icons/list-remove.png</file>
         <file>icons/edit-copy.png</file>
