@@ -51,5 +51,6 @@
         <file>CursorCircle.vert</file>
         <file>cursors/eyedropper.png</file>
         <file>cursors/move-view.png</file>
+        <file>cursors/move-layer.png</file>
     </qresource>
 </RCC>

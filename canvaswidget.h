@@ -16,7 +16,8 @@ namespace CanvasAction
         MouseStroke,
         TabletStroke,
         ColorPick,
-        MoveView
+        MoveView,
+        MoveLayer
     } Action;
 }
 
@@ -108,9 +109,13 @@ private:
     void updateModifiers(QInputEvent *event);
 
     void pickColorAt(QPoint pos);
+    void updateLayerTranslate(int x, int y);
+    void translateCurrentLayer(int x, int y);
 
     QCursor colorPickCursor;
     QCursor moveViewCursor;
+    QCursor moveLayerCursor;
+
 signals:
     void updateStats();
     void updateLayers();

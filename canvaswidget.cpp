@@ -56,6 +56,7 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
 
     colorPickCursor = QCursor(QPixmap(":/cursors/eyedropper.png"));
     moveViewCursor = QCursor(QPixmap(":/cursors/move-view.png"));
+    moveLayerCursor = QCursor(QPixmap(":/cursors/move-layer.png"));
 
     connect(this, &CanvasWidget::updateLayers, this, &CanvasWidget::canvasModified);
 }
@@ -473,6 +474,58 @@ void CanvasWidget::duplicateLayer(int layerIndex)
     emit updateLayers();
 }
 
+void CanvasWidget::updateLayerTranslate(int x,  int y)
+{
+    CanvasLayer *currentLayer = ctx->layers.layers[ctx->currentLayer];
+    CanvasLayer *newLayer = ctx->currentLayerCopy->translated(x, y);
+
+    TileSet layerTiles = currentLayer->getTileSet();
+    TileSet newLayerTiles = newLayer->getTileSet();
+    layerTiles.insert(newLayerTiles.begin(), newLayerTiles.end());
+
+    currentLayer->takeTiles(newLayer);
+    delete newLayer;
+    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+
+    update();
+}
+
+void CanvasWidget::translateCurrentLayer(int x,  int y)
+{
+    CanvasLayer *currentLayer = ctx->layers.layers[ctx->currentLayer];
+    CanvasLayer *newLayer = ctx->currentLayerCopy->translated(x, y);
+    newLayer->prune();
+
+    ctx->clearRedoHistory();
+
+    CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
+    undoEvent->targetTileMap = currentLayer->tiles;
+    undoEvent->currentLayer = ctx->currentLayer;
+
+    // The undo tiles are the original layer + new layer
+    TileSet layerTiles = ctx->currentLayerCopy->getTileSet();
+    TileSet newLayerTiles = newLayer->getTileSet();
+    layerTiles.insert(newLayerTiles.begin(), newLayerTiles.end());
+
+    for (TileSet::iterator iter = layerTiles.begin(); iter != layerTiles.end(); iter++)
+    {
+        undoEvent->tiles[*iter] = ctx->currentLayerCopy->takeTileMaybe(iter->x(), iter->y());
+    }
+    ctx->undoHistory.prepend(undoEvent);
+
+    // The dirty tiles are the (possibly moved) current layer + new layer
+    layerTiles = currentLayer->getTileSet();
+    layerTiles.insert(newLayerTiles.begin(), newLayerTiles.end());
+
+    currentLayer->takeTiles(newLayer);
+    delete newLayer;
+    ctx->currentLayerCopy.reset(currentLayer->deepCopy());
+    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+
+    update();
+    modified = true;
+}
+
 void CanvasWidget::setLayerVisible(int layerIndex, bool visible)
 {
     if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
@@ -688,8 +741,18 @@ void CanvasWidget::keyReleaseEvent(QKeyEvent *event)
 void CanvasWidget::mousePressEvent(QMouseEvent *event)
 {
     QPointF pos = (event->localPos() + canvasOrigin) / viewScale;
+    Qt::MouseButton button = event->button();
+    Qt::KeyboardModifiers modifiers = event->modifiers();
 
-    if (event->button() == 1)
+    modifiers &= Qt::ShiftModifier | Qt::ControlModifier | Qt::MetaModifier;
+
+#ifdef Q_OS_MAC
+    // As of Qt 5.3 there is an overlap between ctrl for right click and the meta key on OSX
+    if (button == 2 && modifiers.testFlag(Qt::MetaModifier))
+        modifiers ^= Qt::MetaModifier;
+#endif
+
+    if (button == 1)
     {
         if (action == CanvasAction::ColorPick)
         {
@@ -703,14 +766,23 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
             action = CanvasAction::MouseStroke;
         }
     }
-    else if (event->button() == 2)
+    else if (button == 2)
     {
         if (action == CanvasAction::None &&
-            event->modifiers() == 0)
+            modifiers == 0)
         {
             action = CanvasAction::MoveView;
             actionOrigin = event->pos();
             setCursor(moveViewCursor);
+        }
+        //FIXME: This shouldn't depend on the binding for color pick
+        //FIXME: This should refuse to move hidden layers
+        else if ((action == CanvasAction::None || action == CanvasAction::ColorPick) &&
+                 modifiers == Qt::ControlModifier)
+        {
+            action = CanvasAction::MoveLayer;
+            actionOrigin = event->pos();
+            setCursor(moveLayerCursor);
         }
     }
 
@@ -728,6 +800,15 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
     {
         action = CanvasAction::None;
         unsetCursor();
+    }
+    else if (action == CanvasAction::MoveLayer && event->button() == 2)
+    {
+        QPoint offset = event->pos() - actionOrigin;
+        offset /= viewScale;
+        action = CanvasAction::None;
+        unsetCursor();
+
+        translateCurrentLayer(offset.x(), offset.y());
     }
 
 
@@ -752,6 +833,13 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
         QPoint dPos = event->pos() - actionOrigin;
         actionOrigin = event->pos();
         canvasOrigin -= dPos;
+    }
+    else if (action == CanvasAction::MoveLayer)
+    {
+        QPoint offset = event->pos() - actionOrigin;
+        offset /= viewScale;
+
+        updateLayerTranslate(offset.x(), offset.y());
     }
 
     event->accept();
