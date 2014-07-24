@@ -47,6 +47,7 @@ public slots:
     void actionOpenFile();
     void actionSave();
     void actionSaveAs();
+    void actionExport();
     void actionUndo();
     void actionRedo();
     void actionZoomIn();

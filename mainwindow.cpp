@@ -11,6 +11,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSettings>
+#include <QImageWriter>
 #include "hsvcolordial.h"
 #include "toolsettingswidget.h"
 #include "toollistwidget.h"
@@ -278,6 +279,54 @@ bool MainWindow::promptSave()
 void MainWindow::actionSaveAs()
 {
     doSave(QString());
+}
+
+void MainWindow::actionExport()
+{
+    QList<QByteArray> writerKnownFormats = QImageWriter::supportedImageFormats();
+    QList<QByteArray> exportFormats;
+    exportFormats.append("png");
+    exportFormats.append("bmp");
+    exportFormats.append("jpg");
+    exportFormats.append("jpeg");
+
+    QStringList exportWildcards;
+
+    for(int i = 0; i < exportFormats.size(); ++i)
+        if (writerKnownFormats.contains(exportFormats[i]))
+            exportWildcards.append(QStringLiteral("*.") + exportFormats[i]);
+
+    QString formats;
+    if (!exportWildcards.isEmpty())
+        formats = QStringLiteral("Export formats ") + "(" + exportWildcards.join(" ") + ")";
+    else
+        return;
+
+    QString filename = QFileDialog::getSaveFileName(this, tr("Export..."),
+                                                    QDir::homePath(),
+                                                    formats);
+
+    if (filename.isEmpty())
+        return;
+
+    QImage image = canvas->asImage();
+
+    if (image.isNull())
+    {
+        QMessageBox::warning(this, tr("Could not save image"),
+                             tr("Could not save because the document is empty."));
+    }
+    else
+    {
+        QImageWriter writer(filename);
+
+        if (!writer.write(image))
+        {
+
+            QMessageBox::warning(this, tr("Could not save image"),
+                                 tr("Save failed: ") + writer.errorString());
+        }
+    }
 }
 
 void MainWindow::actionUndo()

@@ -3,6 +3,7 @@
 
 #include <QGLWidget>
 #include <QInputEvent>
+#include <QImage>
 #include <QColor>
 #include "boxcartimer.h"
 #include "blendmodes.h"
@@ -68,6 +69,7 @@ public:
     void newDrawing();
     void openORA(QString path);
     void saveAsORA(QString path);
+    QImage asImage();
 
     BoxcarTimer mouseEventRate;
     BoxcarTimer frameRate;

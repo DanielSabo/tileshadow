@@ -6,6 +6,7 @@
 #include "tiledebugtool.h"
 #include "mypainttool.h"
 #include "ora.h"
+#include "imageexport.h"
 #include <cmath>
 #include <iostream>
 #include <map>
@@ -951,4 +952,9 @@ void CanvasWidget::saveAsORA(QString path)
     saveStackAs(&ctx->layers, path);
     modified = false;
     emit canvasModified();
+}
+
+QImage CanvasWidget::asImage()
+{
+    return stackToImage(&ctx->layers);
 }

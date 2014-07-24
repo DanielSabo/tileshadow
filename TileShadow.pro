@@ -46,7 +46,8 @@ SOURCES += main.cpp\
     toollistwidget.cpp \
     layerlistwidget.cpp \
     toolsettingswidget.cpp \
-    toollistpopup.cpp
+    toollistpopup.cpp \
+    imageexport.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -73,7 +74,8 @@ HEADERS  += mainwindow.h \
     toolsettingswidget.h \
     toolsettingswidget_p.h \
     blendmodes.h \
-    toollistpopup.h
+    toollistpopup.h \
+    imageexport.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \
