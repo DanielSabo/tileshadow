@@ -105,6 +105,7 @@ private:
     bool modified;
     QPoint canvasOrigin;
     QPoint actionOrigin;
+    Qt::MouseButton actionButton;
 
     void updateModifiers(QInputEvent *event);
 

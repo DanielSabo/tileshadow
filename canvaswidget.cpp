@@ -764,6 +764,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
 
             startStroke(pos, 1.0f);
             action = CanvasAction::MouseStroke;
+            actionButton = event->button();
         }
     }
     else if (button == 2)
@@ -772,6 +773,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
             modifiers == 0)
         {
             action = CanvasAction::MoveView;
+            actionButton = event->button();
             actionOrigin = event->pos();
             setCursor(moveViewCursor);
         }
@@ -781,6 +783,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
                  modifiers == Qt::ControlModifier)
         {
             action = CanvasAction::MoveLayer;
+            actionButton = event->button();
             actionOrigin = event->pos();
             setCursor(moveLayerCursor);
         }
@@ -791,26 +794,31 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
 
 void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (action == CanvasAction::MouseStroke && event->button() == 1)
+    if (event->button() == actionButton)
     {
-        endStroke();
-        action = CanvasAction::None;
-    }
-    else if (action == CanvasAction::MoveView && event->button() == 2)
-    {
-        action = CanvasAction::None;
-        unsetCursor();
-    }
-    else if (action == CanvasAction::MoveLayer && event->button() == 2)
-    {
-        QPoint offset = event->pos() - actionOrigin;
-        offset /= viewScale;
-        action = CanvasAction::None;
-        unsetCursor();
+        if (action == CanvasAction::MouseStroke)
+        {
+            endStroke();
+            action = CanvasAction::None;
+            actionButton = Qt::NoButton;
+        }
+        else if (action == CanvasAction::MoveView)
+        {
+            action = CanvasAction::None;
+            actionButton = Qt::NoButton;
+            unsetCursor();
+        }
+        else if (action == CanvasAction::MoveLayer)
+        {
+            QPoint offset = event->pos() - actionOrigin;
+            offset /= viewScale;
+            action = CanvasAction::None;
+            actionButton = Qt::NoButton;
+            unsetCursor();
 
-        translateCurrentLayer(offset.x(), offset.y());
+            translateCurrentLayer(offset.x(), offset.y());
+        }
     }
-
 
     event->accept();
 }
