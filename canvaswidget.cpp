@@ -855,42 +855,36 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
     float yshift = event->hiResGlobalY() - event->globalY() + canvasOrigin.y();
     QPointF point = QPointF(event->x() + xshift, event->y() + yshift) / viewScale;
 
-    if (eventType == QEvent::TabletPress)
-    {
-        if (action == CanvasAction::ColorPick)
-        {
-            pickColorAt(point.toPoint());
-        }
-        else if (action == CanvasAction::None)
-        {
-            ctx->strokeEventTimestamp = event->timestamp();
-            startStroke(point, event->pressure());
-            action = CanvasAction::TabletStroke;
-        }
-    }
-    else if (eventType == QEvent::TabletRelease)
-    {
-        if (action == CanvasAction::TabletStroke)
-        {
-            action = CanvasAction::None;
-            endStroke();
-        }
-    }
-    else if (eventType == QEvent::TabletMove)
-    {
-        updateModifiers(event);
+    updateModifiers(event);
 
-        if (action == CanvasAction::TabletStroke)
-        {
-            ulong newTimestamp = event->timestamp();
-            strokeTo(point, event->pressure(), float(newTimestamp) - ctx->strokeEventTimestamp);
-            ctx->strokeEventTimestamp = newTimestamp;
-        }
+    if (eventType == QEvent::TabletPress &&
+        action == CanvasAction::None &&
+        event->modifiers() == 0)
+    {
+        ctx->strokeEventTimestamp = event->timestamp();
+        startStroke(point, event->pressure());
+        action = CanvasAction::TabletStroke;
+        event->accept();
+    }
+    else if (eventType == QEvent::TabletRelease &&
+             action == CanvasAction::TabletStroke)
+    {
+        endStroke();
+        action = CanvasAction::None;
+        event->accept();
+    }
+    else if (eventType == QEvent::TabletMove &&
+             action == CanvasAction::TabletStroke)
+    {
+        ulong newTimestamp = event->timestamp();
+        strokeTo(point, event->pressure(), float(newTimestamp) - ctx->strokeEventTimestamp);
+        ctx->strokeEventTimestamp = newTimestamp;
+        event->accept();
     }
     else
-        return;
-
-    event->accept();
+    {
+        event->ignore();
+    }
 }
 
 void CanvasWidget::wheelEvent(QWheelEvent *event)
