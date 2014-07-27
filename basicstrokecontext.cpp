@@ -35,7 +35,11 @@ void BasicStrokeContext::drawDab(QPointF point, TileSet &modTiles)
         for (int ix = ix_start; ix <= ix_end; ++ix)
         {
             float pixel[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-            pixel[(ix + iy) % 3] = 0.0f;
+
+            int index = (ix + iy) % 3;
+            if (index < 0)
+                index = (3 + index) % 3;
+            pixel[index] = 0.0f;
 
             cl_int offsetX = point.x() - (ix * TILE_PIXEL_WIDTH);
             cl_int offsetY = point.y() - (iy * TILE_PIXEL_HEIGHT);
