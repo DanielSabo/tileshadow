@@ -1,7 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QDebug>
-#include <math.h>
+#include <qmath.h>
 #include <QElapsedTimer>
 #include "canvaswidget-opencl.h"
 #include <QDir>

@@ -21,6 +21,7 @@ QMAKE_CXXFLAGS += -O2
 QMAKE_CFLAGS += -O2
 
 CONFIG -= warn_on
+CONFIG += c++11
 
 SOURCES += main.cpp\
         mainwindow.cpp \

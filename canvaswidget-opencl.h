@@ -13,6 +13,10 @@
 void _check_cl_error(const char *file, int line, cl_int err);
 #define check_cl_error(err) _check_cl_error(__FILE__,__LINE__,err)
 
+#define CL_DIM1(a) {(size_t)(a)}
+#define CL_DIM2(a, b) {(size_t)(a), (size_t)(b)}
+#define CL_DIM3(a, b, c) {(size_t)(a), (size_t)(b), (size_t)(c)}
+
 class OpenCLDeviceInfo
 {
 public:

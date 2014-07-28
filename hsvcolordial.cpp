@@ -3,7 +3,7 @@
 #include <QPainter>
 #include <QImage>
 #include <QRgb>
-#include <cmath>
+#include <qmath.h>
 #include <QMouseEvent>
 #include <QScopedPointer>
 

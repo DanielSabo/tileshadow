@@ -3,7 +3,7 @@
 #include "canvastile.h"
 #include <QDebug>
 
-bool _TilePointCompare::operator ()(const QPoint &a, const QPoint &b)
+bool _TilePointCompare::operator ()(const QPoint &a, const QPoint &b) const
 {
     if (a.y() < b.y())
         return true;

@@ -57,10 +57,9 @@ static void subrectCopy(cl_mem src, int srcX, int srcY, cl_mem dst, int dstX, in
     size_t height = std::min(TILE_PIXEL_HEIGHT - srcY, TILE_PIXEL_HEIGHT - dstY);
     size_t stride = TILE_PIXEL_WIDTH * PIXEL_SIZE;
 
-
-    size_t copySrcXYZ[3] = {srcX * PIXEL_SIZE, srcY, 0};
-    size_t copyDstXYZ[3] = {dstX * PIXEL_SIZE, dstY, 0};
-    size_t copyRegion[3] = {width * PIXEL_SIZE, height, 1};
+    size_t copySrcXYZ[3] = CL_DIM3(srcX * PIXEL_SIZE, srcY, 0);
+    size_t copyDstXYZ[3] = CL_DIM3(dstX * PIXEL_SIZE, dstY, 0);
+    size_t copyRegion[3] = CL_DIM3(width * PIXEL_SIZE, height, 1);
 
     clEnqueueCopyBufferRect(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                             src, dst,

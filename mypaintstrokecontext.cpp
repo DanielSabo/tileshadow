@@ -2,7 +2,7 @@
 #include "canvastile.h"
 #include <cstring>
 #include <iostream>
-#include <cmath>
+#include <qmath.h>
 #include <QFile>
 #include <QDebug>
 #include <QColor>
@@ -258,8 +258,8 @@ __kernel void mypaint_color_query_part2(__global float4 *accum,
             cl_int height = TILE_PIXEL_HEIGHT - offsetY - extraY;
             cl_int offset = offsetX + offsetY * stride;
 
-            size_t global_work_size[1] = {height};
-            size_t local_work_size[1] = {1};
+            size_t global_work_size[1] = CL_DIM1(height);
+            size_t local_work_size[1] = CL_DIM1(1);
 
             cl_mem data = layer->clOpenTileAt(ix, iy);
 
@@ -400,8 +400,8 @@ static int drawDabFunction (MyPaintSurface *base_surface,
                 int height = TILE_PIXEL_HEIGHT - offsetY - extraY;
                 cl_int offset = offsetX + offsetY * stride;
 
-                size_t global_work_size[2] = {width, height};
-                size_t local_work_size[2] = {width, 1};
+                size_t global_work_size[2] = CL_DIM2(width, height);
+                size_t local_work_size[2] = CL_DIM2(width, 1);
 
                 surface->strokeContext->priv->modTiles.insert(QPoint(ix, iy));
                 cl_mem data = layer->clOpenTileAt(ix, iy);

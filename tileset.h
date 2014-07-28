@@ -9,7 +9,7 @@ class CanvasTile;
 
 struct _TilePointCompare
 {
-    bool operator()(const QPoint &a, const QPoint &b);
+    bool operator()(const QPoint &a, const QPoint &b) const;
 };
 
 typedef std::set<QPoint, _TilePointCompare> TileSet;
