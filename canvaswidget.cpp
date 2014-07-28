@@ -14,7 +14,6 @@
 #include <QMouseEvent>
 #include <QFile>
 #include <QDebug>
-#include <QOpenGLFunctions_3_2_Core>
 #include "glhelper.h"
 
 using namespace std;
@@ -67,74 +66,7 @@ CanvasWidget::~CanvasWidget()
 void CanvasWidget::initializeGL()
 {
     ctx = new CanvasContext();
-    QOpenGLFunctions_3_2_Core *glFuncs = ctx->glFuncs;
 
-    /* Build canvas shaders */
-    ctx->vertexShader = compileGLShaderFile(glFuncs, ":/CanvasShader.vert", GL_VERTEX_SHADER);
-    ctx->fragmentShader = compileGLShaderFile(glFuncs, ":/CanvasShader.frag", GL_FRAGMENT_SHADER);
-    ctx->program = buildGLProgram(glFuncs, ctx->vertexShader, ctx->fragmentShader);
-
-    if (ctx->program)
-    {
-        ctx->locationTileOrigin = glFuncs->glGetUniformLocation(ctx->program, "tileOrigin");
-        ctx->locationTileSize   = glFuncs->glGetUniformLocation(ctx->program, "tileSize");
-        ctx->locationTileImage  = glFuncs->glGetUniformLocation(ctx->program, "tileImage");
-        ctx->locationTilePixels = glFuncs->glGetUniformLocation(ctx->program, "tilePixels");
-    }
-
-    glFuncs->glGenBuffers(1, &ctx->vertexBuffer);
-    glFuncs->glGenVertexArrays(1, &ctx->vertexArray);
-    glFuncs->glBindVertexArray(ctx->vertexArray);
-    glFuncs->glBindBuffer(GL_ARRAY_BUFFER, ctx->vertexBuffer);
-
-    float positionData[] = {
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f,
-    };
-
-    glFuncs->glBufferData(GL_ARRAY_BUFFER, sizeof(positionData), positionData, GL_STATIC_DRAW);
-
-    glFuncs->glEnableVertexAttribArray(0);
-    glFuncs->glVertexAttribPointer( 0, 2, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL);
-
-    /* Build cursor */
-    {
-        GLuint cursorVert = compileGLShaderFile(glFuncs, ":/CursorCircle.vert", GL_VERTEX_SHADER);
-        GLuint cursorFrag = compileGLShaderFile(glFuncs, ":/CursorCircle.frag", GL_FRAGMENT_SHADER);
-        ctx->cursorProgram = buildGLProgram(glFuncs, cursorVert, cursorFrag);
-
-        if (ctx->cursorProgram)
-        {
-            ctx->cursorProgramDimensions = glFuncs->glGetUniformLocation(ctx->cursorProgram, "dimensions");
-            ctx->cursorProgramPixelRadius = glFuncs->glGetUniformLocation(ctx->cursorProgram, "pixelRadius");
-        }
-
-        float cursorVertData[] = {
-            -1.0f, -1.0f,
-            1.0f,  -1.0f,
-            1.0f,  1.0f,
-            -1.0f, 1.0f,
-        };
-
-        glFuncs->glGenBuffers(1, &ctx->cursorVertexBuffer);
-        glFuncs->glGenVertexArrays(1, &ctx->cursorVertexArray);
-        glFuncs->glBindVertexArray(ctx->cursorVertexArray);
-        glFuncs->glBindBuffer(GL_ARRAY_BUFFER, ctx->cursorVertexBuffer);
-
-        glFuncs->glBufferData(GL_ARRAY_BUFFER, sizeof(cursorVertData), cursorVertData, GL_STATIC_DRAW);
-
-        glFuncs->glEnableVertexAttribArray(0);
-        glFuncs->glVertexAttribPointer( 0, 2, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL);
-
-        if (cursorVert)
-            glFuncs->glDeleteShader(cursorVert);
-        if (cursorFrag)
-            glFuncs->glDeleteShader(cursorFrag);
-    }
-
-    /* Set up widget */
     SharedOpenCL::getSharedOpenCL();
 
     ctx->updateBackgroundTile();

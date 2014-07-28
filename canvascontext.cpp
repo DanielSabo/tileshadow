@@ -1,5 +1,6 @@
 #include "canvascontext.h"
 #include "canvastile.h"
+#include "glhelper.h"
 
 #include <QColor>
 #include <QDebug>
@@ -12,9 +13,8 @@
 
 CanvasContext::CanvasContext() :
     glFuncs(new QOpenGLFunctions_3_2_Core()),
-    vertexShader(0),
-    fragmentShader(0),
     program(0),
+    cursorProgram(0),
     vertexBuffer(0),
     currentLayer(0),
     backgroundGLTile(0)
@@ -24,6 +24,75 @@ CanvasContext::CanvasContext() :
         qWarning() << "Could not initialize OpenGL Core Profile 3.2";
         exit(1);
     }
+
+    /* Set up canvas tile data & shaders */
+    GLuint vertexShader = compileGLShaderFile(glFuncs, ":/CanvasShader.vert", GL_VERTEX_SHADER);
+    GLuint fragmentShader = compileGLShaderFile(glFuncs, ":/CanvasShader.frag", GL_FRAGMENT_SHADER);
+    program = buildGLProgram(glFuncs, vertexShader, fragmentShader);
+
+    if (vertexShader)
+        glFuncs->glDeleteShader(vertexShader);
+    if (fragmentShader)
+        glFuncs->glDeleteShader(fragmentShader);
+
+    if (program)
+    {
+        locationTileOrigin = glFuncs->glGetUniformLocation(program, "tileOrigin");
+        locationTileSize   = glFuncs->glGetUniformLocation(program, "tileSize");
+        locationTileImage  = glFuncs->glGetUniformLocation(program, "tileImage");
+        locationTilePixels = glFuncs->glGetUniformLocation(program, "tilePixels");
+    }
+
+    glFuncs->glGenBuffers(1, &vertexBuffer);
+    glFuncs->glGenVertexArrays(1, &vertexArray);
+    glFuncs->glBindVertexArray(vertexArray);
+    glFuncs->glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+
+    float positionData[] = {
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+        1.0f, 1.0f,
+        0.0f, 1.0f,
+    };
+
+    glFuncs->glBufferData(GL_ARRAY_BUFFER, sizeof(positionData), positionData, GL_STATIC_DRAW);
+
+    glFuncs->glEnableVertexAttribArray(0);
+    glFuncs->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL);
+
+    /* Set up cursor data & shaders */
+    GLuint cursorVert = compileGLShaderFile(glFuncs, ":/CursorCircle.vert", GL_VERTEX_SHADER);
+    GLuint cursorFrag = compileGLShaderFile(glFuncs, ":/CursorCircle.frag", GL_FRAGMENT_SHADER);
+    cursorProgram = buildGLProgram(glFuncs, cursorVert, cursorFrag);
+
+    if (cursorProgram)
+    {
+        cursorProgramDimensions = glFuncs->glGetUniformLocation(cursorProgram, "dimensions");
+        cursorProgramPixelRadius = glFuncs->glGetUniformLocation(cursorProgram, "pixelRadius");
+    }
+
+    float cursorVertData[] = {
+        -1.0f, -1.0f,
+        1.0f,  -1.0f,
+        1.0f,  1.0f,
+        -1.0f, 1.0f,
+    };
+
+    glFuncs->glGenBuffers(1, &cursorVertexBuffer);
+    glFuncs->glGenVertexArrays(1, &cursorVertexArray);
+    glFuncs->glBindVertexArray(cursorVertexArray);
+    glFuncs->glBindBuffer(GL_ARRAY_BUFFER, cursorVertexBuffer);
+
+    glFuncs->glBufferData(GL_ARRAY_BUFFER, sizeof(cursorVertData), cursorVertData, GL_STATIC_DRAW);
+
+    glFuncs->glEnableVertexAttribArray(0);
+    glFuncs->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL);
+
+    if (cursorVert)
+        glFuncs->glDeleteShader(cursorVert);
+    if (cursorFrag)
+        glFuncs->glDeleteShader(cursorFrag);
+
 }
 
 CanvasContext::~CanvasContext()
@@ -37,12 +106,6 @@ CanvasContext::~CanvasContext()
 
     if (vertexArray)
         glFuncs->glDeleteVertexArrays(1, &vertexArray);
-
-    if (vertexShader)
-        glFuncs->glDeleteShader(vertexShader);
-
-    if (fragmentShader)
-        glFuncs->glDeleteShader(fragmentShader);
 
     if (program)
         glFuncs->glDeleteProgram(program);

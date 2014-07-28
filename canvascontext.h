@@ -34,9 +34,6 @@ public:
 
     QOpenGLFunctions_3_2_Core *glFuncs;
 
-    GLuint vertexShader;
-    GLuint fragmentShader;
-
     GLuint program;
     GLuint locationTileOrigin;
     GLuint locationTileSize;
