@@ -159,7 +159,7 @@ void saveStackAs(CanvasStack *stack, QString path)
         if (png_error)
             qDebug() << "lodepng error:" << lodepng_error_text(png_error);
 
-        QString layerFileName = QString().sprintf("layer%03d.png", layerNum++);
+        QString layerFileName = QString().sprintf("data/layer%03d.png", layerNum++);
 
         oraZipWriter.addFile(layerFileName, QByteArray::fromRawData((const char *)pngData, pngDataSize));
 
