@@ -32,8 +32,14 @@ static const QGLFormat &getFormatSingleton()
     return *single;
 }
 
+class CanvasWidgetPrivate
+{
+
+};
+
 CanvasWidget::CanvasWidget(QWidget *parent) :
     QGLWidget(getFormatSingleton(), parent),
+    d_ptr(new CanvasWidgetPrivate),
     mouseEventRate(10),
     frameRate(10),
     ctx(NULL),

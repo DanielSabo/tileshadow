@@ -24,6 +24,7 @@ namespace CanvasAction
 class BaseTool;
 class CanvasContext;
 class CanvasUndoEvent;
+class CanvasWidgetPrivate;
 class CanvasWidget : public QGLWidget
 {
     Q_OBJECT
@@ -92,6 +93,9 @@ protected:
     void enterEvent(QEvent *event);
 
 private:
+    CanvasWidgetPrivate * const d_ptr;
+    Q_DECLARE_PRIVATE(CanvasWidget)
+
     CanvasContext *ctx;
 
     CanvasAction::Action action;
