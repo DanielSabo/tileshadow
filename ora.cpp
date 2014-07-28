@@ -12,6 +12,7 @@
 #include <qzipreader.h>
 
 #include "lodepng.h"
+#include "imageexport.h"
 
 static QString blendModeToOraOp(BlendMode::Mode mode)
 {
@@ -64,7 +65,7 @@ template<typename T> QRect findTileBounds(T const *obj)
     return tileBounds;
 }
 
-void saveStackAs(CanvasStack const *stack, QString path)
+void saveStackAs(CanvasStack *stack, QString path)
 {
     /* FIXME: This should use something like QSaveFile but QZip is not compatible */
     QZipWriter oraZipWriter(path, QIODevice::WriteOnly);
@@ -188,6 +189,16 @@ void saveStackAs(CanvasStack const *stack, QString path)
     oraZipWriter.addFile("stack.xml", stackBuffer.buffer());
     QByteArray mimetypeData("image/openraster");
     oraZipWriter.addFile("mimetype", mimetypeData);
+
+    QBuffer mergedImageBuffer;
+    QImage mergedImage = stackToImage(stack);
+    mergedImage.save(&mergedImageBuffer, "PNG");
+    oraZipWriter.addFile("mergedimage.png", mergedImageBuffer.buffer());
+
+    QBuffer thumbImageBuffer;
+    QImage thumbImage = mergedImage.scaled(128, 128, Qt::KeepAspectRatio);
+    thumbImage.save(&thumbImageBuffer, "PNG");
+    oraZipWriter.addFile("Thumbnails/thumbnail.png", thumbImageBuffer.buffer());
 }
 
 static CanvasLayer *layerFromLinear(uint16_t *layerData, QRect bounds)
