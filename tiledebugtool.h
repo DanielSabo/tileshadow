@@ -15,7 +15,7 @@ public:
     float getPixelRadius();
     void setColor(const QColor &color);
 
-    StrokeContext *newStroke(CanvasContext *ctx, CanvasLayer *layer);
+    StrokeContext *newStroke(CanvasLayer *layer);
 
 private:
     TileDebugToolPrivate *priv;

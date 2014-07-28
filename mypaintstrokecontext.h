@@ -9,7 +9,7 @@ class MyPaintStrokeContextPrivate;
 class MyPaintStrokeContext : public StrokeContext
 {
 public:
-    MyPaintStrokeContext(CanvasContext *ctx, CanvasLayer *layer);
+    MyPaintStrokeContext(CanvasLayer *layer);
     ~MyPaintStrokeContext();
 
     TileSet startStroke(QPointF point, float pressure);

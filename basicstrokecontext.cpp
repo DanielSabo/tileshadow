@@ -6,8 +6,8 @@
 #include <QList>
 
 
-BasicStrokeContext::BasicStrokeContext(CanvasContext *ctx, CanvasLayer *layer, float radius)
-    : StrokeContext(ctx, layer), radius(radius)
+BasicStrokeContext::BasicStrokeContext(CanvasLayer *layer, float radius)
+    : StrokeContext(layer), radius(radius)
 {
 
 }

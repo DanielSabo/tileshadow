@@ -40,9 +40,9 @@ void TileDebugTool::setColor(const QColor &color)
 
 }
 
-StrokeContext *TileDebugTool::newStroke(CanvasContext *ctx, CanvasLayer *layer)
+StrokeContext *TileDebugTool::newStroke(CanvasLayer *layer)
 {
-    BasicStrokeContext *result = new BasicStrokeContext(ctx, layer, priv->sizeMod * 10.0f);
+    BasicStrokeContext *result = new BasicStrokeContext(layer, priv->sizeMod * 10.0f);
 //    result->setColor(priv->color);
 
     return result;

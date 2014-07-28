@@ -8,7 +8,7 @@ class BaseTool
 public:
     BaseTool();
     virtual ~BaseTool();
-    virtual StrokeContext *newStroke(CanvasContext *ctx, CanvasLayer *layer) = 0;
+    virtual StrokeContext *newStroke(CanvasLayer *layer) = 0;
 
     virtual void reset() = 0;
     virtual void setSizeMod(float mult);

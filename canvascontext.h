@@ -11,18 +11,15 @@
 #include "canvasstack.h"
 #include "canvasundoevent.h"
 
-class CanvasContext;
-
 class StrokeContext
 {
 public:
-    StrokeContext(CanvasContext *ctx, CanvasLayer *layer) : ctx(ctx), layer(layer) {}
+    StrokeContext(CanvasLayer *layer) : layer(layer) {}
     virtual ~StrokeContext() {}
 
     virtual TileSet startStroke(QPointF point, float pressure) = 0;
     virtual TileSet strokeTo(QPointF point, float pressure, float dt) = 0;
 
-    CanvasContext *ctx;
     CanvasLayer   *layer;
 };
 

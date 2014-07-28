@@ -6,7 +6,7 @@
 class BasicStrokeContext : public StrokeContext
 {
 public:
-    BasicStrokeContext(CanvasContext *ctx, CanvasLayer *layer, float radius);
+    BasicStrokeContext(CanvasLayer *layer, float radius);
 
     TileSet startStroke(QPointF point, float pressure);
     TileSet strokeTo(QPointF point, float pressure, float dt);

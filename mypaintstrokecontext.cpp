@@ -126,7 +126,7 @@ void MyPaintStrokeContext::setColor(QColor const &color)
     mypaint_brush_set_base_value(priv->brush, MYPAINT_BRUSH_SETTING_COLOR_V, color.valueF());
 }
 
-MyPaintStrokeContext::MyPaintStrokeContext(CanvasContext *ctx, CanvasLayer *layer) : StrokeContext(ctx, layer)
+MyPaintStrokeContext::MyPaintStrokeContext(CanvasLayer *layer) : StrokeContext(layer)
 {
     priv = new MyPaintStrokeContextPrivate();
 

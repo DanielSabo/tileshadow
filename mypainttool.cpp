@@ -177,9 +177,9 @@ void MyPaintTool::setColor(const QColor &color)
     priv->setBrushValue("color_v", color.valueF());
 }
 
-StrokeContext *MyPaintTool::newStroke(CanvasContext *ctx, CanvasLayer *layer)
+StrokeContext *MyPaintTool::newStroke(CanvasLayer *layer)
 {
-    MyPaintStrokeContext *stroke = new MyPaintStrokeContext(ctx, layer);
+    MyPaintStrokeContext *stroke = new MyPaintStrokeContext(layer);
 
     stroke->fromSettings(priv->currentSettings);
 
