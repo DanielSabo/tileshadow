@@ -93,6 +93,8 @@ void ToolListPopup::reposition(QRect const &globalBounds, QPoint const &globalOr
 
     if (top + h > globalBounds.y() + globalBounds.height())
         top -= (top + h) - (globalBounds.y() + globalBounds.height());
+    else if (top < globalBounds.top())
+        top = globalBounds.top();
 
     move(left, top);
 }
