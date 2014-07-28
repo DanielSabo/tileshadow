@@ -1,7 +1,7 @@
 #ifndef BASICSTROKECONTEXT_H
 #define BASICSTROKECONTEXT_H
 
-#include "canvascontext.h"
+#include "strokecontext.h"
 
 class BasicStrokeContext : public StrokeContext
 {

@@ -76,7 +76,8 @@ HEADERS  += mainwindow.h \
     toolsettingswidget_p.h \
     blendmodes.h \
     toollistpopup.h \
-    imageexport.h
+    imageexport.h \
+    strokecontext.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \

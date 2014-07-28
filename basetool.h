@@ -1,7 +1,8 @@
 #ifndef BASETOOL_H
 #define BASETOOL_H
 
-#include "canvascontext.h"
+#include <QColor>
+#include <strokecontext.h>
 
 class BaseTool
 {

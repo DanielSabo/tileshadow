@@ -1,7 +1,10 @@
 #ifndef MYPAINTSTROKECONTEXT_H
 #define MYPAINTSTROKECONTEXT_H
 
-#include "canvascontext.h"
+#include <QMap>
+#include <QString>
+#include <QPair>
+#include "strokecontext.h"
 
 typedef QMap<QString, QPair<float, QMap<QString, QList<QPointF> > > > MyPaintToolSettings;
 
