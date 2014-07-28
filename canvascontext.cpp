@@ -10,6 +10,22 @@
 #include <CL/cl_gl.h>
 #endif
 
+CanvasContext::CanvasContext() :
+    glFuncs(new QOpenGLFunctions_3_2_Core()),
+    vertexShader(0),
+    fragmentShader(0),
+    program(0),
+    vertexBuffer(0),
+    currentLayer(0),
+    backgroundGLTile(0)
+{
+    if (!glFuncs->initializeOpenGLFunctions())
+    {
+        qWarning() << "Could not initialize OpenGL Core Profile 3.2";
+        exit(1);
+    }
+}
+
 CanvasContext::~CanvasContext()
 {
     clearUndoHistory();

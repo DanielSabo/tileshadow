@@ -29,16 +29,7 @@ public:
 class CanvasContext
 {
 public:
-    CanvasContext(QOpenGLFunctions_3_2_Core *glFuncs) :
-                      glFuncs(glFuncs),
-                      vertexShader(0),
-                      fragmentShader(0),
-                      program(0),
-                      vertexBuffer(0),
-                      tileWidth(0),
-                      tileHeight(0),
-                      currentLayer(0),
-                      backgroundGLTile(0) {}
+    CanvasContext();
     ~CanvasContext();
 
     QOpenGLFunctions_3_2_Core *glFuncs;
@@ -60,9 +51,6 @@ public:
     GLuint cursorProgramPixelRadius;
     GLuint cursorVertexBuffer;
     GLuint cursorVertexArray;
-
-    int tileWidth;
-    int tileHeight;
 
     QScopedPointer<StrokeContext> stroke;
     ulong strokeEventTimestamp; // last stroke event time, in milliseconds

@@ -19,8 +19,6 @@
 
 using namespace std;
 
-static QOpenGLFunctions_3_2_Core *glFuncs = NULL;
-
 static const QGLFormat &getFormatSingleton()
 {
     static QGLFormat *single = NULL;
@@ -68,15 +66,8 @@ CanvasWidget::~CanvasWidget()
 
 void CanvasWidget::initializeGL()
 {
-    if (!glFuncs)
-        glFuncs = new QOpenGLFunctions_3_2_Core();
-    if (!glFuncs->initializeOpenGLFunctions())
-    {
-        qWarning() << "Could not initialize OpenGL Core Profile 3.2";
-        exit(1);
-    }
-
-    ctx = new CanvasContext(glFuncs);
+    ctx = new CanvasContext();
+    QOpenGLFunctions_3_2_Core *glFuncs = ctx->glFuncs;
 
     /* Build canvas shaders */
     ctx->vertexShader = compileGLShaderFile(glFuncs, ":/CanvasShader.vert", GL_VERTEX_SHADER);
@@ -153,11 +144,13 @@ void CanvasWidget::initializeGL()
 
 void CanvasWidget::resizeGL(int w, int h)
 {
-    glFuncs->glViewport( 0, 0, qMax(w, 1), qMax(h, 1));
+    glViewport(0, 0, qMax(w, 1), qMax(h, 1));
 }
 
 void CanvasWidget::paintGL()
 {
+    QOpenGLFunctions_3_2_Core *glFuncs = ctx->glFuncs;
+
     frameRate.addEvents(1);
     emit updateStats();
 
