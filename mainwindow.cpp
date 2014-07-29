@@ -131,11 +131,28 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 void MainWindow::keyReleaseEvent(QKeyEvent *event)
 {
+
 #ifdef Q_OS_MAC
     /* As of QT 5.2 single key shortcuts are not handled correctly (QTBUG-33015), the following
      * hacks around that by searching the main windows action list for shortcuts coresponding
      * to any unhandled key events.
      */
+    if(!hasFocus())
+    {
+        QKeyEvent overrideEvent(QEvent::ShortcutOverride,
+                                event->key(),
+                                event->modifiers(),
+                                event->text(),
+                                event->isAutoRepeat(),
+                                event->count());
+        overrideEvent.ignore();
+
+        QApplication::instance()->sendEvent(focusWidget(), &overrideEvent);
+
+        if (overrideEvent.isAccepted())
+            return;
+    }
+
     if ((event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)) == 0)
     {
         QKeySequence shortcutKey = QKeySequence(event->key() + event->modifiers());
