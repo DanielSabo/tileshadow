@@ -1,16 +1,30 @@
 #include "toolsettingswidget.h"
-#include "toolsettingswidget_p.h"
 
+#include "canvaswidget.h"
+#include "hsvcolordial.h"
+#include <QSlider>
 #include <QVBoxLayout>
 #include <QLabel>
 
 #include <QDebug>
 
-#include "canvaswidget.h"
+class ToolSettingsWidgetPrivate
+{
+public:
+    ToolSettingsWidgetPrivate();
+
+    CanvasWidget *canvas;
+    HSVColorDial *toolColorDial;
+    QSlider *toolSizeSlider;
+
+    bool freezeUpdates;
+
+    void colorDialChanged(QColor const &color);
+    void sizeSliderMoved(int value);
+};
 
 ToolSettingsWidgetPrivate::ToolSettingsWidgetPrivate()
-    : QObject(),
-      canvas(NULL),
+    : canvas(NULL),
       freezeUpdates(false)
 {
 }
@@ -66,7 +80,7 @@ ToolSettingsWidget::ToolSettingsWidget(QWidget *parent) :
     d->toolColorDial->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     d->toolColorDial->setMinimumSize(QSize(80, 80));
     d->toolColorDial->setBaseSize(QSize(80, 80));
-    connect(d->toolColorDial, &HSVColorDial::updateColor, d, &ToolSettingsWidgetPrivate::colorDialChanged);
+    connect(d->toolColorDial, &HSVColorDial::updateColor, [=] (const QColor &color) { d->colorDialChanged(color); });
     layout->addWidget(d->toolColorDial);
 
     d->toolSizeSlider = new QSlider(Qt::Horizontal, this);
@@ -74,7 +88,7 @@ ToolSettingsWidget::ToolSettingsWidget(QWidget *parent) :
     d->toolSizeSlider->setMaximum(90);
     d->toolSizeSlider->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     d->toolSizeSlider->setMinimumSize(QSize(80, 0));
-    connect(d->toolSizeSlider, &QSlider::valueChanged, d, &ToolSettingsWidgetPrivate::sizeSliderMoved);
+    connect(d->toolSizeSlider, &QSlider::valueChanged, [=] (int value) { d->sizeSliderMoved(value); });
 
 //    layout->addWidget(new QLabel(tr("Size:"), this));
     layout->addWidget(d->toolSizeSlider);
