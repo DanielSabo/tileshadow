@@ -2,6 +2,8 @@
 
 #include "canvaswidget.h"
 #include "hsvcolordial.h"
+#include "toolsettinginfo.h"
+#include <qmath.h>
 #include <QSlider>
 #include <QVBoxLayout>
 #include <QLabel>
@@ -11,20 +13,39 @@
 class ToolSettingsWidgetPrivate
 {
 public:
-    ToolSettingsWidgetPrivate();
+    ToolSettingsWidgetPrivate(ToolSettingsWidget *q);
+
+    ToolSettingsWidget * const q_ptr;
+    Q_DECLARE_PUBLIC(ToolSettingsWidget)
 
     CanvasWidget *canvas;
+    QString activeToolpath;
     HSVColorDial *toolColorDial;
-    QSlider *toolSizeSlider;
 
     bool freezeUpdates;
 
-    void colorDialChanged(QColor const &color);
-    void sizeSliderMoved(int value);
+    void colorDialChanged(const QColor &color);
+
+    void updateFloatSetting(const QString &settingID, float value);
+    void addExponentSlider(const QString &settingID, const QString &name, float min, float max);
+    void addLinearSlider(const QString &settingID, const QString &name, float min, float max);
+
+    void removeSettings();
+    void addSetting(const ToolSettingInfo &info);
+
+    struct SettingItem
+    {
+        QString name;
+        QLabel *label;
+        QSlider *input;
+    };
+
+    QMap<QString, SettingItem> items;
 };
 
-ToolSettingsWidgetPrivate::ToolSettingsWidgetPrivate()
-    : canvas(NULL),
+ToolSettingsWidgetPrivate::ToolSettingsWidgetPrivate(ToolSettingsWidget *q)
+    : q_ptr(q),
+      canvas(NULL),
       freezeUpdates(false)
 {
 }
@@ -39,34 +60,78 @@ void ToolSettingsWidgetPrivate::colorDialChanged(const QColor &color)
     freezeUpdates = false;
 }
 
-void ToolSettingsWidgetPrivate::sizeSliderMoved(int value)
+void ToolSettingsWidgetPrivate::updateFloatSetting(const QString &settingID, float value)
 {
     if (freezeUpdates)
         return;
 
-    float sizeMultiplyer;
-
-    if (value > 0)
-    {
-        sizeMultiplyer = value / 10.0f + 1.0f;
-    }
-    else if (value < 0)
-    {
-        sizeMultiplyer = 1.0f / (-value / 10.0f + 1.0f);
-    }
-    else
-    {
-        sizeMultiplyer = 1.0f;
-    }
-
     freezeUpdates = true;
-    canvas->setToolSizeFactor(sizeMultiplyer);
+    canvas->setToolSetting(settingID, QVariant::fromValue<float>(value));
     freezeUpdates = false;
+}
+
+void ToolSettingsWidgetPrivate::addExponentSlider(const QString &settingID, const QString &name, float min, float max)
+{
+    Q_Q(ToolSettingsWidget);
+
+    QSlider *slider = new QSlider(Qt::Horizontal, q);
+    slider->setMinimum(min * 100);
+    slider->setMaximum(max * 100);
+    slider->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+    slider->setMinimumSize(QSize(80, 0));
+    slider->setToolTip(name);
+    QLabel *label = new QLabel(name + ":", q);
+
+    q->layout()->addWidget(label);
+    q->layout()->addWidget(slider);
+    QObject::connect(slider, &QSlider::valueChanged, [=] (int value) { updateFloatSetting(settingID, float(value) / 100.0f); });
+
+    items[settingID] = {name, label, slider};
+}
+
+void ToolSettingsWidgetPrivate::addLinearSlider(const QString &settingID, const QString &name, float min, float max)
+{
+    Q_Q(ToolSettingsWidget);
+
+    QSlider *slider = new QSlider(Qt::Horizontal, q);
+    slider->setMinimum(min * 100);
+    slider->setMaximum(max * 100);
+    slider->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
+    slider->setMinimumSize(QSize(80, 0));
+    slider->setToolTip(name);
+    QLabel *label = new QLabel(name + ":", q);
+
+    q->layout()->addWidget(label);
+    q->layout()->addWidget(slider);
+    QObject::connect(slider, &QSlider::valueChanged, [=] (int value) { updateFloatSetting(settingID, float(value) / 100.0f); });
+
+    items[settingID] = {name, label, slider};
+}
+
+void ToolSettingsWidgetPrivate::removeSettings()
+{
+    for (auto iter = items.begin();
+              iter != items.end();
+              iter = items.erase(iter))
+    {
+        delete iter.value().label;
+        delete iter.value().input;
+    }
+}
+
+void ToolSettingsWidgetPrivate::addSetting(const ToolSettingInfo &info)
+{
+    if (info.type == ToolSettingInfoType::ExponentSlider)
+        addExponentSlider(info.settingID, info.name, info.min, info.max);
+    else if (info.type == ToolSettingInfoType::LinearSlider)
+        addLinearSlider(info.settingID, info.name, info.min, info.max);
+    else
+        qDebug() << "Attempted to add unknown setting type" << info.type << info.settingID;
 }
 
 ToolSettingsWidget::ToolSettingsWidget(QWidget *parent) :
     QWidget(parent),
-    d_ptr(new ToolSettingsWidgetPrivate)
+    d_ptr(new ToolSettingsWidgetPrivate(this))
 {
     Q_D(ToolSettingsWidget);
 
@@ -82,16 +147,6 @@ ToolSettingsWidget::ToolSettingsWidget(QWidget *parent) :
     d->toolColorDial->setBaseSize(QSize(80, 80));
     connect(d->toolColorDial, &HSVColorDial::updateColor, [=] (const QColor &color) { d->colorDialChanged(color); });
     layout->addWidget(d->toolColorDial);
-
-    d->toolSizeSlider = new QSlider(Qt::Horizontal, this);
-    d->toolSizeSlider->setMinimum(-30);
-    d->toolSizeSlider->setMaximum(90);
-    d->toolSizeSlider->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
-    d->toolSizeSlider->setMinimumSize(QSize(80, 0));
-    connect(d->toolSizeSlider, &QSlider::valueChanged, [=] (int value) { d->sizeSliderMoved(value); });
-
-//    layout->addWidget(new QLabel(tr("Size:"), this));
-    layout->addWidget(d->toolSizeSlider);
 }
 
 void ToolSettingsWidget::setCanvas(CanvasWidget *newCanvas)
@@ -123,16 +178,29 @@ void ToolSettingsWidget::updateTool()
     Q_D(ToolSettingsWidget);
     d->freezeUpdates = true;
 
+    if (d->activeToolpath != d->canvas->getActiveTool())
+    {
+        d->activeToolpath = d->canvas->getActiveTool();
+
+        QList<ToolSettingInfo> infos = d->canvas->getToolSettings();
+
+        d->removeSettings();
+        for (auto iter = infos.begin(); iter != infos.end(); ++iter)
+            d->addSetting(*iter);
+    }
+
     d->toolColorDial->setColor(d->canvas->getToolColor());
 
-    float sizeFactor = d->canvas->getToolSizeFactor();
-
-    if (sizeFactor > 1.0f)
-        d->toolSizeSlider->setValue((sizeFactor - 1.0f) * 10.0f);
-    else if (sizeFactor < 1.0f)
-        d->toolSizeSlider->setValue(-(((1.0f / sizeFactor) - 1.0f) * 10.0f));
-    else
-        d->toolSizeSlider->setValue(1.0f);
+    for (auto iter = d->items.begin(); iter != d->items.end(); ++iter)
+    {
+        //FIXME: Don't assume everything is a float and a QSlider
+        QVariant value = d->canvas->getToolSetting(iter.key());
+        if (value.canConvert<float>())
+        {
+            //FIXME: Don't hardcode 100.0f here
+            iter.value().input->setValue(value.toFloat() * 100.0f);
+        }
+    }
 
     d->freezeUpdates = false;
 }

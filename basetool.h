@@ -1,8 +1,10 @@
 #ifndef BASETOOL_H
 #define BASETOOL_H
 
+#include <QList>
 #include <QColor>
 #include <strokecontext.h>
+#include <toolsettinginfo.h>
 
 class BaseTool
 {
@@ -12,9 +14,12 @@ public:
     virtual StrokeContext *newStroke(CanvasLayer *layer) = 0;
 
     virtual void reset() = 0;
-    virtual void setSizeMod(float mult);
     virtual float getPixelRadius() = 0;
     virtual void setColor(QColor const &color);
+
+    virtual void setToolSetting(QString const &name, QVariant const &value);
+    virtual QVariant getToolSetting(QString const &name);
+    virtual QList<ToolSettingInfo> listToolSettings();
 };
 
 #endif // BASETOOL_H

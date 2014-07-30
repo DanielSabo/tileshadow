@@ -7,6 +7,7 @@
 #include <QColor>
 #include "boxcartimer.h"
 #include "blendmodes.h"
+#include "toolsettinginfo.h"
 
 namespace CanvasAction
 {
@@ -39,12 +40,14 @@ public:
         BlendMode::Mode mode;
     };
 
-    void setToolSizeFactor(float multipler);
-    float getToolSizeFactor();
     void setToolColor(const QColor &color);
     QColor getToolColor();
     void setActiveTool(const QString &toolName);
     QString getActiveTool();
+    QList<ToolSettingInfo> getToolSettings();
+    void setToolSetting(const QString &settingName, const QVariant &value);
+    QVariant getToolSetting(const QString &settingName);
+
     void startStroke(QPointF pos, float pressure);
     void strokeTo(QPointF pos, float pressure, float dt);
     void endStroke();
@@ -99,9 +102,6 @@ private:
     CanvasContext *ctx;
 
     CanvasAction::Action action;
-    QString activeToolName;
-    QScopedPointer<BaseTool> activeTool;
-    float toolSizeFactor;
     QColor toolColor;
     float viewScale;
     bool showToolCursor;

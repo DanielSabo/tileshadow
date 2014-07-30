@@ -11,9 +11,12 @@ public:
     ~TileDebugTool();
 
     void reset();
-    void setSizeMod(float mult);
     float getPixelRadius();
     void setColor(const QColor &color);
+
+    void setToolSetting(const QString &name, const QVariant &value);
+    virtual QVariant getToolSetting(QString const &name);
+    virtual QList<ToolSettingInfo> listToolSettings();
 
     StrokeContext *newStroke(CanvasLayer *layer);
 

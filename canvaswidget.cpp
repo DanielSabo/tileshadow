@@ -34,8 +34,21 @@ static const QGLFormat &getFormatSingleton()
 
 class CanvasWidgetPrivate
 {
+public:
+    QString activeToolPath;
+    BaseTool *activeTool;
+    QMap<QString, BaseTool *> tools;
 
+    ~CanvasWidgetPrivate();
 };
+
+CanvasWidgetPrivate::~CanvasWidgetPrivate()
+{
+    activeTool = NULL;
+    for (auto iter = tools.begin(); iter != tools.end(); ++iter)
+        delete iter.value();
+    tools.clear();
+}
 
 CanvasWidget::CanvasWidget(QWidget *parent) :
     QGLWidget(getFormatSingleton(), parent),
@@ -44,7 +57,6 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
     frameRate(10),
     ctx(NULL),
     action(CanvasAction::None),
-    toolSizeFactor(1.0f),
     toolColor(QColor::fromRgbF(0.0, 0.0, 0.0)),
     viewScale(1.0f),
     showToolCursor(true),
@@ -53,9 +65,6 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
     canvasOrigin(0, 0)
 {
     setMouseTracking(true);
-
-    //FIXME: Creating the tool may do OpenCL things that require a valid context
-    setActiveTool("debug");
 
     colorPickCursor = QCursor(QPixmap(":/cursors/eyedropper.png"));
     moveViewCursor = QCursor(QPixmap(":/cursors/move-view.png"));
@@ -87,6 +96,8 @@ void CanvasWidget::resizeGL(int w, int h)
 
 void CanvasWidget::paintGL()
 {
+    Q_D(CanvasWidget);
+
     QOpenGLFunctions_3_2_Core *glFuncs = ctx->glFuncs;
 
     frameRate.addEvents(1);
@@ -139,9 +150,9 @@ void CanvasWidget::paintGL()
             glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
 
-    if (!activeTool.isNull() && showToolCursor)
+    if (d->activeTool && showToolCursor)
     {
-        float toolSize = activeTool->getPixelRadius() * 2.0f * viewScale;
+        float toolSize = d->activeTool->getPixelRadius() * 2.0f * viewScale;
         if (toolSize < 2.0f)
             toolSize = 2.0f;
         glEnable(GL_BLEND);
@@ -161,12 +172,14 @@ void CanvasWidget::paintGL()
 
 void CanvasWidget::startStroke(QPointF pos, float pressure)
 {
+    Q_D(CanvasWidget);
+
     ctx->stroke.reset(NULL);
 
     if (ctx->layers.layers.empty())
         return;
 
-    if (activeTool.isNull())
+    if (!d->activeTool)
         return;
 
     CanvasLayer *targetLayer = ctx->layers.layers.at(ctx->currentLayer);
@@ -174,7 +187,7 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
     if (!targetLayer->visible)
         return;
 
-    ctx->stroke.reset(activeTool->newStroke(targetLayer));
+    ctx->stroke.reset(d->activeTool->newStroke(targetLayer));
 
     TileSet changedTiles = ctx->stroke->startStroke(pos, pressure);
 
@@ -879,57 +892,95 @@ void CanvasWidget::updateModifiers(QInputEvent *event)
 
 void CanvasWidget::setActiveTool(const QString &toolName)
 {
-    activeToolName = toolName;
+    Q_D(CanvasWidget);
 
-    if (toolName.endsWith(".myb"))
+    d->activeToolPath = toolName;
+
+    auto found = d->tools.find(toolName);
+
+    if (found != d->tools.end())
     {
-        activeTool.reset(new MyPaintTool(QString(":/mypaint-tools/") + toolName));
+        d->activeTool = found.value();
     }
-    else if (toolName == QString("debug"))
+    else if (toolName.endsWith(".myb"))
     {
-        activeTool.reset(new TileDebugTool());
+        d->activeTool = new MyPaintTool(QString(":/mypaint-tools/") + toolName);
+        d->tools[toolName] = d->activeTool;
+    }
+    else if (toolName == QStringLiteral("debug"))
+    {
+        d->activeTool = new TileDebugTool();
+        d->tools[toolName] = d->activeTool;
     }
     else
     {
         qWarning() << "Unknown tool set \'" << toolName << "\', using debug";
-        activeTool.reset(new TileDebugTool());
+        d->activeToolPath = QStringLiteral("debug");
+        d->activeTool = d->tools["debug"];
+
+        if (d->activeTool == NULL)
+        {
+            d->activeTool = new TileDebugTool();
+            d->tools[QStringLiteral("debug")] = d->activeTool;
+        }
     }
 
-    if (!activeTool.isNull())
+    if (d->activeTool)
     {
-        activeTool->setSizeMod(toolSizeFactor);
-        activeTool->setColor(toolColor);
+        d->activeTool->setColor(toolColor);
     }
-
-    emit updateTool();
-}
-
-QString CanvasWidget::getActiveTool()
-{
-    return activeToolName;
-}
-
-void CanvasWidget::setToolSizeFactor(float multipler)
-{
-    multipler = max(min(multipler, 10.0f), 0.25f);
-    toolSizeFactor = multipler;
-    if (!activeTool.isNull())
-        activeTool->setSizeMod(toolSizeFactor);
 
     emit updateTool();
     update();
 }
 
-float CanvasWidget::getToolSizeFactor()
+QString CanvasWidget::getActiveTool()
 {
-    return toolSizeFactor;
+    Q_D(CanvasWidget);
+
+    return d->activeToolPath;
+}
+
+QList<ToolSettingInfo> CanvasWidget::getToolSettings()
+{
+    Q_D(CanvasWidget);
+
+    if (d->activeTool)
+        return d->activeTool->listToolSettings();
+    else
+        return QList<ToolSettingInfo>();
+}
+
+void CanvasWidget::setToolSetting(const QString &settingName, const QVariant &value)
+{
+    Q_D(CanvasWidget);
+
+    if (!d->activeTool)
+        return;
+
+    d->activeTool->setToolSetting(settingName, value);
+
+    emit updateTool();
+    update();
+}
+
+QVariant CanvasWidget::getToolSetting(const QString &settingName)
+{
+    Q_D(CanvasWidget);
+
+    if (!d->activeTool)
+        return QVariant();
+
+    return d->activeTool->getToolSetting(settingName);
 }
 
 void CanvasWidget::setToolColor(const QColor &color)
 {
+    Q_D(CanvasWidget);
+
     toolColor = color;
-    if (!activeTool.isNull())
-        activeTool->setColor(toolColor);
+    if (d->activeTool)
+        d->activeTool->setColor(toolColor);
 
     emit updateTool();
 }

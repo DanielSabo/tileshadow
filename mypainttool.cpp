@@ -96,6 +96,7 @@ MyPaintTool::MyPaintTool(const QString &path) : priv(new MyPaintToolPrivate())
 
             for (iter = settingsObj.begin(); iter != settingsObj.end(); ++iter)
             {
+                //FIXME: Assert that settingName is valid (or brushlib will crash)
                 QString     settingName = iter.key();
                 QJsonObject settingObj  = iter.value().toObject();
 
@@ -150,19 +151,49 @@ void MyPaintTool::reset()
     priv->updateRadius();
 }
 
-void MyPaintTool::setSizeMod(float mult)
+void MyPaintTool::setToolSetting(QString const &name, QVariant const &value)
 {
-    float radius = priv->getOriginalBrushValue("radius_logarithmic");
-    radius = log(exp(radius) * mult);
+    if (name == QStringLiteral("size") && value.canConvert<float>())
+    {
+        //FIXME: Should query the min and max values instead of hardcoding
+        float radius = qBound<float>(-2.0f, value.toFloat(), 6.0f);
 
-    //FIXME: Should query the min and max values instead of hardcoding
-    if (radius < -2.0f)
-        radius = -2.0f;
-    if (radius > 6.0f)
-        radius = 6.0f;
+        priv->setBrushValue("radius_logarithmic", radius);
+        priv->updateRadius();
+    }
+    else if (name == QStringLiteral("opacity") && value.canConvert<float>())
+    {
+        //FIXME: Should query the min and max values instead of hardcoding
+        float opacity = qBound<float>(0.0f, value.toFloat(), 2.0f);
 
-    priv->setBrushValue("radius_logarithmic", radius);
-    priv->updateRadius();
+        priv->setBrushValue("opaque", opacity);
+    }
+    else
+    {
+        BaseTool::setToolSetting(name, value);
+    }
+}
+
+QVariant MyPaintTool::getToolSetting(const QString &name)
+{
+    if (name == QStringLiteral("size"))
+        return QVariant::fromValue<float>(priv->getBrushValue("radius_logarithmic"));
+    else if (name == QStringLiteral("opacity"))
+        return QVariant::fromValue<float>(priv->getBrushValue("opaque"));
+    else
+        return BaseTool::getToolSetting(name);
+
+}
+
+QList<ToolSettingInfo> MyPaintTool::listToolSettings()
+{
+    QList<ToolSettingInfo> result;
+
+    result.append(ToolSettingInfo::exponentSlider("size", "SizeExp", -2.0f, 6.0f));
+    result.append(ToolSettingInfo::linearSlider("opacity", "Opacity", 0.0f, 1.0f));
+
+    return result;
+
 }
 
 float MyPaintTool::getPixelRadius()

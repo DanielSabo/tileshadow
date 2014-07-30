@@ -48,7 +48,8 @@ SOURCES += main.cpp\
     layerlistwidget.cpp \
     toolsettingswidget.cpp \
     toollistpopup.cpp \
-    imageexport.cpp
+    imageexport.cpp \
+    toolsettinginfo.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -76,7 +77,8 @@ HEADERS  += mainwindow.h \
     blendmodes.h \
     toollistpopup.h \
     imageexport.h \
-    strokecontext.h
+    strokecontext.h \
+    toolsettinginfo.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \

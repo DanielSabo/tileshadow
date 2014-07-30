@@ -358,14 +358,22 @@ void MainWindow::actionRedo()
 
 void MainWindow::actionToolSizeIncrease()
 {
-    float size = canvas->getToolSizeFactor() * 2;
-    canvas->setToolSizeFactor(size);
+    bool hasSize = false;
+    double size = canvas->getToolSetting(QStringLiteral("size")).toDouble(&hasSize);
+
+    // FIXME: This is specific to the mypaint log-size property
+    if (hasSize)
+        canvas->setToolSetting("size", QVariant(size + 0.3));
 }
 
 void MainWindow::actionToolSizeDecrease()
 {
-    float size = canvas->getToolSizeFactor() / 2;
-    canvas->setToolSizeFactor(size);
+    bool hasSize = false;
+    double size = canvas->getToolSetting(QStringLiteral("size")).toDouble(&hasSize);
+
+    // FIXME: This is specific to the mypaint log-size property
+    if (hasSize)
+        canvas->setToolSetting("size", QVariant(size - 0.3));
 }
 
 void MainWindow::actionZoomIn()
