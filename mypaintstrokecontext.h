@@ -21,10 +21,6 @@ public:
     bool fromSettings(MyPaintToolSettings const &settings);
     void fromDefaults();
 
-    void multiplySize(float mult);
-    float getPixelRadius();
-    void setColor(QColor const &color);
-
     MyPaintStrokeContextPrivate *priv;
 };
 
