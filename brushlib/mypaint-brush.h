@@ -31,7 +31,7 @@ typedef struct _MyPaintBrush MyPaintBrush;
 #endif // MYPAINT_CONFIG_USE_GLIB
 
 MyPaintBrush *
-mypaint_brush_new();
+mypaint_brush_new(void);
 
 void
 mypaint_brush_unref(MyPaintBrush *self);

@@ -113,7 +113,7 @@ void settings_base_values_have_changed (MyPaintBrush *self);
   * Initial reference count is 1. Release references using mypaint_brush_unref()
   */
 MyPaintBrush *
-mypaint_brush_new()
+mypaint_brush_new(void)
 {
     MyPaintBrush *self = (MyPaintBrush *)malloc(sizeof(MyPaintBrush));
 
@@ -435,7 +435,7 @@ smallest_angular_difference(float a, float b)
   // mappings in critical places or extremely few events per second.
   //
   // note: parameters are is dx/ddab, ..., dtime/ddab (dab is the number, 5.0 = 5th dab)
-  void update_states_and_setting_values (MyPaintBrush *self, float step_dx, float step_dy, float step_dpressure, float step_declination, float step_ascension, float step_dtime)
+  void update_states_and_setting_values (MyPaintBrush *self, float step_ddab, float step_dx, float step_dy, float step_dpressure, float step_declination, float step_ascension, float step_dtime)
   {
     float pressure;
     float inputs[MYPAINT_BRUSH_INPUTS_COUNT];
@@ -483,7 +483,7 @@ smallest_angular_difference(float a, float b)
     float norm_dx, norm_dy, norm_dist, norm_speed;
     norm_dx = step_dx / step_dtime / base_radius;
     norm_dy = step_dy / step_dtime / base_radius;
-    norm_speed = sqrt(SQR(norm_dx) + SQR(norm_dy));
+    norm_speed = hypotf(norm_dx, norm_dy);
     norm_dist = norm_speed * step_dtime;
 
     inputs[MYPAINT_BRUSH_INPUT_PRESSURE] = pressure * expf(mapping_get_base_value(self->settings[MYPAINT_BRUSH_SETTING_PRESSURE_GAIN_LOG]));
@@ -508,8 +508,8 @@ smallest_angular_difference(float a, float b)
     }
 
     {
-      float fac = 1.0 - exp_decay (self->settings_value[MYPAINT_BRUSH_SETTING_SLOW_TRACKING_PER_DAB], 1.0);
-      self->states[MYPAINT_BRUSH_STATE_ACTUAL_X] += (self->states[MYPAINT_BRUSH_STATE_X] - self->states[MYPAINT_BRUSH_STATE_ACTUAL_X]) * fac; // FIXME: should this depend on base radius?
+      float fac = 1.0 - exp_decay (self->settings_value[MYPAINT_BRUSH_SETTING_SLOW_TRACKING_PER_DAB], step_ddab);
+      self->states[MYPAINT_BRUSH_STATE_ACTUAL_X] += (self->states[MYPAINT_BRUSH_STATE_X] - self->states[MYPAINT_BRUSH_STATE_ACTUAL_X]) * fac;
       self->states[MYPAINT_BRUSH_STATE_ACTUAL_Y] += (self->states[MYPAINT_BRUSH_STATE_Y] - self->states[MYPAINT_BRUSH_STATE_ACTUAL_Y]) * fac;
     }
 
@@ -890,16 +890,8 @@ smallest_angular_difference(float a, float b)
       assert(isfinite(xtilt) && isfinite(ytilt));
 
       tilt_ascension = 180.0*atan2(-xtilt, ytilt)/M_PI;
-      float e;
-      if (abs(xtilt) > abs(ytilt)) {
-        e = sqrt(1+ytilt*ytilt);
-      } else {
-        e = sqrt(1+xtilt*xtilt);
-      }
       const float rad = hypot(xtilt, ytilt);
-      float cos_alpha = rad/e;
-      if (cos_alpha >= 1.0) cos_alpha = 1.0; // fix numerical inaccuracy
-      tilt_declination = 180.0*acos(cos_alpha)/M_PI;
+      tilt_declination = 90-(rad*60);
 
       assert(isfinite(tilt_ascension));
       assert(isfinite(tilt_declination));
@@ -952,9 +944,9 @@ smallest_angular_difference(float a, float b)
 
     // draw many (or zero) dabs to the next position
 
-    // see doc/stroke2dabs.png
-    float dist_moved = self->states[MYPAINT_BRUSH_STATE_DIST];
-    float dist_todo = count_dabs_to (self, x, y, pressure, dtime);
+    // see doc/images/stroke2dabs.png
+    float dabs_moved = self->states[MYPAINT_BRUSH_STATE_PARTIAL_DABS];
+    float dabs_todo = count_dabs_to (self, x, y, pressure, dtime);
 
     if (dtime > 5 || self->reset_requested) {
       self->reset_requested = FALSE;
@@ -979,23 +971,22 @@ smallest_angular_difference(float a, float b)
       return TRUE;
     }
 
-    //g_print("dist = %f\n", states[MYPAINT_BRUSH_STATE_DIST]);
     enum { UNKNOWN, YES, NO } painted = UNKNOWN;
     double dtime_left = dtime;
 
-    float step_dx, step_dy, step_dpressure, step_dtime;
+    float step_ddab, step_dx, step_dy, step_dpressure, step_dtime;
     float step_declination, step_ascension;
-    while (dist_moved + dist_todo >= 1.0) { // there are dabs pending
+    while (dabs_moved + dabs_todo >= 1.0) { // there are dabs pending
       { // linear interpolation (nonlinear variant was too slow, see SVN log)
         float frac; // fraction of the remaining distance to move
-        if (dist_moved > 0) {
-          // "move" the brush exactly to the first dab (moving less than one dab)
-          frac = (1.0 - dist_moved) / dist_todo;
-          dist_moved = 0;
+        if (dabs_moved > 0) {
+          // "move" the brush exactly to the first dab
+          step_ddab = 1.0 - dabs_moved; // the step "moves" the brush by a fraction of one dab
+          dabs_moved = 0;
         } else {
-          // "move" the brush from one dab to the next
-          frac = 1.0 / dist_todo;
+          step_ddab = 1.0; // the step "moves" the brush by exactly one dab
         }
+        frac = step_ddab / dabs_todo;
         step_dx        = frac * (x - self->states[MYPAINT_BRUSH_STATE_X]);
         step_dy        = frac * (y - self->states[MYPAINT_BRUSH_STATE_Y]);
         step_dpressure = frac * (pressure - self->states[MYPAINT_BRUSH_STATE_PRESSURE]);
@@ -1005,7 +996,7 @@ smallest_angular_difference(float a, float b)
         step_ascension   = frac * smallest_angular_difference(self->states[MYPAINT_BRUSH_STATE_ASCENSION], tilt_ascension);
       }
 
-      update_states_and_setting_values (self, step_dx, step_dy, step_dpressure, step_declination, step_ascension, step_dtime);
+      update_states_and_setting_values (self, step_ddab, step_dx, step_dy, step_dpressure, step_declination, step_ascension, step_dtime);
       gboolean painted_now = prepare_and_draw_dab (self, surface);
       if (painted_now) {
         painted = YES;
@@ -1014,16 +1005,17 @@ smallest_angular_difference(float a, float b)
       }
 
       dtime_left   -= step_dtime;
-      dist_todo  = count_dabs_to (self, x, y, pressure, dtime_left);
+      dabs_todo  = count_dabs_to (self, x, y, pressure, dtime_left);
     }
 
     {
       // "move" the brush to the current time (no more dab will happen)
       // Important to do this at least once every event, because
       // brush_count_dabs_to depends on the radius and the radius can
-      // depend on something that changes much faster than only every
-      // dab (eg speed).
+      // depend on something that changes much faster than just every
+      // dab.
 
+      step_ddab = dabs_todo; // the step "moves" the brush by a fraction of one dab
       step_dx        = x - self->states[MYPAINT_BRUSH_STATE_X];
       step_dy        = y - self->states[MYPAINT_BRUSH_STATE_Y];
       step_dpressure = pressure - self->states[MYPAINT_BRUSH_STATE_PRESSURE];
@@ -1033,12 +1025,11 @@ smallest_angular_difference(float a, float b)
 
       //dtime_left = 0; but that value is not used any more
 
-      update_states_and_setting_values (self, step_dx, step_dy, step_dpressure, step_declination, step_ascension, step_dtime);
+      update_states_and_setting_values (self, step_ddab, step_dx, step_dy, step_dpressure, step_declination, step_ascension, step_dtime);
     }
 
     // save the fraction of a dab that is already done now
-    self->states[MYPAINT_BRUSH_STATE_DIST] = dist_moved + dist_todo;
-    //g_print("dist_final = %f\n", states[MYPAINT_BRUSH_STATE_DIST]);
+    self->states[MYPAINT_BRUSH_STATE_PARTIAL_DABS] = dabs_moved + dabs_todo;
 
     /* not working any more with the new rng...
     // next seed for the RNG (GRand has no get_state() and states[] must always contain our full state)
@@ -1091,11 +1082,30 @@ smallest_angular_difference(float a, float b)
   }
 
 #ifdef HAVE_JSON_C
-gboolean
+
+// Compat wrapper, for supporting libjson
+static gboolean
+obj_get(json_object *self, const gchar *key, json_object **obj_out) {
+#if JSON_C_MINOR_VERSION >= 10
+    return json_object_object_get_ex(self, key, obj_out);
+#else
+    json_object *o = json_object_object_get(self, key);
+    if (obj_out) {
+        *obj_out = o;
+    }
+    return (o != NULL);
+#endif
+}
+
+static gboolean
 update_settings_from_json_object(MyPaintBrush *self)
 {
     // Check version
-    json_object *version_object = json_object_object_get(self->brush_json, "version");
+    json_object *version_object = NULL;
+    if (! obj_get(self->brush_json, "version", &version_object)) {
+        fprintf(stderr, "Error: No 'version' field for brush\n");
+        return FALSE;
+    }
     const int version = json_object_get_int(version_object);
     if (version != 3) {
         fprintf(stderr, "Error: Unsupported brush setting version: %d\n", version);
@@ -1103,7 +1113,11 @@ update_settings_from_json_object(MyPaintBrush *self)
     }
 
     // Set settings
-    json_object *settings = json_object_object_get(self->brush_json, "settings");
+    json_object *settings = NULL;
+    if (! obj_get(self->brush_json, "settings", &settings)) {
+        fprintf(stderr, "Error: No 'settings' field for brush\n");
+        return FALSE;
+    }
 
     json_object_object_foreach(settings, setting_name, setting_obj) {
 
@@ -1115,12 +1129,20 @@ update_settings_from_json_object(MyPaintBrush *self)
         }
 
         // Base value
-        json_object *base_value_obj = json_object_object_get(setting_obj, "base_value");
+        json_object *base_value_obj = NULL;
+        if (! obj_get(setting_obj, "base_value", &base_value_obj)) {
+            fprintf(stderr, "Error: No 'base_value' field for setting: %s\n", setting_name);
+            return FALSE;
+        }
         const double base_value = json_object_get_double(base_value_obj);
         mypaint_brush_set_base_value(self, setting_id, base_value);
 
         // Inputs
-        json_object *inputs = json_object_object_get(setting_obj, "inputs");
+        json_object *inputs = NULL;
+        if (! obj_get(setting_obj, "inputs", &inputs)) {
+            fprintf(stderr, "Error: No 'inputs' field for setting: %s\n", setting_name);
+            return FALSE;
+        }
         json_object_object_foreach(inputs, input_name, input_obj) {
             MyPaintBrushInput input_id = mypaint_brush_input_from_cname(input_name);
 
