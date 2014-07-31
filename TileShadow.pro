@@ -73,7 +73,6 @@ HEADERS  += mainwindow.h \
     toollistwidget.h \
     layerlistwidget.h \
     toolsettingswidget.h \
-    toolsettingswidget_p.h \
     blendmodes.h \
     toollistpopup.h \
     imageexport.h \
