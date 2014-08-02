@@ -32,12 +32,22 @@ static const QGLFormat &getFormatSingleton()
     return *single;
 }
 
+struct SavedTabletEvent
+{
+    bool valid;
+    QPointF pos;
+    double pressure;
+    ulong timestamp;
+};
+
 class CanvasWidgetPrivate
 {
 public:
     QString activeToolPath;
     BaseTool *activeTool;
     QMap<QString, BaseTool *> tools;
+
+    SavedTabletEvent lastTabletEvent;
 
     ~CanvasWidgetPrivate();
 };
@@ -684,7 +694,12 @@ void CanvasWidget::keyReleaseEvent(QKeyEvent *event)
 
 void CanvasWidget::mousePressEvent(QMouseEvent *event)
 {
+    Q_D(CanvasWidget);
+
     QPointF pos = (event->localPos() + canvasOrigin) / viewScale;
+    float pressure = 1.0f;
+    ulong timestamp = event->timestamp();
+    bool wasTablet = false;
     Qt::MouseButton button = event->button();
     Qt::KeyboardModifiers modifiers = event->modifiers();
 
@@ -696,6 +711,15 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
         modifiers ^= Qt::MetaModifier;
 #endif
 
+    if (d->lastTabletEvent.valid)
+    {
+        d->lastTabletEvent.valid = false;
+        pos = d->lastTabletEvent.pos;
+        pressure = d->lastTabletEvent.pressure;
+        timestamp = d->lastTabletEvent.timestamp;
+        wasTablet = true;
+    }
+
     if (button == 1)
     {
         if (action == CanvasAction::ColorPick)
@@ -704,10 +728,13 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
         }
         else if (action == CanvasAction::None)
         {
-            ctx->strokeEventTimestamp = event->timestamp();
+            ctx->strokeEventTimestamp = timestamp;
 
-            startStroke(pos, 1.0f);
-            action = CanvasAction::MouseStroke;
+            startStroke(pos, pressure);
+            if (wasTablet)
+                action = CanvasAction::TabletStroke;
+            else
+                action = CanvasAction::MouseStroke;
             actionButton = event->button();
         }
     }
@@ -801,6 +828,8 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
 
 void CanvasWidget::tabletEvent(QTabletEvent *event)
 {
+    Q_D(CanvasWidget);
+
     QEvent::Type eventType = event->type();
 
     float xshift = event->hiResGlobalX() - event->globalX() + canvasOrigin.x();
@@ -809,14 +838,10 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
 
     updateModifiers(event);
 
-    if (eventType == QEvent::TabletPress &&
-        action == CanvasAction::None &&
-        event->modifiers() == 0)
+    if (eventType == QEvent::TabletPress)
     {
-        ctx->strokeEventTimestamp = event->timestamp();
-        startStroke(point, event->pressure());
-        action = CanvasAction::TabletStroke;
-        event->accept();
+        d->lastTabletEvent = {true, point, event->pressure(), event->timestamp()};
+        event->ignore();
     }
     else if (eventType == QEvent::TabletRelease &&
              action == CanvasAction::TabletStroke)
