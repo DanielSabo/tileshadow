@@ -96,9 +96,11 @@ MyPaintTool::MyPaintTool(const QString &path) : priv(new MyPaintToolPrivate())
 
             for (iter = settingsObj.begin(); iter != settingsObj.end(); ++iter)
             {
-                //FIXME: Assert that settingName is valid (or brushlib will crash)
                 QString     settingName = iter.key();
                 QJsonObject settingObj  = iter.value().toObject();
+
+                if (mypaint_brush_setting_from_cname(settingName.toUtf8().constData()) < 0)
+                    throw QString("Mypaint brush error, invalid setting:") + settingName;
 
                 settings[settingName].first = settingObj.value("base_value").toDouble(0);
 
@@ -109,6 +111,9 @@ MyPaintTool::MyPaintTool(const QString &path) : priv(new MyPaintToolPrivate())
                 {
                     QString    inputName  = inputIter.key();
                     QJsonArray inputArray = inputIter.value().toArray();
+
+                    if (mypaint_brush_input_from_cname(inputName.toUtf8().constData()) < 0)
+                        throw QString("Mypaint brush error, invalid setting:") + inputName;
 
                     QList<QPointF> mappingPoints;
 
