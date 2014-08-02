@@ -1,6 +1,7 @@
 #include "canvaswidget.h"
 #include "canvaswidget-opencl.h"
 #include "canvastile.h"
+#include "canvasrender.h"
 #include "canvascontext.h"
 #include "basetool.h"
 #include "tiledebugtool.h"
@@ -65,6 +66,7 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
     d_ptr(new CanvasWidgetPrivate),
     mouseEventRate(10),
     frameRate(10),
+    render(NULL),
     ctx(NULL),
     action(CanvasAction::None),
     toolColor(QColor::fromRgbF(0.0, 0.0, 0.0)),
@@ -85,16 +87,18 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
 
 CanvasWidget::~CanvasWidget()
 {
+    delete render;
     delete ctx;
 }
 
 void CanvasWidget::initializeGL()
 {
     ctx = new CanvasContext();
+    render = new CanvasRender();
 
     SharedOpenCL::getSharedOpenCL();
 
-    ctx->updateBackgroundTile();
+    render->updateBackgroundTile(ctx);
 
     newDrawing();
 }
@@ -108,12 +112,12 @@ void CanvasWidget::paintGL()
 {
     Q_D(CanvasWidget);
 
-    QOpenGLFunctions_3_2_Core *glFuncs = ctx->glFuncs;
+    QOpenGLFunctions_3_2_Core *glFuncs = render->glFuncs;
 
     frameRate.addEvents(1);
     emit updateStats();
 
-    ctx->closeTiles();
+    render->closeTiles(ctx);
 
     int widgetWidth  = width();
     int widgetHeight = height();
@@ -140,13 +144,13 @@ void CanvasWidget::paintGL()
 //    glFuncs->glClearColor(0.2, 0.2, 0.4, 1.0);
 //    glFuncs->glClear(GL_COLOR_BUFFER_BIT);
 
-    glFuncs->glUseProgram(ctx->program);
+    glFuncs->glUseProgram(render->program);
 
     glFuncs->glActiveTexture(GL_TEXTURE0);
-    glFuncs->glUniform1i(ctx->locationTileImage, 0);
-    glFuncs->glUniform2f(ctx->locationTileSize, tileWidth, tileHeight);
-    glFuncs->glUniform2f(ctx->locationTilePixels, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT);
-    glFuncs->glBindVertexArray(ctx->vertexArray);
+    glFuncs->glUniform1i(render->locationTileImage, 0);
+    glFuncs->glUniform2f(render->locationTileSize, tileWidth, tileHeight);
+    glFuncs->glUniform2f(render->locationTilePixels, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT);
+    glFuncs->glBindVertexArray(render->vertexArray);
 
     for (int ix = 0; ix < tileCountX; ++ix)
         for (int iy = 0; iy < tileCountY; ++iy)
@@ -154,9 +158,9 @@ void CanvasWidget::paintGL()
             float offsetX = (ix * tileWidth) - 1.0f - tileShiftX;
             float offsetY = 1.0f - ((iy + 1) * tileHeight) + tileShiftY;
 
-            GLuint tileBuffer = ctx->getGLBuf(ix + originTileX, iy + originTileY);
+            GLuint tileBuffer = render->getGLBuf(ix + originTileX, iy + originTileY);
             glFuncs->glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, tileBuffer);
-            glFuncs->glUniform2f(ctx->locationTileOrigin, offsetX, offsetY);
+            glFuncs->glUniform2f(render->locationTileOrigin, offsetX, offsetY);
             glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         }
 
@@ -168,13 +172,13 @@ void CanvasWidget::paintGL()
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         QPoint cursorPos = mapFromGlobal(QCursor::pos());
-        glFuncs->glUseProgram(ctx->cursorProgram);
-        glFuncs->glUniform4f(ctx->cursorProgramDimensions,
+        glFuncs->glUseProgram(render->cursorProgram);
+        glFuncs->glUniform4f(render->cursorProgramDimensions,
                              (float(cursorPos.x()) / widgetWidth * 2.0f) - 1.0f,
                              1.0f - (float(cursorPos.y()) / widgetHeight * 2.0f),
                              toolSize / widgetWidth, toolSize / widgetHeight);
-        glFuncs->glUniform1f(ctx->cursorProgramPixelRadius, toolSize / 2.0f);
-        glFuncs->glBindVertexArray(ctx->cursorVertexArray);
+        glFuncs->glUniform1f(render->cursorProgramPixelRadius, toolSize / 2.0f);
+        glFuncs->glBindVertexArray(render->cursorVertexArray);
         glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         glDisable(GL_BLEND);
     }
@@ -1019,7 +1023,7 @@ void CanvasWidget::newDrawing()
 {
     ctx->clearUndoHistory();
     ctx->clearRedoHistory();
-    ctx->clearTiles();
+    render->clearTiles();
     lastNewLayerNumber = 0;
     ctx->layers.clearLayers();
     ctx->layers.newLayerAt(0, QString().sprintf("Layer %02d", ++lastNewLayerNumber));
@@ -1034,7 +1038,7 @@ void CanvasWidget::openORA(QString path)
 {
     ctx->clearUndoHistory();
     ctx->clearRedoHistory();
-    ctx->clearTiles();
+    render->clearTiles();
     lastNewLayerNumber = 0;
     loadStackFromORA(&ctx->layers, path);
     setActiveLayer(0); // Sync up the undo layer

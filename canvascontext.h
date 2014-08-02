@@ -18,23 +18,6 @@ public:
     CanvasContext();
     ~CanvasContext();
 
-    QOpenGLFunctions_3_2_Core *glFuncs;
-
-    GLuint program;
-    GLuint locationTileOrigin;
-    GLuint locationTileSize;
-    GLuint locationTileImage;
-    GLuint locationTilePixels;
-
-    GLuint vertexBuffer;
-    GLuint vertexArray;
-
-    GLuint cursorProgram;
-    GLuint cursorProgramDimensions;
-    GLuint cursorProgramPixelRadius;
-    GLuint cursorVertexBuffer;
-    GLuint cursorVertexArray;
-
     QScopedPointer<StrokeContext> stroke;
     ulong strokeEventTimestamp; // last stroke event time, in milliseconds
 
@@ -45,19 +28,11 @@ public:
     QList<CanvasUndoEvent *> undoHistory;
     QList<CanvasUndoEvent *> redoHistory;
 
-    typedef std::map<QPoint, GLuint, _tilePointCompare> GLTileMap;
-
-    GLuint backgroundGLTile;
-    GLTileMap glTiles;
     TileSet dirtyTiles;
     TileSet strokeModifiedTiles;
 
-    GLuint getGLBuf(int x, int y);
-    void closeTileAt(int x, int y);
-    void closeTiles();
     void clearUndoHistory();
     void clearRedoHistory();
-    void clearTiles();
     void updateBackgroundTile();
 };
 

@@ -49,7 +49,8 @@ SOURCES += main.cpp\
     toolsettingswidget.cpp \
     toollistpopup.cpp \
     imageexport.cpp \
-    toolsettinginfo.cpp
+    toolsettinginfo.cpp \
+    canvasrender.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -78,7 +79,8 @@ HEADERS  += mainwindow.h \
     toollistpopup.h \
     imageexport.h \
     strokecontext.h \
-    toolsettinginfo.h
+    toolsettinginfo.h \
+    canvasrender.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \
