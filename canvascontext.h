@@ -45,7 +45,7 @@ public:
     QList<CanvasUndoEvent *> undoHistory;
     QList<CanvasUndoEvent *> redoHistory;
 
-    typedef std::map<QPoint, GLuint, _TilePointCompare> GLTileMap;
+    typedef std::map<QPoint, GLuint, _tilePointCompare> GLTileMap;
 
     GLuint backgroundGLTile;
     GLTileMap glTiles;

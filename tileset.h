@@ -7,13 +7,13 @@
 
 class CanvasTile;
 
-struct _TilePointCompare
+struct _tilePointCompare
 {
     bool operator()(const QPoint &a, const QPoint &b) const;
 };
 
-typedef std::set<QPoint, _TilePointCompare> TileSet;
-typedef std::map<QPoint, CanvasTile *, _TilePointCompare> TileMap;
+typedef std::set<QPoint, _tilePointCompare> TileSet;
+typedef std::map<QPoint, CanvasTile *, _tilePointCompare> TileMap;
 
 void _deleteTileMap(TileMap *tiles);
 
