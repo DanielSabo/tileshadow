@@ -134,13 +134,3 @@ TileSet BasicStrokeContext::strokeTo(QPointF point, float pressure, float dt)
     }
     return modTiles;
 }
-
-void BasicStrokeContext::multiplySize(float mult)
-{
-    radius *= mult;
-}
-
-float BasicStrokeContext::getPixelRadius()
-{
-    return radius;
-}

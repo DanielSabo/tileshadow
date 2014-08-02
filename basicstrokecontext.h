@@ -12,9 +12,6 @@ public:
     TileSet strokeTo(QPointF point, float pressure, float dt);
     void drawDab(QPointF point, TileSet &modTiles);
 
-    void multiplySize(float mult);
-    float getPixelRadius();
-
     float radius;
 
     QPointF start;
