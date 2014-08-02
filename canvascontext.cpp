@@ -162,14 +162,7 @@ GLuint CanvasContext::getGLBuf(int x, int y)
             return backgroundGLTile;
     }
 
-    closeTileAt(x, y);
-
-    // Call clFinish here because we closed a tile outside of closeTiles()
-    clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
-
-    GLuint tileBuffer = glTiles[QPoint(x, y)];
-
-    return tileBuffer ? tileBuffer : backgroundGLTile;
+    return backgroundGLTile;
 }
 
 void CanvasContext::closeTileAt(int x, int y)

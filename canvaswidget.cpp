@@ -1014,6 +1014,7 @@ void CanvasWidget::openORA(QString path)
     loadStackFromORA(&ctx->layers, path);
     setActiveLayer(0); // Sync up the undo layer
     canvasOrigin = QPoint(0, 0);
+    ctx->dirtyTiles = ctx->layers.getTileSet();
     update();
     modified = false;
     emit updateLayers();
