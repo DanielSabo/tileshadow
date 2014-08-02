@@ -20,11 +20,10 @@ public:
 protected:
     void showEvent(QShowEvent *event);
 
-    QScopedPointer<QString> queryResultString;
+    QString queryResultString;
 
 private:
     Ui::SystemInfoDialog *ui;
-    QLabel *outputLabel;
 };
 
 #endif // SYSTEMINFODIALOG_H

@@ -7,13 +7,11 @@ BenchmarkDialog::BenchmarkDialog(QWidget *parent) :
     ui(new Ui::BenchmarkDialog)
 {
   ui->setupUi(this);
-
-  outputLabel = findChild<QLabel*>("queryOutput");
 }
 
 void BenchmarkDialog::setOutputText(const QString &txt)
 {
-    outputLabel->setText(txt);
+    ui->outputLabel->setText(txt);
 }
 
 void BenchmarkDialog::runButtonClicked()

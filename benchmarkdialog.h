@@ -18,7 +18,6 @@ public:
 
 private:
     Ui::BenchmarkDialog *ui;
-    QLabel *outputLabel;
 
 signals:
 

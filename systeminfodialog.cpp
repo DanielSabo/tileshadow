@@ -18,8 +18,6 @@ SystemInfoDialog::SystemInfoDialog(QWidget *parent) :
     ui(new Ui::SystemInfoDialog)
 {
     ui->setupUi(this);
-
-    outputLabel = findChild<QLabel*>("queryOutput");
 }
 
 void addSectionHeader(QString &str, const char *name)
@@ -48,39 +46,33 @@ void addPlatformValue(QString &str, const char *name, const char *value)
 
 void SystemInfoDialog::showEvent(QShowEvent *event)
 {
-    (void)event;
-
-    if (!outputLabel)
-        return;
-
     if (queryResultString.isNull())
     {
-        queryResultString.reset(new QString ());
         unsigned int num_platforms;
         clGetPlatformIDs (0, NULL, &num_platforms);
 
         QOpenGLFunctions_3_2_Core gl = QOpenGLFunctions_3_2_Core();
         gl.initializeOpenGLFunctions();
 
-        queryResultString->append("<html><head>\n");
+        queryResultString.append("<html><head>\n");
 
-        queryResultString->append("<style>\n");
-        queryResultString->append(".queryContent { }\n");
-        queryResultString->append(".sectionHeader { font-size: x-large; font-weight: bold;  }\n");
-        queryResultString->append(".platformHeader { font-weight: bold; margin-left: 10px; }\n");
-        queryResultString->append(".platformValue { margin-left: 20px; white-space: normal; }\n");
-        queryResultString->append("</style>\n");
+        queryResultString.append("<style>\n");
+        queryResultString.append(".queryContent { }\n");
+        queryResultString.append(".sectionHeader { font-size: x-large; font-weight: bold;  }\n");
+        queryResultString.append(".platformHeader { font-weight: bold; margin-left: 10px; }\n");
+        queryResultString.append(".platformValue { margin-left: 20px; white-space: normal; }\n");
+        queryResultString.append("</style>\n");
 
-        queryResultString->append("</head><body><div class=\"queryContent\">\n");
+        queryResultString.append("</head><body><div class=\"queryContent\">\n");
 
-        addSectionHeader(*queryResultString, "OpenGL");
+        addSectionHeader(queryResultString, "OpenGL");
 
-        addPlatformHeader(*queryResultString, (const char *)gl.glGetString(GL_VENDOR));
-        addPlatformValue(*queryResultString, "Renderer", (const char *)gl.glGetString(GL_RENDERER));
-        addPlatformValue(*queryResultString, "GL Version", (const char *)gl.glGetString(GL_VERSION));
-        addPlatformValue(*queryResultString, "GLSL Version", (const char *)gl.glGetString(GL_SHADING_LANGUAGE_VERSION));
+        addPlatformHeader(queryResultString, (const char *)gl.glGetString(GL_VENDOR));
+        addPlatformValue(queryResultString, "Renderer", (const char *)gl.glGetString(GL_RENDERER));
+        addPlatformValue(queryResultString, "GL Version", (const char *)gl.glGetString(GL_VERSION));
+        addPlatformValue(queryResultString, "GLSL Version", (const char *)gl.glGetString(GL_SHADING_LANGUAGE_VERSION));
 
-        addSectionHeader(*queryResultString, "OpenCL");
+        addSectionHeader(queryResultString, "OpenCL");
 
         std::list<OpenCLDeviceInfo> deviceInfoList = enumerateOpenCLDevices();
         std::list<OpenCLDeviceInfo>::iterator deviceInfoIter;
@@ -92,12 +84,12 @@ void SystemInfoDialog::showEvent(QShowEvent *event)
             devStr.append(deviceInfoIter->getPlatformName());
             devStr.append(" - ");
             devStr.append(deviceInfoIter->getDeviceName());
-            addPlatformHeader(*queryResultString, devStr.toUtf8().constData());
+            addPlatformHeader(queryResultString, devStr.toUtf8().constData());
 
             char infoReturnStr[1024];
             cl_uint infoReturnInt = 0;
             clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_VERSION, sizeof(infoReturnStr), infoReturnStr, NULL);
-            addPlatformValue(*queryResultString, NULL, infoReturnStr);
+            addPlatformValue(queryResultString, NULL, infoReturnStr);
 
 #ifdef CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV
             {
@@ -108,29 +100,29 @@ void SystemInfoDialog::showEvent(QShowEvent *event)
                     CL_SUCCESS == clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV, sizeof(nvComputeMinor), &nvComputeMinor, NULL))
                 {
                     sprintf(infoReturnStr, "%d.%d", nvComputeMajor, nvComputeMinor);
-                    addPlatformValue(*queryResultString, "NVIDIA Compute Capability", infoReturnStr);
+                    addPlatformValue(queryResultString, "NVIDIA Compute Capability", infoReturnStr);
                 }
             }
 #endif
 
             clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(infoReturnInt), &infoReturnInt, NULL);
             sprintf(infoReturnStr, "%d", infoReturnInt);
-            addPlatformValue(*queryResultString, "CL_DEVICE_MAX_COMPUTE_UNITS", infoReturnStr);
+            addPlatformValue(queryResultString, "CL_DEVICE_MAX_COMPUTE_UNITS", infoReturnStr);
 
 #ifdef CL_DEVICE_WARP_SIZE_NV
             if (CL_SUCCESS == clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_WARP_SIZE_NV, sizeof(infoReturnInt), &infoReturnInt, NULL))
             {
                 sprintf(infoReturnStr, "%d", infoReturnInt);
-                addPlatformValue(*queryResultString, "CL_DEVICE_WARP_SIZE_NV", infoReturnStr);
+                addPlatformValue(queryResultString, "CL_DEVICE_WARP_SIZE_NV", infoReturnStr);
             }
 #endif
         }
 
-        queryResultString->append("</div>\n");
-        queryResultString->append("</body>\n");
+        queryResultString.append("</div>\n");
+        queryResultString.append("</body>\n");
     }
 
-    outputLabel->setText(*queryResultString);
+    ui->queryOutput->setText(queryResultString);
 }
 
 SystemInfoDialog::~SystemInfoDialog()
