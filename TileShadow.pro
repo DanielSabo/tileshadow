@@ -90,9 +90,11 @@ FORMS    += mainwindow.ui \
 win32 {
     INCLUDEPATH += "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v5.5\include"
     LIBS += -L"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v5.5\lib\Win32" -lOpenCL
+    RC_FILE = tileshadow.rc
 } mac {
     QMAKE_CXXFLAGS += -framework OpenCL -Qunused-arguments
     LIBS += -framework OpenCL
+    ICON = TileShadow.icns
 } unix:!mac {
     LIBS += -lOpenCL
 }

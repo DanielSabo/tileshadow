@@ -63,7 +63,17 @@ MainWindow::MainWindow(QWidget *parent) :
     canvas->setActiveTool("default.myb");
     canvas->setToolColor(QColor(255, 0, 0));
 
+#ifdef Q_OS_MAC
+    // On OSX the window icon represents the current file
     setWindowIcon(QIcon(":icons/image-x-generic.png"));
+#else
+    // On other platforms it represents the application
+    QIcon windowIcon;
+    windowIcon.addFile(":icons/app-tileshadow-16.png");
+    windowIcon.addFile(":icons/app-tileshadow-32.png");
+    windowIcon.addFile(":icons/app-tileshadow-128.png");
+    setWindowIcon(windowIcon);
+#endif
 
     setFocus();
 }
