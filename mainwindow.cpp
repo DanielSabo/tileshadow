@@ -24,7 +24,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     canvas = ui->mainCanvas;
-    ui->statusBar->hide();
 
     {
         QBoxLayout *sidebarLayout = qobject_cast<QBoxLayout *>(ui->sidebar->layout());
@@ -59,6 +58,8 @@ MainWindow::MainWindow(QWidget *parent) :
         restoreGeometry(appSettings.value("MainWindow/geometry").toByteArray());
     else
         resize(700, 400);
+
+    showStatusBar(appSettings.value("MainWindow/statusBar", false).toBool());
 
     canvas->setActiveTool("default.myb");
     canvas->setToolColor(QColor(255, 0, 0));
@@ -106,6 +107,8 @@ void MainWindow::updateTitle()
 
 void MainWindow::showStatusBar(bool show)
 {
+    ui->actionStatus_Bar->setChecked(show);
+
     if (show)
         ui->statusBar->show();
     else
@@ -195,6 +198,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
     }
 
     QSettings().setValue("MainWindow/geometry", saveGeometry());
+    QSettings().setValue("MainWindow/statusBar", ui->statusBar->isVisible());
 
     if (!infoWindow.isNull())
         infoWindow->close();
