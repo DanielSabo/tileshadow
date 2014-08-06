@@ -236,6 +236,9 @@ void CanvasRender::closeTileAt(CanvasContext *ctx, int x, int y)
 
 void CanvasRender::closeTiles(CanvasContext *ctx)
 {
+    if (ctx->dirtyTiles.empty())
+        return;
+
     if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
         glFinish();
 
