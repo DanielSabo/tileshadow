@@ -56,12 +56,15 @@ public:
 
     SavedTabletEvent lastTabletEvent;
 
+    int nextFrameDelay;
     QTimer frameTickTrigger;
     QElapsedTimer lastFrameTimer;
 };
 
 CanvasWidgetPrivate::CanvasWidgetPrivate()
 {
+    lastFrameTimer.invalidate();
+    nextFrameDelay = 15;
     activeTool = NULL;
     lastTabletEvent = {0, };
 }
@@ -136,15 +139,23 @@ void CanvasWidget::paintGL()
 
     QOpenGLFunctions_3_2_Core *glFuncs = render->glFuncs;
 
-    if (!d->lastFrameTimer.isValid() || d->lastFrameTimer.elapsed() > 15)
+    qint64 elapsedTime = 0;
+    if (d->lastFrameTimer.isValid())
+        elapsedTime = d->lastFrameTimer.elapsed();
+    else
+        d->lastFrameTimer.start();
+
+    if (elapsedTime > d->nextFrameDelay)
     {
+        d->nextFrameDelay = 15 - elapsedTime;
+
         d->lastFrameTimer.restart();
         d->frameTickTrigger.stop();
     }
     else
     {
         if (!d->frameTickTrigger.isActive())
-            d->frameTickTrigger.start();
+            d->frameTickTrigger.start(15 - elapsedTime);
         return;
     }
 
