@@ -44,14 +44,21 @@ struct SavedTabletEvent
 class CanvasWidgetPrivate
 {
 public:
+    CanvasWidgetPrivate();
+    ~CanvasWidgetPrivate();
+
     QString activeToolPath;
     BaseTool *activeTool;
     QMap<QString, BaseTool *> tools;
 
     SavedTabletEvent lastTabletEvent;
-
-    ~CanvasWidgetPrivate();
 };
+
+CanvasWidgetPrivate::CanvasWidgetPrivate()
+{
+    activeTool = NULL;
+    lastTabletEvent = {0, };
+}
 
 CanvasWidgetPrivate::~CanvasWidgetPrivate()
 {
