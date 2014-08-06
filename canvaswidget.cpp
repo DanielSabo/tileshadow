@@ -14,6 +14,8 @@
 #include <list>
 #include <QMouseEvent>
 #include <QFile>
+#include <QTimer>
+#include <QElapsedTimer>
 #include <QDebug>
 #include "glhelper.h"
 
@@ -28,6 +30,7 @@ static const QGLFormat &getFormatSingleton()
         single = new QGLFormat();
         single->setVersion(3, 2);
         single->setProfile(QGLFormat::CoreProfile);
+        single->setDoubleBuffer(false);
     }
 
     return *single;
@@ -52,6 +55,9 @@ public:
     QMap<QString, BaseTool *> tools;
 
     SavedTabletEvent lastTabletEvent;
+
+    QTimer frameTickTrigger;
+    QElapsedTimer lastFrameTimer;
 };
 
 CanvasWidgetPrivate::CanvasWidgetPrivate()
@@ -83,6 +89,8 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
     modified(false),
     canvasOrigin(0, 0)
 {
+    Q_D(CanvasWidget);
+
     setMouseTracking(true);
 
     colorPickCursor = QCursor(QPixmap(":/cursors/eyedropper.png"));
@@ -90,6 +98,13 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
     moveLayerCursor = QCursor(QPixmap(":/cursors/move-layer.png"));
 
     connect(this, &CanvasWidget::updateLayers, this, &CanvasWidget::canvasModified);
+
+    d->frameTickTrigger.setInterval(1);
+    d->frameTickTrigger.setSingleShot(true);
+    d->frameTickTrigger.setTimerType(Qt::PreciseTimer);
+
+    //FIXME: (As of QT5.2) Old style connect because timeout has QPrivateSignal, this should be fixed in some newer QT version
+    connect(&d->frameTickTrigger, SIGNAL(timeout()), this, SLOT(update()));
 }
 
 CanvasWidget::~CanvasWidget()
@@ -120,6 +135,18 @@ void CanvasWidget::paintGL()
     Q_D(CanvasWidget);
 
     QOpenGLFunctions_3_2_Core *glFuncs = render->glFuncs;
+
+    if (!d->lastFrameTimer.isValid() || d->lastFrameTimer.elapsed() > 15)
+    {
+        d->lastFrameTimer.restart();
+        d->frameTickTrigger.stop();
+    }
+    else
+    {
+        if (!d->frameTickTrigger.isActive())
+            d->frameTickTrigger.start();
+        return;
+    }
 
     frameRate.addEvents(1);
     emit updateStats();
