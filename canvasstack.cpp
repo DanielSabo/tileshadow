@@ -108,7 +108,7 @@ void clBlendInPlace(CanvasTile *inTile, CanvasTile *auxTile, BlendMode::Mode mod
                            0, NULL, NULL);
 }
 
-CanvasTile *CanvasStack::getTileMaybe(int x, int y)
+CanvasTile *CanvasStack::getTileMaybe(int x, int y, bool cache)
 {
     int layerCount = layers.size();
 
@@ -156,6 +156,12 @@ CanvasTile *CanvasStack::getTileMaybe(int x, int y)
     }
 
     if (result)
+    {
+        result->x = x;
+        result->y = y;
+    }
+
+    if (result && cache)
     {
         TileMap::iterator found = tiles.find(QPoint(x, y));
 

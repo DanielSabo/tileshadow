@@ -101,7 +101,7 @@ private:
     Q_DECLARE_PRIVATE(CanvasWidget)
 
     CanvasRender *render;
-    CanvasContext *ctx;
+    CanvasContext *context;
 
     CanvasAction::Action action;
     QColor toolColor;
@@ -118,6 +118,9 @@ private:
     void pickColorAt(QPoint pos);
     void updateLayerTranslate(int x, int y);
     void translateCurrentLayer(int x, int y);
+
+    CanvasContext *getContext();
+    CanvasContext *getContextMaybe();
 
     QCursor colorPickCursor;
     QCursor moveViewCursor;

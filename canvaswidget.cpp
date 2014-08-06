@@ -3,6 +3,7 @@
 #include "canvastile.h"
 #include "canvasrender.h"
 #include "canvascontext.h"
+#include "canvaseventthread.h"
 #include "basetool.h"
 #include "tiledebugtool.h"
 #include "mypainttool.h"
@@ -18,8 +19,6 @@
 #include <QElapsedTimer>
 #include <QDebug>
 #include "glhelper.h"
-
-using namespace std;
 
 static const QGLFormat &getFormatSingleton()
 {
@@ -55,7 +54,10 @@ public:
     BaseTool *activeTool;
     QMap<QString, BaseTool *> tools;
 
+    CanvasEventThread eventThread;
+
     SavedTabletEvent lastTabletEvent;
+    ulong strokeEventTimestamp; // last stroke event time, in milliseconds
 
     int nextFrameDelay;
     QTimer frameTickTrigger;
@@ -68,6 +70,7 @@ CanvasWidgetPrivate::CanvasWidgetPrivate()
     nextFrameDelay = 15;
     activeTool = NULL;
     lastTabletEvent = {0, };
+    strokeEventTimestamp = 0;
 }
 
 CanvasWidgetPrivate::~CanvasWidgetPrivate()
@@ -84,7 +87,7 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
     mouseEventRate(10),
     frameRate(10),
     render(NULL),
-    ctx(NULL),
+    context(NULL),
     action(CanvasAction::None),
     toolColor(QColor::fromRgbF(0.0, 0.0, 0.0)),
     viewScale(1.0f),
@@ -114,17 +117,22 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
 CanvasWidget::~CanvasWidget()
 {
     delete render;
-    delete ctx;
+    delete context;
 }
 
 void CanvasWidget::initializeGL()
 {
-    ctx = new CanvasContext();
+    Q_D(CanvasWidget);
+
+    context = new CanvasContext();
     render = new CanvasRender();
 
     SharedOpenCL::getSharedOpenCL();
 
-    render->updateBackgroundTile(ctx);
+    render->updateBackgroundTile(context);
+
+    d->eventThread.ctx = context;
+    d->eventThread.start();
 
     newDrawing();
 }
@@ -137,7 +145,6 @@ void CanvasWidget::resizeGL(int w, int h)
 void CanvasWidget::paintGL()
 {
     Q_D(CanvasWidget);
-
     QOpenGLFunctions_3_2_Core *glFuncs = render->glFuncs;
 
     qint64 elapsedTime = 0;
@@ -163,7 +170,20 @@ void CanvasWidget::paintGL()
     frameRate.addEvents(1);
     emit updateStats();
 
-    render->closeTiles(ctx);
+    {
+        d->eventThread.resultTilesMutex.lock();
+        for (auto &iter: d->eventThread.resultTiles)
+        {
+            render->renderTile(iter.first.x(), iter.first.y(), iter.second);
+            delete iter.second;
+        }
+        d->eventThread.resultTiles.clear();
+        d->eventThread.resultTilesMutex.unlock();
+    }
+
+    // Render dirty tiles after result tiles to avoid stale tiles
+    if (CanvasContext *ctx = getContextMaybe())
+        render->closeTiles(ctx);
 
     int widgetWidth  = width();
     int widgetHeight = height();
@@ -233,6 +253,7 @@ void CanvasWidget::paintGL()
 void CanvasWidget::startStroke(QPointF pos, float pressure)
 {
     Q_D(CanvasWidget);
+    CanvasContext *ctx = getContext(); //FIXME
 
     ctx->stroke.reset(NULL);
 
@@ -249,37 +270,52 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
 
     ctx->stroke.reset(d->activeTool->newStroke(targetLayer));
 
-    TileSet changedTiles = ctx->stroke->startStroke(pos, pressure);
+    auto msg = [pos, pressure](CanvasContext *ctx) {
+        if (!ctx->stroke.isNull())
+        {
+            TileSet changedTiles = ctx->stroke->startStroke(pos, pressure);
 
-    if(!changedTiles.empty())
-    {
-        ctx->dirtyTiles.insert(changedTiles.begin(), changedTiles.end());
-        ctx->strokeModifiedTiles.insert(changedTiles.begin(), changedTiles.end());
-        update();
-    }
+            if(!changedTiles.empty())
+            {
+                ctx->dirtyTiles.insert(changedTiles.begin(), changedTiles.end());
+                ctx->strokeModifiedTiles.insert(changedTiles.begin(), changedTiles.end());
+            }
+        }
+    };
+
+    d->eventThread.enqueueCommand(msg);
+
     modified = true;
     emit canvasModified();
 }
 
 void CanvasWidget::strokeTo(QPointF pos, float pressure, float dt)
 {
-    mouseEventRate.addEvents(1);
-    TileSet changedTiles;
-    if (!ctx->stroke.isNull())
-    {
-        changedTiles = ctx->stroke->strokeTo(pos, pressure, dt);
-    }
+    Q_D(CanvasWidget);
 
-    if(!changedTiles.empty())
-    {
-        ctx->dirtyTiles.insert(changedTiles.begin(), changedTiles.end());
-        ctx->strokeModifiedTiles.insert(changedTiles.begin(), changedTiles.end());
-        update();
-    }
+    mouseEventRate.addEvents(1);
+
+    auto msg = [pos, pressure, dt](CanvasContext *ctx) {
+        if (!ctx->stroke.isNull())
+        {
+            TileSet changedTiles = ctx->stroke->strokeTo(pos, pressure, dt);
+
+            if(!changedTiles.empty())
+            {
+                ctx->dirtyTiles.insert(changedTiles.begin(), changedTiles.end());
+                ctx->strokeModifiedTiles.insert(changedTiles.begin(), changedTiles.end());
+            }
+        }
+    };
+
+    d->eventThread.enqueueCommand(msg);
 }
 
 void CanvasWidget::endStroke()
 {
+    Q_D(CanvasWidget);
+    CanvasContext *ctx = getContext(); //FIXME
+
     if (ctx->stroke.isNull())
         return;
 
@@ -333,14 +369,18 @@ void CanvasWidget::setScale(float newScale)
 
 int CanvasWidget::getActiveLayer()
 {
+    CanvasContext *ctx = getContext();
+
     if (!ctx)
         return 0;
-
-    return ctx->currentLayer;
+    else
+        return ctx->currentLayer;
 }
 
 void CanvasWidget::setActiveLayer(int layerIndex)
 {
+    CanvasContext *ctx = getContext();
+
     if (!ctx)
         return;
 
@@ -357,6 +397,8 @@ void CanvasWidget::setActiveLayer(int layerIndex)
 
 void CanvasWidget::addLayerAbove(int layerIndex)
 {
+    CanvasContext *ctx = getContext();
+
     ctx->clearRedoHistory();
     CanvasUndoLayers *undoEvent = new CanvasUndoLayers(&ctx->layers, ctx->currentLayer);
     ctx->undoHistory.prepend(undoEvent);
@@ -370,6 +412,8 @@ void CanvasWidget::addLayerAbove(int layerIndex)
 
 void CanvasWidget::removeLayer(int layerIndex)
 {
+    CanvasContext *ctx = getContext();
+
     if (layerIndex < 0 || layerIndex > ctx->layers.layers.size())
         return;
     if (ctx->layers.layers.size() == 1)
@@ -400,6 +444,7 @@ void CanvasWidget::moveLayer(int currentIndex, int targetIndex)
     /* Move the layer at currentIndex to targetIndex, the layers at targetIndex and
      * above will be shifted up to accommodate it.
      */
+    CanvasContext *ctx = getContext();
 
     if (currentIndex < 0 || currentIndex >= ctx->layers.layers.size())
         return;
@@ -440,6 +485,8 @@ void CanvasWidget::moveLayer(int currentIndex, int targetIndex)
 
 void CanvasWidget::renameLayer(int layerIndex, QString name)
 {
+    CanvasContext *ctx = getContext();
+
     if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
         return;
 
@@ -455,6 +502,8 @@ void CanvasWidget::renameLayer(int layerIndex, QString name)
 
 void CanvasWidget::duplicateLayer(int layerIndex)
 {
+    CanvasContext *ctx = getContext();
+
     if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
         return;
 
@@ -480,6 +529,8 @@ void CanvasWidget::duplicateLayer(int layerIndex)
 
 void CanvasWidget::updateLayerTranslate(int x,  int y)
 {
+    CanvasContext *ctx = getContext();
+
     CanvasLayer *currentLayer = ctx->layers.layers[ctx->currentLayer];
     CanvasLayer *newLayer = ctx->currentLayerCopy->translated(x, y);
 
@@ -496,6 +547,8 @@ void CanvasWidget::updateLayerTranslate(int x,  int y)
 
 void CanvasWidget::translateCurrentLayer(int x,  int y)
 {
+    CanvasContext *ctx = getContext();
+
     CanvasLayer *currentLayer = ctx->layers.layers[ctx->currentLayer];
     CanvasLayer *newLayer = ctx->currentLayerCopy->translated(x, y);
     newLayer->prune();
@@ -530,8 +583,31 @@ void CanvasWidget::translateCurrentLayer(int x,  int y)
     modified = true;
 }
 
+CanvasContext *CanvasWidget::getContext()
+{
+    Q_D(CanvasWidget);
+
+    d->eventThread.sync();
+
+    if (!d->eventThread.resultTiles.empty())
+        update();
+
+    return context;
+}
+
+CanvasContext *CanvasWidget::getContextMaybe()
+{
+    Q_D(CanvasWidget);
+
+    if (d->eventThread.checkSync())
+        return context;
+    return NULL;
+}
+
 void CanvasWidget::setLayerVisible(int layerIndex, bool visible)
 {
+    CanvasContext *ctx = getContext();
+
     if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
         return;
 
@@ -556,6 +632,8 @@ void CanvasWidget::setLayerVisible(int layerIndex, bool visible)
 
 bool CanvasWidget::getLayerVisible(int layerIndex)
 {
+    CanvasContext *ctx = getContext();
+
     if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
         return false;
 
@@ -564,6 +642,8 @@ bool CanvasWidget::getLayerVisible(int layerIndex)
 
 void CanvasWidget::setLayerMode(int layerIndex, BlendMode::Mode mode)
 {
+    CanvasContext *ctx = getContext();
+
     if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
         return;
 
@@ -588,6 +668,8 @@ void CanvasWidget::setLayerMode(int layerIndex, BlendMode::Mode mode)
 
 BlendMode::Mode CanvasWidget::getLayerMode(int layerIndex)
 {
+    CanvasContext *ctx = getContext();
+
     if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
         return BlendMode::Over;
 
@@ -596,6 +678,7 @@ BlendMode::Mode CanvasWidget::getLayerMode(int layerIndex)
 
 QList<CanvasWidget::LayerInfo> CanvasWidget::getLayerList()
 {
+    CanvasContext *ctx = getContext();
     QList<LayerInfo> result;
 
     if (!ctx)
@@ -612,6 +695,8 @@ QList<CanvasWidget::LayerInfo> CanvasWidget::getLayerList()
 
 void CanvasWidget::undo()
 {
+    CanvasContext *ctx = getContext();
+
     if (ctx->undoHistory.empty())
         return;
 
@@ -642,6 +727,8 @@ void CanvasWidget::undo()
 
 void CanvasWidget::redo()
 {
+    CanvasContext *ctx = getContext();
+
     if (ctx->redoHistory.empty())
         return;
 
@@ -682,6 +769,8 @@ void CanvasWidget::setModified(bool state)
 
 void CanvasWidget::pickColorAt(QPoint pos)
 {
+    CanvasContext *ctx = getContext();
+
     int ix = tile_indice(pos.x(), TILE_PIXEL_WIDTH);
     int iy = tile_indice(pos.y(), TILE_PIXEL_HEIGHT);
     CanvasTile *tile = ctx->layers.layers[ctx->currentLayer]->getTileMaybe(ix, iy);
@@ -778,7 +867,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
         }
         else if (action == CanvasAction::None)
         {
-            ctx->strokeEventTimestamp = timestamp;
+            d->strokeEventTimestamp = timestamp;
 
             startStroke(pos, pressure);
             if (wasTablet)
@@ -815,6 +904,8 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
 
 void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
 {
+    Q_D(CanvasWidget);
+
     if (event->button() == actionButton)
     {
         if (action == CanvasAction::MouseStroke)
@@ -846,6 +937,8 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
 
 void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
 {
+    Q_D(CanvasWidget);
+
     updateModifiers(event);
 
     if (action == CanvasAction::MouseStroke)
@@ -853,9 +946,9 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
         QPointF pos = (event->localPos() + canvasOrigin) / viewScale;
         ulong newTimestamp = event->timestamp();
 
-        strokeTo(pos, 1.0f, float(newTimestamp) - ctx->strokeEventTimestamp);
+        strokeTo(pos, 1.0f, float(newTimestamp) - d->strokeEventTimestamp);
 
-        ctx->strokeEventTimestamp = newTimestamp;
+        d->strokeEventTimestamp = newTimestamp;
     }
     else if (action == CanvasAction::MoveView)
     {
@@ -904,8 +997,8 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
              action == CanvasAction::TabletStroke)
     {
         ulong newTimestamp = event->timestamp();
-        strokeTo(point, event->pressure(), float(newTimestamp) - ctx->strokeEventTimestamp);
-        ctx->strokeEventTimestamp = newTimestamp;
+        strokeTo(point, event->pressure(), float(newTimestamp) - d->strokeEventTimestamp);
+        d->strokeEventTimestamp = newTimestamp;
         event->accept();
     }
     else
@@ -1067,6 +1160,8 @@ QColor CanvasWidget::getToolColor()
 
 void CanvasWidget::newDrawing()
 {
+    CanvasContext *ctx = getContext();
+
     ctx->clearUndoHistory();
     ctx->clearRedoHistory();
     render->clearTiles();
@@ -1082,6 +1177,8 @@ void CanvasWidget::newDrawing()
 
 void CanvasWidget::openORA(QString path)
 {
+    CanvasContext *ctx = getContext();
+
     ctx->clearUndoHistory();
     ctx->clearRedoHistory();
     render->clearTiles();
@@ -1097,6 +1194,8 @@ void CanvasWidget::openORA(QString path)
 
 void CanvasWidget::saveAsORA(QString path)
 {
+    CanvasContext *ctx = getContext();
+
     saveStackAs(&ctx->layers, path);
     modified = false;
     emit canvasModified();
@@ -1104,5 +1203,7 @@ void CanvasWidget::saveAsORA(QString path)
 
 QImage CanvasWidget::asImage()
 {
+    CanvasContext *ctx = getContext();
+
     return stackToImage(&ctx->layers);
 }

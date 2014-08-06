@@ -50,7 +50,8 @@ SOURCES += main.cpp\
     toollistpopup.cpp \
     imageexport.cpp \
     toolsettinginfo.cpp \
-    canvasrender.cpp
+    canvasrender.cpp \
+    canvaseventthread.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -80,7 +81,8 @@ HEADERS  += mainwindow.h \
     imageexport.h \
     strokecontext.h \
     toolsettinginfo.h \
-    canvasrender.h
+    canvasrender.h \
+    canvaseventthread.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \

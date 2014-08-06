@@ -19,7 +19,6 @@ public:
     ~CanvasContext();
 
     QScopedPointer<StrokeContext> stroke;
-    ulong strokeEventTimestamp; // last stroke event time, in milliseconds
 
     int currentLayer;
     QScopedPointer<CanvasLayer> currentLayerCopy;
