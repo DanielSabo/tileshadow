@@ -31,6 +31,7 @@ static const QGLFormat &getFormatSingleton()
         single->setVersion(3, 2);
         single->setProfile(QGLFormat::CoreProfile);
         single->setDoubleBuffer(false);
+        single->setSwapInterval(0);
     }
 
     return *single;

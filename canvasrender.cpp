@@ -7,6 +7,7 @@
 #include <QDebug>
 
 #ifdef __APPLE__
+#include <OpenGL/OpenGL.h>
 #include <OpenCL/cl_gl.h>
 #else
 #include <CL/cl_gl.h>
@@ -24,6 +25,14 @@ CanvasRender::CanvasRender() :
         qWarning() << "Could not initialize OpenGL Core Profile 3.2";
         exit(1);
     }
+
+#ifdef __APPLE__
+    {
+        // Extra steps to disable vsync on OSX
+        GLint value = 0;
+        CGLSetParameter(CGLGetCurrentContext(), kCGLCPSwapInterval, &value);
+    }
+#endif
 
     /* Set up canvas tile data & shaders */
     GLuint vertexShader = compileGLShaderFile(glFuncs, ":/CanvasShader.vert", GL_VERTEX_SHADER);
