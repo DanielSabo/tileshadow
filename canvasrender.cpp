@@ -172,10 +172,8 @@ GLuint CanvasRender::getGLBuf(int x, int y)
     return backgroundGLTile;
 }
 
-void CanvasRender::closeTileAt(CanvasContext *ctx, int x, int y)
+void CanvasRender::renderTile(int x, int y, CanvasTile *tile)
 {
-    CanvasTile *tile = ctx->layers.getTileMaybe(x, y);
-
     GLTileMap::iterator found = glTiles.find(QPoint(x, y));
 
     GLuint tileBuffer = 0;
@@ -255,7 +253,11 @@ void CanvasRender::closeTiles(CanvasContext *ctx)
          dirtyIter != ctx->dirtyTiles.end();
          dirtyIter++)
     {
-        closeTileAt(ctx, dirtyIter->x(), dirtyIter->y());
+        int x = dirtyIter->x();
+        int y = dirtyIter->y();
+
+        CanvasTile *tile = ctx->layers.getTileMaybe(x, y);
+        renderTile(x, y, tile);
     }
 
     ctx->dirtyTiles.clear();
