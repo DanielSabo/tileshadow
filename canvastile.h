@@ -1,6 +1,12 @@
 #ifndef CANVASTILE_H
 #define CANVASTILE_H
 
+#ifdef __APPLE__
+#include <OpenCL/cl.h>
+#else
+#include <CL/cl.h>
+#endif
+
 static const int TILE_PIXEL_WIDTH  = 128;
 static const int TILE_PIXEL_HEIGHT = 128;
 static const int TILE_COMP_TOTAL = TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT * 4;
