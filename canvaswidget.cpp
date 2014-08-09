@@ -9,16 +9,11 @@
 #include "mypainttool.h"
 #include "ora.h"
 #include "imageexport.h"
-#include <cmath>
-#include <iostream>
-#include <map>
-#include <list>
+#include <qmath.h>
 #include <QMouseEvent>
-#include <QFile>
 #include <QTimer>
 #include <QElapsedTimer>
 #include <QDebug>
-#include "glhelper.h"
 
 static const QGLFormat &getFormatSingleton()
 {
