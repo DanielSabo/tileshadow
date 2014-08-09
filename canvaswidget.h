@@ -59,6 +59,9 @@ public:
     bool getModified();
     void setModified(bool state);
 
+    bool getSynchronous();
+    void setSynchronous(bool synced);
+
     int getActiveLayer();
     void setActiveLayer(int layerIndex);
     void addLayerAbove(int layerIndex);

@@ -411,6 +411,8 @@ double drawBenchmarkCircle(CanvasWidget *canvas, float radius, float centerX, fl
 {
     QElapsedTimer timer;
     float currentAngle = 0;
+    bool savedSync = canvas->getSynchronous();
+    canvas->setSynchronous(true);
 
     timer.start();
     canvas->startStroke(QPointF(cosf(currentAngle) * radius + centerX, sinf(currentAngle) * radius + centerY), 1.0f);
@@ -422,6 +424,7 @@ double drawBenchmarkCircle(CanvasWidget *canvas, float radius, float centerX, fl
     canvas->endStroke();
     clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
     double runTime = timer.elapsed();
+    canvas->setSynchronous(savedSync);
 
     return runTime;
 }

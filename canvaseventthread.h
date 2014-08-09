@@ -21,6 +21,7 @@ public:
     QList< std::function<void(CanvasContext *)> > inQueue;
     bool threadIsSynced;
     int workPending;
+    bool synchronous;
 
     QMutex resultTilesMutex;
     TileMap resultTiles;
@@ -31,6 +32,9 @@ public:
     void enqueueCommand(std::function<void(CanvasContext *)> msg);
     bool checkSync();
     void sync();
+
+    bool getSynchronous();
+    void setSynchronous(bool synced);
 
 signals:
     void hasResultTiles();

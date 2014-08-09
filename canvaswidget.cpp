@@ -782,6 +782,20 @@ void CanvasWidget::setModified(bool state)
     modified = true;
 }
 
+bool CanvasWidget::getSynchronous()
+{
+    Q_D(CanvasWidget);
+
+    return d->eventThread.getSynchronous();
+}
+
+void CanvasWidget::setSynchronous(bool synced)
+{
+    Q_D(CanvasWidget);
+
+    return d->eventThread.setSynchronous(synced);
+}
+
 void CanvasWidget::pickColorAt(QPoint pos)
 {
     CanvasContext *ctx = getContext();

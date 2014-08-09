@@ -9,7 +9,8 @@ CanvasEventThread::CanvasEventThread(QObject *parent)
       ctx(0),
       workPending(0),
       threadIsSynced(true),
-      needResultTiles(false)
+      needResultTiles(false),
+      synchronous(false)
 {
 }
 
@@ -42,8 +43,27 @@ void CanvasEventThread::sync()
     return;
 }
 
+bool CanvasEventThread::getSynchronous()
+{
+    return synchronous;
+}
+
+void CanvasEventThread::setSynchronous(bool synced)
+{
+    synchronous = synced;
+
+    if (synchronous)
+        sync();
+}
+
 void CanvasEventThread::enqueueCommand(function<void(CanvasContext *)> msg)
 {
+    if (synchronous)
+    {
+        msg(ctx);
+        return;
+    }
+
     threadIsSynced = false;
 
     queueMutex.lock();
