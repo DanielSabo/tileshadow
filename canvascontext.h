@@ -10,6 +10,7 @@
 #include "canvaslayer.h"
 #include "canvasstack.h"
 #include "canvasundoevent.h"
+#include "basetool.h"
 #include "strokecontext.h"
 
 class CanvasContext
@@ -18,6 +19,7 @@ public:
     CanvasContext();
     ~CanvasContext();
 
+    QScopedPointer<BaseTool> strokeTool;
     QScopedPointer<StrokeContext> stroke;
 
     int currentLayer;

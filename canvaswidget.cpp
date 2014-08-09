@@ -268,33 +268,32 @@ void CanvasWidget::paintGL()
 void CanvasWidget::startStroke(QPointF pos, float pressure)
 {
     Q_D(CanvasWidget);
-    CanvasContext *ctx = getContext(); //FIXME
-
-    ctx->stroke.reset(NULL);
-
-    if (ctx->layers.layers.empty())
-        return;
 
     if (!d->activeTool)
         return;
 
-    CanvasLayer *targetLayer = ctx->layers.layers.at(ctx->currentLayer);
+    BaseTool *strokeTool = d->activeTool->clone();
 
-    if (!targetLayer->visible)
-        return;
+    auto msg = [strokeTool, pos, pressure](CanvasContext *ctx) {
+        ctx->strokeTool.reset(strokeTool);
+        ctx->stroke.reset(NULL);
 
-    ctx->stroke.reset(d->activeTool->newStroke(targetLayer));
+        if (ctx->layers.layers.empty())
+            return;
 
-    auto msg = [pos, pressure](CanvasContext *ctx) {
-        if (!ctx->stroke.isNull())
+        CanvasLayer *targetLayer = ctx->layers.layers.at(ctx->currentLayer);
+
+        if (!targetLayer->visible)
+            return;
+
+        ctx->stroke.reset(strokeTool->newStroke(targetLayer));
+
+        TileSet changedTiles = ctx->stroke->startStroke(pos, pressure);
+
+        if(!changedTiles.empty())
         {
-            TileSet changedTiles = ctx->stroke->startStroke(pos, pressure);
-
-            if(!changedTiles.empty())
-            {
-                ctx->dirtyTiles.insert(changedTiles.begin(), changedTiles.end());
-                ctx->strokeModifiedTiles.insert(changedTiles.begin(), changedTiles.end());
-            }
+            ctx->dirtyTiles.insert(changedTiles.begin(), changedTiles.end());
+            ctx->strokeModifiedTiles.insert(changedTiles.begin(), changedTiles.end());
         }
     };
 
