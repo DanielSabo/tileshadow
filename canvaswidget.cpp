@@ -192,6 +192,7 @@ void CanvasWidget::paintGL()
             delete iter.second;
         }
         d->eventThread.resultTiles.clear();
+        d->eventThread.needResultTiles = true;
         d->eventThread.resultTilesMutex.unlock();
     }
 

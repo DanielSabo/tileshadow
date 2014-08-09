@@ -24,6 +24,7 @@ public:
 
     QMutex resultTilesMutex;
     TileMap resultTiles;
+    volatile bool needResultTiles;
 
     CanvasContext *ctx;
 

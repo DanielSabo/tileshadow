@@ -8,7 +8,8 @@ CanvasEventThread::CanvasEventThread(QObject *parent)
     : QThread(parent),
       ctx(0),
       workPending(0),
-      threadIsSynced(true)
+      threadIsSynced(true),
+      needResultTiles(false)
 {
 }
 
@@ -78,34 +79,43 @@ void CanvasEventThread::run()
         Q_ASSERT(workPending == batchSize);
         queueMutex.unlock();
 
-        // FIXME: Assert context is owned by this thread
+
         while (!messages.empty())
-            messages.takeFirst()(ctx);
-
-        if (!ctx->dirtyTiles.empty())
         {
-            TileMap newTiles;
-            for (QPoint const &iter : ctx->dirtyTiles)
+            while (!messages.empty())
             {
-                int x = iter.x();
-                int y = iter.y();
+                messages.takeFirst()(ctx);
 
-                newTiles[QPoint(x, y)] = ctx->layers.getTileMaybe(x, y, false);
+                if (needResultTiles && !ctx->dirtyTiles.empty())
+                    break;
             }
-            ctx->dirtyTiles.clear();
 
-            resultTilesMutex.lock();
-            for (auto &iter: newTiles)
+            if (!ctx->dirtyTiles.empty())
             {
-                CanvasTile *& tile = resultTiles[iter.first];
-                if (tile)
-                    delete tile;
-                tile = iter.second;
-            }
-            newTiles.clear();
-            resultTilesMutex.unlock();
+                TileMap newTiles;
+                for (QPoint const &iter : ctx->dirtyTiles)
+                {
+                    int x = iter.x();
+                    int y = iter.y();
 
-            emit hasResultTiles();
+                    newTiles[QPoint(x, y)] = ctx->layers.getTileMaybe(x, y, false);
+                }
+                ctx->dirtyTiles.clear();
+
+                resultTilesMutex.lock();
+                for (auto &iter: newTiles)
+                {
+                    CanvasTile *& tile = resultTiles[iter.first];
+                    if (tile)
+                        delete tile;
+                    tile = iter.second;
+                }
+                newTiles.clear();
+                needResultTiles = false;
+                resultTilesMutex.unlock();
+
+                emit hasResultTiles();
+            }
         }
     }
 }
