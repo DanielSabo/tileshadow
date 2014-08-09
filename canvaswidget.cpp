@@ -142,30 +142,42 @@ void CanvasWidget::resizeGL(int w, int h)
     glViewport(0, 0, qMax(w, 1), qMax(h, 1));
 }
 
+void CanvasWidget::paintEvent(QPaintEvent *)
+{
+    Q_D(CanvasWidget);
+
+    if (!updatesEnabled() || !isValid())
+        return;
+
+    if (!d->lastFrameTimer.isValid())
+    {
+        d->lastFrameTimer.start();
+        glDraw();
+    }
+    else
+    {
+        qint64 elapsedTime = d->lastFrameTimer.elapsed();
+
+        if (elapsedTime >= d->nextFrameDelay)
+        {
+            d->nextFrameDelay = 15 - elapsedTime;
+
+            d->lastFrameTimer.restart();
+            d->frameTickTrigger.stop();
+            glDraw();
+        }
+        else
+        {
+            if (!d->frameTickTrigger.isActive())
+                d->frameTickTrigger.start(qMax<int>(15 - elapsedTime, 0));
+        }
+    }
+}
+
 void CanvasWidget::paintGL()
 {
     Q_D(CanvasWidget);
     QOpenGLFunctions_3_2_Core *glFuncs = render->glFuncs;
-
-    qint64 elapsedTime = 0;
-    if (d->lastFrameTimer.isValid())
-        elapsedTime = d->lastFrameTimer.elapsed();
-    else
-        d->lastFrameTimer.start();
-
-    if (elapsedTime > d->nextFrameDelay)
-    {
-        d->nextFrameDelay = 15 - elapsedTime;
-
-        d->lastFrameTimer.restart();
-        d->frameTickTrigger.stop();
-    }
-    else
-    {
-        if (!d->frameTickTrigger.isActive())
-            d->frameTickTrigger.start(15 - elapsedTime);
-        return;
-    }
 
     frameRate.addEvents(1);
     emit updateStats();
