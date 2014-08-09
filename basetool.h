@@ -11,6 +11,7 @@ class BaseTool
 public:
     BaseTool();
     virtual ~BaseTool();
+    virtual BaseTool *clone() = 0;
     virtual StrokeContext *newStroke(CanvasLayer *layer) = 0;
 
     virtual void reset() = 0;

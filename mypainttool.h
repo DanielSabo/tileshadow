@@ -8,8 +8,9 @@ class MyPaintToolPrivate;
 class MyPaintTool : public BaseTool
 {
 public:
-    MyPaintTool(const QString &path);
+    explicit MyPaintTool(const QString &path);
     ~MyPaintTool();
+    BaseTool *clone();
 
     void reset();
     float getPixelRadius();
@@ -22,6 +23,7 @@ public:
     StrokeContext *newStroke(CanvasLayer *layer);
 
 private:
+    MyPaintTool(const MyPaintTool &tool);
     MyPaintToolPrivate *priv;
 };
 

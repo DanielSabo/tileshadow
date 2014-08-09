@@ -145,9 +145,19 @@ MyPaintTool::MyPaintTool(const QString &path) : priv(new MyPaintToolPrivate())
     priv->updateRadius();
 }
 
+MyPaintTool::MyPaintTool(const MyPaintTool &tool) : priv(new MyPaintToolPrivate())
+{
+    *priv = *tool.priv;
+}
+
 MyPaintTool::~MyPaintTool()
 {
     delete priv;
+}
+
+BaseTool *MyPaintTool::clone()
+{
+    return new MyPaintTool(*this);
 }
 
 void MyPaintTool::reset()

@@ -23,6 +23,14 @@ TileDebugTool::~TileDebugTool()
     delete priv;
 }
 
+BaseTool *TileDebugTool::clone()
+{
+    TileDebugTool *result = new TileDebugTool();
+    *result->priv = *priv;
+
+    return result;
+}
+
 void TileDebugTool::reset()
 {
     priv->color = QColor::fromRgbF(0.0, 0.0, 0.0);

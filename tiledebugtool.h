@@ -9,6 +9,7 @@ class TileDebugTool : public BaseTool
 public:
     TileDebugTool();
     ~TileDebugTool();
+    BaseTool *clone();
 
     void reset();
     float getPixelRadius();
