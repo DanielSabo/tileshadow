@@ -329,32 +329,36 @@ void CanvasWidget::strokeTo(QPointF pos, float pressure, float dt)
 void CanvasWidget::endStroke()
 {
     Q_D(CanvasWidget);
-    CanvasContext *ctx = getContext(); //FIXME
 
-    if (ctx->stroke.isNull())
-        return;
+    auto msg = [](CanvasContext *ctx) {
+        if (!ctx->stroke.isNull())
+        {
+            ctx->stroke.reset();
 
-    ctx->stroke.reset();
+            CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
+            undoEvent->targetTileMap = ctx->layers.layers[ctx->currentLayer]->tiles;
+            undoEvent->currentLayer = ctx->currentLayer;
 
-    CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
-    undoEvent->targetTileMap = ctx->layers.layers[ctx->currentLayer]->tiles;
-    undoEvent->currentLayer = ctx->currentLayer;
+            CanvasLayer *currentLayerObj = ctx->layers.layers[ctx->currentLayer];
 
-    CanvasLayer *currentLayerObj = ctx->layers.layers[ctx->currentLayer];
+            for (QPoint const &iter : ctx->strokeModifiedTiles)
+            {
+                /* Move oldTile to the layer because we will are just going to overwrite the one it currentLayerCopy */
+                CanvasTile *oldTile = ctx->currentLayerCopy->getTileMaybe(iter.x(), iter.y());
+                undoEvent->tiles[iter] = oldTile;
 
-    for (TileSet::iterator iter = ctx->strokeModifiedTiles.begin(); iter != ctx->strokeModifiedTiles.end(); iter++)
-    {
-        /* Move oldTile to the layer because we will are just going to overwrite the one it currentLayerCopy */
-        CanvasTile *oldTile = ctx->currentLayerCopy->getTileMaybe(iter->x(), iter->y());
-        undoEvent->tiles[*iter] = oldTile;
+                /* FIXME: It's hypothetically possible that the stroke removed tiles */
+                (*ctx->currentLayerCopy->tiles)[iter] = (*currentLayerObj->tiles)[iter]->copy();
+            }
 
-        /* FIXME: It's hypothetically possible that the stroke removed tiles */
-        (*ctx->currentLayerCopy->tiles)[*iter] = (*currentLayerObj->tiles)[*iter]->copy();
-    }
+            ctx->clearRedoHistory(); //FIXME: This should probably happen at the start of the stroke
+            ctx->undoHistory.prepend(undoEvent);
+            ctx->strokeModifiedTiles.clear();
+        }
+    };
 
-    ctx->clearRedoHistory(); //FIXME: This should probably happen at the start of the stroke
-    ctx->undoHistory.prepend(undoEvent);
-    ctx->strokeModifiedTiles.clear();
+    d->eventThread.enqueueCommand(msg);
+
     modified = true;
     emit canvasModified();
 }
