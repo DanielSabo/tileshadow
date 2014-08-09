@@ -112,6 +112,8 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
 
     //FIXME: (As of QT5.2) Old style connect because timeout has QPrivateSignal, this should be fixed in some newer QT version
     connect(&d->frameTickTrigger, SIGNAL(timeout()), this, SLOT(update()));
+
+    connect(&d->eventThread, SIGNAL(hasResultTiles()), this, SLOT(update()), Qt::QueuedConnection);
 }
 
 CanvasWidget::~CanvasWidget()
@@ -600,9 +602,6 @@ CanvasContext *CanvasWidget::getContext()
     Q_D(CanvasWidget);
 
     d->eventThread.sync();
-
-    if (!d->eventThread.resultTiles.empty())
-        update();
 
     return context;
 }

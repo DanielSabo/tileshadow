@@ -31,6 +31,9 @@ public:
     bool checkSync();
     void sync();
 
+signals:
+    void hasResultTiles();
+
 protected:
     void run();
 };

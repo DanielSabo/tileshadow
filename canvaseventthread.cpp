@@ -104,6 +104,8 @@ void CanvasEventThread::run()
             }
             newTiles.clear();
             resultTilesMutex.unlock();
+
+            emit hasResultTiles();
         }
     }
 }
