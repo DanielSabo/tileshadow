@@ -82,15 +82,9 @@ void CanvasEventThread::run()
 
         while (!messages.empty())
         {
-            while (!messages.empty())
-            {
-                messages.takeFirst()(ctx);
+            messages.takeFirst()(ctx);
 
-                if (needResultTiles && !ctx->dirtyTiles.empty())
-                    break;
-            }
-
-            if (!ctx->dirtyTiles.empty())
+            if ((needResultTiles || messages.empty()) && !ctx->dirtyTiles.empty())
             {
                 TileMap newTiles;
                 for (QPoint const &iter : ctx->dirtyTiles)
