@@ -2,8 +2,6 @@
 #define BENCHMARKDIALOG_H
 
 #include <QDialog>
-#include <QScopedPointer>
-#include <QLabel>
 
 namespace Ui {
 class BenchmarkDialog;

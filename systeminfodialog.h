@@ -2,8 +2,6 @@
 #define SYSTEMINFODIALOG_H
 
 #include <QDialog>
-#include <QScopedPointer>
-#include <QLabel>
 
 namespace Ui {
 class SystemInfoDialog;
