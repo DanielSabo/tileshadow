@@ -5,10 +5,6 @@
 #include <QRgb>
 #include <qmath.h>
 #include <QMouseEvent>
-#include <QScopedPointer>
-
-#include <iostream>
-using namespace std;
 
 static const double BOX_VALUE_FACTOR = 0.75;
 
@@ -35,8 +31,8 @@ public:
 
     QRect boxRect;
 
-    QScopedPointer<QImage> renderedInnerBox;
-    QScopedPointer<QImage> renderedDial;
+    QImage renderedInnerBox;
+    QImage renderedDial;
 };
 
 HSVColorDial::HSVColorDial(QWidget *parent) :
@@ -77,7 +73,7 @@ void HSVColorDial::setColor(const QColor &color)
 
     emit updateColor(QColor::fromHsvF(d->h, d->s, d->v));
 
-    d->renderedInnerBox.reset();
+    d->renderedInnerBox = QImage();
     update();
 }
 
@@ -89,9 +85,8 @@ QColor HSVColorDial::getColor() const
 void HSVColorDial::resizeEvent(QResizeEvent *event)
 {
     Q_D(HSVColorDial);
-    d->renderedDial.reset();
-    d->renderedInnerBox.reset();
-    //updateGeometry
+    d->renderedDial = QImage();
+    d->renderedInnerBox = QImage();
 }
 
 static float hueFromXY(float x, float y)
@@ -134,11 +129,11 @@ void HSVColorDial::paintEvent(QPaintEvent *event)
 
     if (d->renderedDial.isNull())
     {
-        d->renderedDial.reset(new QImage(dialSize, dialSize, QImage::Format_ARGB32));
+        d->renderedDial = QImage(dialSize, dialSize, QImage::Format_ARGB32);
 
         for (int row = 0; row < dialSize; row++)
         {
-            QRgb *pixel = (QRgb *)d->renderedDial->scanLine(row);
+            QRgb *pixel = (QRgb *)d->renderedDial.scanLine(row);
             for (int col = 0; col < dialSize; col++)
             {
                 float dx = col - dialSize / 2.0f;
@@ -175,11 +170,11 @@ void HSVColorDial::paintEvent(QPaintEvent *event)
         QPoint p2 = QPoint(cos(-1.0 / 4.0 * M_PI) * boxInnerRadius, sin(3.0 / 4.0 * M_PI) * boxInnerRadius) + center;
         d->boxRect = QRect(p1.x(), p1.y(), abs(p2.x() - p1.x()), abs(p2.y() - p1.y()));
 
-        d->renderedInnerBox.reset(new QImage(d->boxRect.size(), QImage::Format_ARGB32));
+        d->renderedInnerBox = QImage(d->boxRect.size(), QImage::Format_ARGB32);
 
         for (int row = 0; row < d->boxRect.height(); row++)
         {
-            QRgb *pixel = (QRgb *)d->renderedInnerBox->scanLine(row);
+            QRgb *pixel = (QRgb *)d->renderedInnerBox.scanLine(row);
             float v = float(d->boxRect.height() - row) / d->boxRect.height();
             v = powf(v, BOX_VALUE_FACTOR);
             for (int col = 0; col < d->boxRect.width(); col++)
@@ -194,8 +189,8 @@ void HSVColorDial::paintEvent(QPaintEvent *event)
     }
 
     QPainter painter(this);
-    painter.drawImage(QPoint(dialOffsetX,0), *d->renderedDial);
-    painter.drawImage(d->boxRect.topLeft() + QPoint(dialOffsetX, 0), *d->renderedInnerBox);
+    painter.drawImage(QPoint(dialOffsetX,0), d->renderedDial);
+    painter.drawImage(d->boxRect.topLeft() + QPoint(dialOffsetX, 0), d->renderedInnerBox);
 
     { /* Selected hue */
         QPointF center = QPointF(dialSize / 2 + dialOffsetX, dialSize / 2) + QPointF(0.5f, 0.5f);
@@ -245,7 +240,7 @@ void HSVColorDial::mouseMoveEvent(QMouseEvent *event)
     {
         float h = hueFromXY(dx, dy);
         d->h = h;
-        d->renderedInnerBox.reset();
+        d->renderedInnerBox = QImage();
         update();
         emit updateColor(QColor::fromHsvF(d->h, d->s, d->v));
     }
@@ -282,7 +277,7 @@ void HSVColorDial::mousePressEvent(QMouseEvent *event)
     {
         float h = hueFromXY(dx, dy);
         d->h = h;
-        d->renderedInnerBox.reset();
+        d->renderedInnerBox = QImage();
         update();
         emit updateColor(QColor::fromHsvF(d->h, d->s, d->v));
         d->inDialDrag = true;
@@ -321,7 +316,7 @@ void HSVColorDial::mouseReleaseEvent(QMouseEvent *event)
         float h = hueFromXY(dx, dy);
 //        qDebug() << h << QColor::fromHsvF(h, 1, 1);
         d->h = h;
-        d->renderedInnerBox.reset();
+        d->renderedInnerBox = QImage();
         update();
         emit updateColor(QColor::fromHsvF(d->h, d->s, d->v));
     }
