@@ -208,9 +208,6 @@ void CanvasRender::renderTile(int x, int y, CanvasTile *tile)
 
     if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
     {
-        /* This function assumes cl_khr_gl_event is present; which allows
-         * the Acquire and Release calls to be used without explicitly syncing.
-         */
         cl_int err = CL_SUCCESS;
         cl_command_queue cmdQueue = SharedOpenCL::getSharedOpenCL()->cmdQueue;
         cl_context context = SharedOpenCL::getSharedOpenCL()->ctx;
