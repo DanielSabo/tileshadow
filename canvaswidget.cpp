@@ -179,17 +179,24 @@ void CanvasWidget::paintGL()
     frameRate.addEvents(1);
     emit updateStats();
 
+    d->eventThread.resultTilesMutex.lock();
+    if (!d->eventThread.resultTiles.empty())
     {
-        d->eventThread.resultTilesMutex.lock();
+        if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
+            glFinish();
+
         for (auto &iter: d->eventThread.resultTiles)
         {
             render->renderTile(iter.first.x(), iter.first.y(), iter.second);
             delete iter.second;
         }
         d->eventThread.resultTiles.clear();
-        d->eventThread.needResultTiles = true;
-        d->eventThread.resultTilesMutex.unlock();
+
+        if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
+            clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
     }
+    d->eventThread.needResultTiles = true;
+    d->eventThread.resultTilesMutex.unlock();
 
     // Render dirty tiles after result tiles to avoid stale tiles
     if (CanvasContext *ctx = getContextMaybe())
