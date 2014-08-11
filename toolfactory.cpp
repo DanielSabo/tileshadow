@@ -3,6 +3,7 @@
 #include <QDir>
 
 #include "tiledebugtool.h"
+#include "roundbrushtool.h"
 #include "mypainttool.h"
 
 static void asciiTitleCase(QString &instr)
@@ -52,6 +53,7 @@ ToolList ToolFactory::listTools()
     ToolList toolList;
 
     toolList.append(QPair<QString, QString>("debug", "Debug"));
+    toolList.append(QPair<QString, QString>("round", "Round"));
 
     QStringList brushFiles = findBrushFiles(QDir(":/mypaint-tools/"));
 
@@ -84,6 +86,10 @@ BaseTool *ToolFactory::loadTool(QString toolName)
     else if (toolName == QStringLiteral("debug"))
     {
         result = new TileDebugTool();
+    }
+    else if (toolName == QStringLiteral("round"))
+    {
+        result = new RoundBrushTool();
     }
 
     return result;

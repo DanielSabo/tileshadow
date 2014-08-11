@@ -1,4 +1,5 @@
 #include "basicstrokecontext.h"
+#include <qmath.h>
 #include "canvastile.h"
 #include "paintutils.h"
 
@@ -10,7 +11,8 @@ BasicStrokeContext::BasicStrokeContext(CanvasLayer *layer, float radius)
 
 void BasicStrokeContext::drawDab(QPointF point, TileSet &modTiles)
 {
-    cl_int intRadius = radius;
+    cl_int intRadius = ceil(radius);
+    cl_float floatRadius = radius;
     int ix_start = tile_indice(point.x() - intRadius, TILE_PIXEL_WIDTH);
     int iy_start = tile_indice(point.y() - intRadius, TILE_PIXEL_HEIGHT);
 
@@ -24,7 +26,7 @@ void BasicStrokeContext::drawDab(QPointF point, TileSet &modTiles)
     cl_int stride = TILE_PIXEL_WIDTH;
 
     err = clSetKernelArg(kernel, 1, sizeof(cl_int), (void *)&stride);
-    err = clSetKernelArg(kernel, 4, sizeof(cl_int), (void *)&intRadius);
+    err = clSetKernelArg(kernel, 4, sizeof(cl_float), (void *)&floatRadius);
 
     for (int iy = iy_start; iy <= iy_end; ++iy)
     {

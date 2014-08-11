@@ -2,7 +2,7 @@ __kernel void circle(__global float4 *buf,
                               int     stride,
                               int     x,
                               int     y,
-                              int     r,
+                              float   r,
                               float4  color)
 {
   int gidx = get_global_id(0);

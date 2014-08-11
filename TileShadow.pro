@@ -45,6 +45,7 @@ SOURCES += main.cpp\
     basetool.cpp \
     mypainttool.cpp \
     tiledebugtool.cpp \
+    roundbrushtool.cpp \
     toollistwidget.cpp \
     toolfactory.cpp \
     layerlistwidget.cpp \
@@ -77,6 +78,7 @@ HEADERS  += mainwindow.h \
     basetool.h \
     mypainttool.h \
     tiledebugtool.h \
+    roundbrushtool.h \
     toollistwidget.h \
     toolfactory.h \
     layerlistwidget.h \
