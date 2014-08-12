@@ -1,7 +1,7 @@
 #ifndef STROKECONTEXT_H
 #define STROKECONTEXT_H
 
-#include <canvaslayer.h>
+#include "canvaslayer.h"
 
 class StrokeContext
 {

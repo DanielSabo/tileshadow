@@ -3,8 +3,8 @@
 
 #include <QList>
 #include <QColor>
-#include <strokecontext.h>
-#include <toolsettinginfo.h>
+#include "strokecontext.h"
+#include "toolsettinginfo.h"
 
 class BaseTool
 {
