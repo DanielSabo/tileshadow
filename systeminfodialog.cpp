@@ -115,6 +115,31 @@ void SystemInfoDialog::showEvent(QShowEvent *event)
                 addPlatformValue(queryResultString, "CL_DEVICE_WARP_SIZE_NV", infoReturnStr);
             }
 #endif
+            {
+                cl_ulong byteSize;
+                clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(byteSize), &byteSize, NULL);
+                QString format = QStringLiteral("%1 bytes");
+
+                if (byteSize > 1024)
+                {
+                    byteSize /= 1024;
+                    format = QStringLiteral("%1 kB");
+                }
+
+                if (byteSize > 1024)
+                {
+                    byteSize /= 1024;
+                    format = QStringLiteral("%1 MB");
+                }
+
+                addPlatformValue(queryResultString, "CL_DEVICE_GLOBAL_MEM_SIZE", format.arg(byteSize).toUtf8().constData());
+            }
+
+            {
+                cl_bool infoReturnBool;
+                clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_HOST_UNIFIED_MEMORY, sizeof(infoReturnBool), &infoReturnBool, NULL);
+                addPlatformValue(queryResultString, "CL_DEVICE_HOST_UNIFIED_MEMORY", infoReturnBool ? "True" : "False");
+            }
         }
 
         queryResultString.append("</div>\n");
