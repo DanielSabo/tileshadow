@@ -19,24 +19,24 @@ SystemInfoDialog::SystemInfoDialog(QWidget *parent) :
     ui->setupUi(this);
 }
 
-void addSectionHeader(QString &str, const char *name)
+void addSectionHeader(QString &str, QString const &name)
 {
    str.append("<div class=\"sectionHeader\">");
    str.append(name);
    str.append("</div>\n");
 }
 
-void addPlatformHeader(QString &str, const char *name)
+void addPlatformHeader(QString &str, QString const &name)
 {
     str.append("<div class=\"platformHeader\">");
     str.append(name);
     str.append("</div>\n");
 }
 
-void addPlatformValue(QString &str, const char *name, const char *value)
+void addPlatformValue(QString &str, QString const &name, QString const &value)
 {
     str.append("<div class=\"platformValue\">");
-    if (name && strlen(name))
+    if (!name.isEmpty())
         str.append(name).append(": ");
     str.append(value);
     str.append("</div>\n");
@@ -83,7 +83,7 @@ void SystemInfoDialog::showEvent(QShowEvent *event)
             devStr.append(deviceInfoIter->getPlatformName());
             devStr.append(" - ");
             devStr.append(deviceInfoIter->getDeviceName());
-            addPlatformHeader(queryResultString, devStr.toUtf8().constData());
+            addPlatformHeader(queryResultString, devStr);
 
             char infoReturnStr[1024];
             cl_uint infoReturnInt = 0;
@@ -98,21 +98,18 @@ void SystemInfoDialog::showEvent(QShowEvent *event)
                     &&
                     CL_SUCCESS == clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV, sizeof(nvComputeMinor), &nvComputeMinor, NULL))
                 {
-                    sprintf(infoReturnStr, "%d.%d", nvComputeMajor, nvComputeMinor);
-                    addPlatformValue(queryResultString, "NVIDIA Compute Capability", infoReturnStr);
+                    addPlatformValue(queryResultString, "NVIDIA Compute Capability", QStringLiteral("%1.%2").arg(nvComputeMajor).arg(nvComputeMinor));
                 }
             }
 #endif
 
             clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(infoReturnInt), &infoReturnInt, NULL);
-            sprintf(infoReturnStr, "%d", infoReturnInt);
-            addPlatformValue(queryResultString, "CL_DEVICE_MAX_COMPUTE_UNITS", infoReturnStr);
+            addPlatformValue(queryResultString, "CL_DEVICE_MAX_COMPUTE_UNITS", QString::number(infoReturnInt));
 
 #ifdef CL_DEVICE_WARP_SIZE_NV
             if (CL_SUCCESS == clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_WARP_SIZE_NV, sizeof(infoReturnInt), &infoReturnInt, NULL))
             {
-                sprintf(infoReturnStr, "%d", infoReturnInt);
-                addPlatformValue(queryResultString, "CL_DEVICE_WARP_SIZE_NV", infoReturnStr);
+                addPlatformValue(queryResultString, "CL_DEVICE_WARP_SIZE_NV", QString::number(infoReturnInt));
             }
 #endif
             {
@@ -132,7 +129,7 @@ void SystemInfoDialog::showEvent(QShowEvent *event)
                     format = QStringLiteral("%1 MB");
                 }
 
-                addPlatformValue(queryResultString, "CL_DEVICE_GLOBAL_MEM_SIZE", format.arg(byteSize).toUtf8().constData());
+                addPlatformValue(queryResultString, "CL_DEVICE_GLOBAL_MEM_SIZE", format.arg(byteSize));
             }
 
             {
