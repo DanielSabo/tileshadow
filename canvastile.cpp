@@ -9,13 +9,13 @@ CanvasTile::CanvasTile()
                               TILE_COMP_TOTAL * sizeof(float), tileData, NULL);
 }
 
-CanvasTile::~CanvasTile(void)
+CanvasTile::~CanvasTile()
 {
     unmapHost();
     clReleaseMemObject(tileMem);
 }
 
-float *CanvasTile::mapHost(void)
+float *CanvasTile::mapHost()
 {
     if (!tileData)
     {

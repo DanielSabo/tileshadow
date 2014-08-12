@@ -26,11 +26,8 @@ public:
     CanvasTile();
     ~CanvasTile();
 
-    cl_mem  tileMem;
-    float  *tileData;
-
-    float *mapHost(void);
-    cl_mem unmapHost(void);
+    float *mapHost();
+    cl_mem unmapHost();
 
     void fill(float r, float g, float b, float a);
     CanvasTile *copy();
@@ -38,6 +35,9 @@ public:
 private:
   CanvasTile(const CanvasTile&);
   CanvasTile &operator=(const CanvasTile&);
+
+  cl_mem  tileMem;
+  float  *tileData;
 };
 
 #endif // CANVASTILE_H
