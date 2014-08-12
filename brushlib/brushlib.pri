@@ -8,7 +8,6 @@ INCLUDEPATH += $$PWD
 
 SOURCES += $$PWD/fifo.c \
            $$PWD/helpers.c \
-           $$PWD/libmypaint.c \
            $$PWD/mapping.c \
            $$PWD/mypaint-brush-settings.c \
            $$PWD/mypaint-brush.c \
