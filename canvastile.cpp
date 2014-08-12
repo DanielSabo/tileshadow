@@ -1,7 +1,7 @@
 #include "canvaswidget-opencl.h"
 #include "canvastile.h"
 
-CanvasTile::CanvasTile(int x, int y) : x(x), y(y)
+CanvasTile::CanvasTile()
 {
     tileMem = 0;
     tileData = NULL;
@@ -59,7 +59,7 @@ void CanvasTile::fill(float r, float g, float b, float a)
 
 CanvasTile *CanvasTile::copy()
 {
-    CanvasTile *result = new CanvasTile(x, y);
+    CanvasTile *result = new CanvasTile();
 
     unmapHost();
     result->unmapHost();

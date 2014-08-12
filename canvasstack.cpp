@@ -4,7 +4,7 @@
 
 CanvasStack::CanvasStack()
 {
-    backgroundTile = new CanvasTile(0, 0);
+    backgroundTile = new CanvasTile();
     backgroundTile->fill(1.0f, 1.0f, 1.0f, 1.0f);
     backgroundTileCL = backgroundTile->copy();
     backgroundTileCL->unmapHost();
@@ -153,12 +153,6 @@ CanvasTile *CanvasStack::getTileMaybe(int x, int y, bool cache)
         }
 
         result = inTile;
-    }
-
-    if (result)
-    {
-        result->x = x;
-        result->y = y;
     }
 
     if (result && cache)

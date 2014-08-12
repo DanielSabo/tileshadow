@@ -187,7 +187,7 @@ CanvasTile *CanvasLayer::getTile(int x, int y)
     if (found != tiles->end())
         return found->second;
 
-    CanvasTile *tile = new CanvasTile(x, y);
+    CanvasTile *tile = new CanvasTile();
 
     tile->fill(0.0f, 0.0f, 0.0f, 0.0f);
 

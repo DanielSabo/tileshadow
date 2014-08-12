@@ -23,11 +23,9 @@ static inline int tile_indice (int coordinate, int stride)
 class CanvasTile
 {
 public:
-    CanvasTile(int x, int y);
+    CanvasTile();
     ~CanvasTile();
 
-    int     x;
-    int     y;
     cl_mem  tileMem;
     float  *tileData;
 
