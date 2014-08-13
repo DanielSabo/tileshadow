@@ -14,9 +14,10 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = TileShadow
 TEMPLATE = app
 
-# For unique_ptr
-#QMAKE_CXXFLAGS += -std=gnu++0x
-QMAKE_CFLAGS += -std=gnu99
+!win32-msvc* {
+    QMAKE_CFLAGS += -std=gnu99
+}
+
 QMAKE_CXXFLAGS += -O2
 QMAKE_CFLAGS += -O2
 
@@ -90,8 +91,13 @@ FORMS    += mainwindow.ui \
     layerlistwidget.ui
 
 win32 {
-    INCLUDEPATH += "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v5.5\include"
-    LIBS += -L"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v5.5\lib\Win32" -lOpenCL
+    win32-msvc* {
+        INCLUDEPATH += "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v5.5\include"
+        LIBS += "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v5.5\lib\x64\OpenCL.lib"
+    } else {
+        INCLUDEPATH += "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v5.5\include"
+        LIBS += -L"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v5.5\lib\Win32" -lOpenCL
+    }
     RC_FILE = tileshadow.rc
 } mac {
     QMAKE_CXXFLAGS += -framework OpenCL -Qunused-arguments

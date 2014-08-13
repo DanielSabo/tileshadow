@@ -10,6 +10,7 @@
 #include <QXmlStreamReader>
 #include <qzipwriter.h>
 #include <qzipreader.h>
+#include <cstdint>
 
 #include "lodepng.h"
 #include "imageexport.h"

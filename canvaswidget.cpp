@@ -704,7 +704,7 @@ QList<CanvasWidget::LayerInfo> CanvasWidget::getLayerList()
     for (int i = ctx->layers.layers.size() - 1; i >= 0; --i)
     {
         CanvasLayer *layer = ctx->layers.layers[i];
-        result.append((LayerInfo){layer->name, layer->visible, layer->mode});
+        result.append({layer->name, layer->visible, layer->mode});
     }
 
     return result;
