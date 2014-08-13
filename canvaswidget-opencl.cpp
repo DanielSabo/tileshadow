@@ -1,6 +1,7 @@
 #include "canvaswidget-opencl.h"
 #include <string.h>
 #include <iostream>
+#include <vector>
 #include <QFile>
 #include <QDebug>
 #include <QStringList>
@@ -123,10 +124,10 @@ const QString &OpenCLDeviceInfo::getDeviceName()
         size_t deviceNameSize = 0;
         clGetDeviceInfo(device, CL_DEVICE_NAME, 0, NULL, &deviceNameSize);
 
-        char deviceNameBuffer[deviceNameSize];
-        clGetDeviceInfo(device, CL_DEVICE_NAME, deviceNameSize, deviceNameBuffer, NULL);
+        vector<char> deviceNameBuffer(deviceNameSize);
+        clGetDeviceInfo(device, CL_DEVICE_NAME, deviceNameSize, deviceNameBuffer.data(), NULL);
 
-        deviceName = QString(deviceNameBuffer);
+        deviceName = QString(deviceNameBuffer.data());
     }
 
     return deviceName;
@@ -139,10 +140,10 @@ const QString &OpenCLDeviceInfo::getPlatformName()
         size_t platformNameSize = 0;
         clGetPlatformInfo(platform, CL_PLATFORM_NAME, 0, NULL, &platformNameSize);
 
-        char platformNameBuffer[platformNameSize];
-        clGetPlatformInfo(platform, CL_PLATFORM_NAME, platformNameSize, platformNameBuffer, NULL);
+        vector<char> platformNameBuffer(platformNameSize);
+        clGetPlatformInfo(platform, CL_PLATFORM_NAME, platformNameSize, platformNameBuffer.data(), NULL);
 
-        platformName = QString(platformNameBuffer);
+        platformName = QString(platformNameBuffer.data());
     }
 
     return platformName;
@@ -160,22 +161,21 @@ std::list<OpenCLDeviceInfo> enumerateOpenCLDevices()
 {
     std::list<OpenCLDeviceInfo> deviceList;
 
-    cl_uint i, j;
-
     cl_uint numPlatforms;
     clGetPlatformIDs (0, NULL, &numPlatforms);
-    cl_platform_id platforms[numPlatforms];
-    clGetPlatformIDs (numPlatforms, platforms, NULL);
 
-    for (i = 0; i < numPlatforms; ++i)
+    vector<cl_platform_id> platforms(numPlatforms);
+    clGetPlatformIDs (numPlatforms, platforms.data(), NULL);
+
+    for (cl_platform_id platform: platforms)
     {
         cl_uint numDevices;
-        clGetDeviceIDs (platforms[i], CL_DEVICE_TYPE_ALL, 0, NULL, &numDevices);
-        cl_device_id devices[numDevices];
-        clGetDeviceIDs (platforms[i], CL_DEVICE_TYPE_ALL, numDevices, devices, NULL);
+        clGetDeviceIDs (platform, CL_DEVICE_TYPE_ALL, 0, NULL, &numDevices);
+        vector<cl_device_id> devices(numDevices);
+        clGetDeviceIDs (platform, CL_DEVICE_TYPE_ALL, numDevices, devices.data(), NULL);
 
-        for (j = 0; j < numDevices; ++j)
-            deviceList.push_back(OpenCLDeviceInfo(devices[j]));
+        for (cl_device_id device: devices)
+            deviceList.push_back(OpenCLDeviceInfo(device));
     }
 
     return deviceList;
@@ -226,11 +226,11 @@ static cl_program compileFile (SharedOpenCL *cl, const QString &path)
     clGetProgramBuildInfo (prog, cl->device, CL_PROGRAM_BUILD_LOG, 0, NULL, &error_len);
     if (error_len)
     {
-        char *error_buf = new char[error_len];
+        vector<char> error_buf(error_len);
         error_buf[0] = '\0';
 
-        clGetProgramBuildInfo (prog, cl->device, CL_PROGRAM_BUILD_LOG, error_len, error_buf, NULL);
-        QString errorStr = QString(error_buf).trimmed();
+        clGetProgramBuildInfo (prog, cl->device, CL_PROGRAM_BUILD_LOG, error_len, error_buf.data(), NULL);
+        QString errorStr = QString(error_buf.data()).trimmed();
         if (errorStr.size() > 0)
             qWarning() << errorStr;
         else if (err != CL_SUCCESS)
@@ -270,12 +270,11 @@ static cl_context createSharedContext()
         return 0;
 #if defined(Q_OS_WIN32) || (defined(Q_OS_UNIX) && !defined(Q_OS_MAC))
     cl_context result;
-    cl_uint i;
 
     cl_uint numPlatforms;
     clGetPlatformIDs (0, NULL, &numPlatforms);
-    cl_platform_id platforms[numPlatforms];
-    clGetPlatformIDs (numPlatforms, platforms, NULL);
+    vector<cl_platform_id> platforms(numPlatforms);
+    clGetPlatformIDs (numPlatforms, platforms.data(), NULL);
 
     clGetGLContextInfoKHR_fn clGetGLContextInfoKHR = (clGetGLContextInfoKHR_fn)clGetExtensionFunctionAddress ("clGetGLContextInfoKHR");
 
@@ -285,13 +284,13 @@ static cl_context createSharedContext()
         return 0;
     }
 
-    for (i = 0; i < numPlatforms; ++i)
+    for (cl_platform_id platform: platforms)
     {
         size_t resultSize;
-        clGetPlatformInfo(platforms[i], CL_PLATFORM_EXTENSIONS, 0, NULL, &resultSize);
-        char resultStr[resultSize];
-        clGetPlatformInfo(platforms[i], CL_PLATFORM_EXTENSIONS, resultSize, resultStr, NULL);
-        QStringList platform_extensions = QString(resultStr).split(' ');
+        clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, 0, NULL, &resultSize);
+        vector<char> resultStr(resultSize);
+        clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, resultSize, resultStr.data(), NULL);
+        QStringList platform_extensions = QString(resultStr.data()).split(' ');
 
         if (platform_extensions.indexOf(QString("cl_khr_gl_sharing")) != -1)
         {
@@ -303,14 +302,14 @@ static cl_context createSharedContext()
             cl_context_properties properties[] = {
                 CL_GL_CONTEXT_KHR, (cl_context_properties)wglGetCurrentContext(),
                 CL_WGL_HDC_KHR, (cl_context_properties)wglGetCurrentDC(),
-                CL_CONTEXT_PLATFORM, (cl_context_properties)platforms[i],
+                CL_CONTEXT_PLATFORM, (cl_context_properties)platform,
                 0, 0,
             };
 #elif defined(Q_OS_UNIX)
             cl_context_properties properties[] = {
                 CL_GL_CONTEXT_KHR, (cl_context_properties)glXGetCurrentContext(),
                 CL_GLX_DISPLAY_KHR, (cl_context_properties)glXGetCurrentDisplay(),
-                CL_CONTEXT_PLATFORM, (cl_context_properties)platforms[i],
+                CL_CONTEXT_PLATFORM, (cl_context_properties)platform,
                 0, 0,
             };
 #else
