@@ -32,6 +32,8 @@ public:
     void fill(float r, float g, float b, float a);
     CanvasTile *copy();
 
+    static int globalTileCount();
+
 private:
   CanvasTile(const CanvasTile&);
   CanvasTile &operator=(const CanvasTile&);

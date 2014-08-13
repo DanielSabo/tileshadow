@@ -1,18 +1,29 @@
 #include "canvaswidget-opencl.h"
 #include "canvastile.h"
 
+static QAtomicInt allocatedTileCount;
+
+int CanvasTile::globalTileCount()
+{
+    return allocatedTileCount;
+}
+
 CanvasTile::CanvasTile()
 {
     tileMem = 0;
     tileData = NULL;
     tileMem = clCreateBuffer (SharedOpenCL::getSharedOpenCL()->ctx, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
                               TILE_COMP_TOTAL * sizeof(float), tileData, NULL);
+
+    allocatedTileCount.ref();
 }
 
 CanvasTile::~CanvasTile()
 {
     unmapHost();
     clReleaseMemObject(tileMem);
+
+    allocatedTileCount.deref();
 }
 
 float *CanvasTile::mapHost()

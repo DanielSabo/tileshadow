@@ -12,6 +12,7 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QImageWriter>
+#include "canvastile.h"
 #include "hsvcolordial.h"
 #include "toolsettingswidget.h"
 #include "toollistwidget.h"
@@ -120,8 +121,16 @@ void MainWindow::updateStatus()
     if (!ui->statusBar->isVisible())
         return;
 
-    ui->statusBar->showMessage(
-        QString().sprintf("FPS: %.02f Events/sec: %.02f", canvas->frameRate.getRate(), canvas->mouseEventRate.getRate()));
+    QString message;
+
+    message.sprintf("FPS: %.02f Events/sec: %.02f", canvas->frameRate.getRate(), canvas->mouseEventRate.getRate());
+
+    int allocated = CanvasTile::globalTileCount() * TILE_COMP_TOTAL * sizeof(float);
+    allocated /= 1024 * 1024;
+
+    message += " Tiles: " + QString::number(allocated) + "MB";
+
+    ui->statusBar->showMessage(message);
 }
 
 void MainWindow::updateTool()
