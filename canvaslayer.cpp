@@ -44,7 +44,10 @@ void CanvasLayer::prune()
                 empty = false;
 
         if (empty)
+        {
+            delete iter->second;
             tiles->erase(iter++);
+        }
         else
             ++iter;
     }
