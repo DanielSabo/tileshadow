@@ -35,9 +35,12 @@
 #endif // HAVE_JSON_C
 
 #ifdef _MSC_VER
-  #include <float.h>
-  static inline int    isfinite(double x) { return _finite(x); }
-  static inline float  roundf  (float  x) { return x >= 0.0f ? floorf(x + 0.5f) : ceilf(x - 0.5f); }
+  #define inline __inline
+  #if _MSC_VER < 1800
+    #include <float.h>
+    static inline int    isfinite(double x) { return _finite(x); }
+    static inline float  roundf  (float  x) { return x >= 0.0f ? floorf(x + 0.5f) : ceilf(x - 0.5f); }
+  #endif
 #endif
 
 #ifndef M_PI
