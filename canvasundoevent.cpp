@@ -30,7 +30,12 @@ TileSet CanvasUndoTiles::apply(CanvasStack *stack, int *activeLayer)
 
     for (TileMap::iterator iter = tiles.begin(); iter != tiles.end(); ++iter)
     {
-        redoTiles[iter->first] = (*targetTileMap)[iter->first];
+        CanvasTile *redoTile = (*targetTileMap)[iter->first];
+
+        if (redoTile)
+            redoTile->swapHost();
+
+        redoTiles[iter->first] = redoTile;
 
         if (iter->second)
             (*targetTileMap)[iter->first] = iter->second;

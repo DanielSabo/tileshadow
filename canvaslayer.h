@@ -33,6 +33,7 @@ public:
     CanvasLayer *translated(int x, int y) const;
     TileSet takeTiles(CanvasLayer *source);
     void prune();
+    void swapOut();
 };
 
 #endif // CANVASLAYER_H

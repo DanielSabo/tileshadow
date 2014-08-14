@@ -346,6 +346,10 @@ void CanvasWidget::endStroke()
             {
                 /* Move oldTile to the layer because we will are just going to overwrite the one it currentLayerCopy */
                 CanvasTile *oldTile = ctx->currentLayerCopy->getTileMaybe(iter.x(), iter.y());
+
+                if (oldTile)
+                    oldTile->swapHost();
+
                 undoEvent->tiles[iter] = oldTile;
 
                 /* FIXME: It's hypothetically possible that the stroke removed tiles */
@@ -446,6 +450,8 @@ void CanvasWidget::removeLayer(int layerIndex)
     /* Before we delete the layer, dirty all tiles it intersects */
     TileSet layerTiles = ctx->layers.layers[layerIndex]->getTileSet();
     ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+
+    ctx->layers.layers[layerIndex]->swapOut();
 
     ctx->layers.removeLayerAt(layerIndex);
     if (layerIndex == ctx->currentLayer)
@@ -586,7 +592,10 @@ void CanvasWidget::translateCurrentLayer(int x,  int y)
 
     for (TileSet::iterator iter = layerTiles.begin(); iter != layerTiles.end(); iter++)
     {
-        undoEvent->tiles[*iter] = ctx->currentLayerCopy->takeTileMaybe(iter->x(), iter->y());
+        CanvasTile *undoTile = ctx->currentLayerCopy->takeTileMaybe(iter->x(), iter->y());
+        if (undoTile)
+            undoTile->swapHost();
+        undoEvent->tiles[*iter] = undoTile;
     }
     ctx->undoHistory.prepend(undoEvent);
 

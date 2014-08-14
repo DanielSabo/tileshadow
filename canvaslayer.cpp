@@ -53,6 +53,12 @@ void CanvasLayer::prune()
     }
 }
 
+void CanvasLayer::swapOut()
+{
+    for (auto iter: *tiles)
+        iter.second->swapHost();
+}
+
 static void subrectCopy(cl_mem src, int srcX, int srcY, cl_mem dst, int dstX, int dstY)
 {
     static const size_t PIXEL_SIZE = sizeof(float) * 4;

@@ -28,11 +28,12 @@ public:
 
     float *mapHost();
     cl_mem unmapHost();
+    void swapHost();
 
     void fill(float r, float g, float b, float a);
     CanvasTile *copy();
 
-    static int globalTileCount();
+    static int deviceTileCount();
 
 private:
   CanvasTile(const CanvasTile&);

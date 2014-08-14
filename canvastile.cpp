@@ -3,7 +3,7 @@
 
 static QAtomicInt allocatedTileCount;
 
-int CanvasTile::globalTileCount()
+int CanvasTile::deviceTileCount()
 {
     return allocatedTileCount;
 }
@@ -42,13 +42,42 @@ float *CanvasTile::mapHost()
 
 cl_mem CanvasTile::unmapHost()
 {
-    if (tileData)
+    if (tileData && tileMem)
+    {
+        cl_int err = clEnqueueUnmapMemObject(SharedOpenCL::getSharedOpenCL()->cmdQueue, tileMem, tileData, 0, NULL, NULL);
+        tileData = NULL;
+    }
+    else if (tileData)
+    {
+        tileMem = clCreateBuffer (SharedOpenCL::getSharedOpenCL()->ctx, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR ,
+                                  TILE_COMP_TOTAL * sizeof(float), tileData, NULL);
+        delete tileData;
+        tileData = NULL;
+        allocatedTileCount.ref();
+    }
+
+    return tileMem;
+}
+
+void CanvasTile::swapHost()
+{
+    if (tileMem && tileData)
     {
         cl_int err = clEnqueueUnmapMemObject(SharedOpenCL::getSharedOpenCL()->cmdQueue, tileMem, tileData, 0, NULL, NULL);
         tileData = NULL;
     }
 
-    return tileMem;
+    if (!tileData)
+    {
+        tileData = new float[TILE_COMP_TOTAL];
+        cl_int err = clEnqueueReadBuffer(SharedOpenCL::getSharedOpenCL()->cmdQueue,
+                                         tileMem, CL_TRUE,
+                                         0, TILE_COMP_TOTAL * sizeof(float), tileData,
+                                         0, NULL, NULL);
+        err = clReleaseMemObject(tileMem);
+        tileMem = 0;
+        allocatedTileCount.deref();
+    }
 }
 
 void CanvasTile::fill(float r, float g, float b, float a)
