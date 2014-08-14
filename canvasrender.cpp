@@ -253,8 +253,11 @@ void CanvasRender::closeTiles(CanvasContext *ctx)
         int x = dirtyIter->x();
         int y = dirtyIter->y();
 
-        CanvasTile *tile = ctx->layers.getTileMaybe(x, y);
+        CanvasTile *tile = ctx->layers.getTileMaybe(x, y, false);
         renderTile(x, y, tile);
+
+        if (tile)
+            delete tile;
     }
 
     ctx->dirtyTiles.clear();
