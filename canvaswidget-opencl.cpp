@@ -376,6 +376,7 @@ SharedOpenCL::SharedOpenCL()
 
     platform = 0;
     device = 0;
+    deviceType = 0;
     ctx = NULL;
     cmdQueue = NULL;
     gl_sharing = false;
@@ -423,6 +424,7 @@ SharedOpenCL::SharedOpenCL()
     OpenCLDeviceInfo deviceInfo(device);
     device = deviceInfo.device;
     platform = deviceInfo.platform;
+    deviceType = deviceInfo.getType();
 
     cout << "CL Platform: " << deviceInfo.getPlatformName().toUtf8().constData() << endl;
     cout << "CL Device: " << deviceInfo.getDeviceName().toUtf8().constData() << endl;

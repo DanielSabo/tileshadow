@@ -76,6 +76,9 @@ cl_mem CanvasTile::unmapHost()
 
 void CanvasTile::swapHost()
 {
+    if (SharedOpenCL::getSharedOpenCL()->deviceType == CL_DEVICE_TYPE_CPU)
+        return;
+
     if (tileMem && tileData)
     {
         cl_int err = clEnqueueUnmapMemObject(SharedOpenCL::getSharedOpenCL()->cmdQueue, tileMem, tileData, 0, NULL, NULL);

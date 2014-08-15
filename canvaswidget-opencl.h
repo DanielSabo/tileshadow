@@ -44,6 +44,7 @@ public:
 
     cl_platform_id platform;
     cl_device_id   device;
+    cl_device_type deviceType;
 
     cl_context ctx;
     cl_command_queue cmdQueue;
