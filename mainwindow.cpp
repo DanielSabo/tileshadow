@@ -125,10 +125,13 @@ void MainWindow::updateStatus()
 
     message.sprintf("FPS: %.02f Events/sec: %.02f", canvas->frameRate.getRate(), canvas->mouseEventRate.getRate());
 
-    int allocated = CanvasTile::deviceTileCount() * TILE_COMP_TOTAL * sizeof(float);
+    int deviceAllocated = CanvasTile::deviceTileCount() * TILE_COMP_TOTAL * sizeof(float);
+    deviceAllocated /= 1024 * 1024;
+    int allocated = CanvasTile::allocatedTileCount() * TILE_COMP_TOTAL * sizeof(float);
     allocated /= 1024 * 1024;
+    allocated -= deviceAllocated;
 
-    message += " Tiles: " + QString::number(allocated) + "MB";
+    message += " Tiles: " + QString::number(deviceAllocated) + "MB + " + QString::number(allocated) + "MB";
 
     ui->statusBar->showMessage(message);
 }

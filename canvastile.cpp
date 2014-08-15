@@ -1,11 +1,17 @@
 #include "canvaswidget-opencl.h"
 #include "canvastile.h"
 
-static QAtomicInt allocatedTileCount;
+static QAtomicInt privAllocatedTileCount;
+static QAtomicInt privDeviceTileCount;
+
+int CanvasTile::allocatedTileCount()
+{
+    return privAllocatedTileCount;
+}
 
 int CanvasTile::deviceTileCount()
 {
-    return allocatedTileCount;
+    return privDeviceTileCount;
 }
 
 CanvasTile::CanvasTile()
@@ -15,15 +21,24 @@ CanvasTile::CanvasTile()
     tileMem = clCreateBuffer (SharedOpenCL::getSharedOpenCL()->ctx, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
                               TILE_COMP_TOTAL * sizeof(float), tileData, NULL);
 
-    allocatedTileCount.ref();
+    privAllocatedTileCount.ref();
+    privDeviceTileCount.ref();
 }
 
 CanvasTile::~CanvasTile()
 {
-    unmapHost();
-    clReleaseMemObject(tileMem);
+    if (tileMem)
+    {
+        unmapHost();
+        clReleaseMemObject(tileMem);
+        privDeviceTileCount.deref();
+    }
+    else if (tileData)
+    {
+        delete tileData;
+    }
 
-    allocatedTileCount.deref();
+    privAllocatedTileCount.deref();
 }
 
 float *CanvasTile::mapHost()
@@ -53,7 +68,7 @@ cl_mem CanvasTile::unmapHost()
                                   TILE_COMP_TOTAL * sizeof(float), tileData, NULL);
         delete tileData;
         tileData = NULL;
-        allocatedTileCount.ref();
+        privDeviceTileCount.ref();
     }
 
     return tileMem;
@@ -76,7 +91,7 @@ void CanvasTile::swapHost()
                                          0, NULL, NULL);
         err = clReleaseMemObject(tileMem);
         tileMem = 0;
-        allocatedTileCount.deref();
+        privDeviceTileCount.deref();
     }
 }
 

@@ -33,6 +33,7 @@ public:
     void fill(float r, float g, float b, float a);
     CanvasTile *copy();
 
+    static int allocatedTileCount();
     static int deviceTileCount();
 
 private:
