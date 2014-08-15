@@ -6,12 +6,12 @@ static QAtomicInt privDeviceTileCount;
 
 int CanvasTile::allocatedTileCount()
 {
-    return privAllocatedTileCount;
+    return privAllocatedTileCount.load();
 }
 
 int CanvasTile::deviceTileCount()
 {
-    return privDeviceTileCount;
+    return privDeviceTileCount.load();
 }
 
 CanvasTile::CanvasTile()
