@@ -178,7 +178,7 @@ void CanvasWidget::paintEvent(QPaintEvent *)
 
         if (elapsedTime >= d->nextFrameDelay)
         {
-            d->nextFrameDelay = 15 - elapsedTime;
+            d->nextFrameDelay = 30 - elapsedTime;
 
             d->lastFrameTimer.restart();
             d->frameTickTrigger.stop();
@@ -187,7 +187,7 @@ void CanvasWidget::paintEvent(QPaintEvent *)
         else
         {
             if (!d->frameTickTrigger.isActive())
-                d->frameTickTrigger.start(qMax<int>(15 - elapsedTime, 0));
+                d->frameTickTrigger.start(qMax<int>(30 - elapsedTime, 0));
         }
     }
 }
