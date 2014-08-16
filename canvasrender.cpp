@@ -186,9 +186,16 @@ void CanvasRender::updateBackgroundTile(CanvasContext *ctx)
 
     glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, backgroundGLTile);
     glFuncs->glBufferData(GL_TEXTURE_BUFFER,
-                          sizeof(float) * TILE_COMP_TOTAL,
-                          ctx->layers.backgroundTile->mapHost(),
+                          sizeof(GLubyte) * TILE_COMP_TOTAL,
+                          nullptr,
                           GL_STATIC_DRAW);
+
+    GLubyte *dstData = (GLubyte *)glFuncs->glMapBuffer(GL_TEXTURE_BUFFER, GL_WRITE_ONLY);
+    float *srcData = ctx->layers.backgroundTile->mapHost();
+    for (int i = 0; i < TILE_COMP_TOTAL; ++i)
+        dstData[i] = srcData[i] * 0xFF;
+
+    glFuncs->glUnmapBuffer(GL_TEXTURE_BUFFER);
 }
 
 GLuint CanvasRender::getGLBuf(int x, int y)
@@ -237,9 +244,19 @@ void CanvasRender::renderTile(int x, int y, CanvasTile *tile)
 
         err = clEnqueueAcquireGLObjects(cmdQueue, 1, &output, 0, nullptr, nullptr);
 
-        err = clEnqueueCopyBuffer(cmdQueue, tile->unmapHost(), output,
-                                  0, 0, sizeof(float) * TILE_COMP_TOTAL,
-                                  0, nullptr, nullptr);
+        cl_mem input = tile->unmapHost();
+
+        cl_kernel kernel = SharedOpenCL::getSharedOpenCL()->floatToU8;
+
+        err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&input);
+        err = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&output);
+
+        size_t workSize = TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT;
+
+        err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
+                                     kernel, 1,
+                                     nullptr, &workSize, nullptr,
+                                     0, nullptr, nullptr);
 
         err = clEnqueueReleaseGLObjects(cmdQueue, 1, &output, 0, nullptr, nullptr);
 
@@ -247,12 +264,12 @@ void CanvasRender::renderTile(int x, int y, CanvasTile *tile)
     }
     else
     {
-        /* Push the new data to OpenGL */
         glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, tileBuffer);
-        glFuncs->glBufferData(GL_TEXTURE_BUFFER,
-                              sizeof(float) * TILE_COMP_TOTAL,
-                              tile->mapHost(),
-                              GL_STREAM_DRAW);
+        GLubyte *dstData = (GLubyte *)glFuncs->glMapBuffer(GL_TEXTURE_BUFFER, GL_WRITE_ONLY);
+        float *srcData = tile->mapHost();
+        for (int i = 0; i < TILE_COMP_TOTAL; ++i)
+            dstData[i] = srcData[i] * 0xFF;
+        glFuncs->glUnmapBuffer(GL_TEXTURE_BUFFER);
     }
 }
 
@@ -272,7 +289,7 @@ void CanvasRender::ensureTiles(TileMap const &tiles)
                 glFuncs->glGenBuffers(1, &ref);
                 glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, ref);
                 glFuncs->glBufferData(GL_TEXTURE_BUFFER,
-                                      sizeof(float) * TILE_COMP_TOTAL,
+                                      sizeof(GLubyte) * TILE_COMP_TOTAL,
                                       nullptr,
                                       GL_DYNAMIC_DRAW);
             }

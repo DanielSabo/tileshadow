@@ -262,7 +262,7 @@ void CanvasWidget::paintGL()
         float offsetY = worldOriginY - iy * worldTileHeight;
 
         GLuint tileBuffer = render->getGLBuf(ix, iy);
-        glFuncs->glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, tileBuffer);
+        glFuncs->glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA8, tileBuffer);
         glFuncs->glUniform2f(render->locationTileOrigin, offsetX, offsetY);
         glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 

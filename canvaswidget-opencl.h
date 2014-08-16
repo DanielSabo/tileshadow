@@ -57,6 +57,7 @@ public:
 
     cl_kernel circleKernel;
     cl_kernel fillKernel;
+    cl_kernel floatToU8;
 
     cl_kernel blendKernel_over;
     cl_kernel blendKernel_multiply;

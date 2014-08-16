@@ -49,6 +49,12 @@ __kernel void fill(__global float4 *buf,
   buf[get_global_id(0)] = color;
 }
 
+__kernel void floatToU8(__global float4 *in,
+                        __global uchar4 *out)
+{
+  out[get_global_id(0)] = convert_uchar4_sat_rte(in[get_global_id(0)] * 255.0f);
+}
+
 __kernel void tileSVGOver(__global float4 *out,
                           __global float4 *in,
                           __global float4 *aux)
