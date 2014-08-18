@@ -1,10 +1,6 @@
 #include "basicstrokecontext.h"
 #include "canvastile.h"
-#include <algorithm>
-#include <cmath>
-#include <QSet>
-#include <QList>
-
+#include "paintutils.h"
 
 BasicStrokeContext::BasicStrokeContext(CanvasLayer *layer, float radius)
     : StrokeContext(layer), radius(radius)
@@ -66,7 +62,6 @@ void BasicStrokeContext::drawDab(QPointF point, TileSet &modTiles)
 TileSet BasicStrokeContext::startStroke(QPointF point, float pressure)
 {
     TileSet modTiles;
-    (void)pressure;
 
     start = point;
     drawDab(point, modTiles);
@@ -76,61 +71,11 @@ TileSet BasicStrokeContext::startStroke(QPointF point, float pressure)
 TileSet BasicStrokeContext::strokeTo(QPointF point, float pressure, float dt)
 {
     TileSet modTiles;
-    (void)pressure;
 
-    float dist = sqrtf(powf(lastDab.x() - point.x(), 2.0f) + powf(lastDab.y() - point.y(), 2.0f));
+    std::vector<QPoint> line = interpolateLine(lastDab.toPoint(), point.toPoint());
 
-    if (dist >= 1.0f)
-    {
-        int x0 = lastDab.x();
-        int y0 = lastDab.y();
-        int x1 = point.x();
-        int y1 = point.y();
-        int x = x0;
-        int y = y0;
+    for (QPoint const &p: line)
+        drawDab(p, modTiles);
 
-        bool steep = false;
-        int sx, sy;
-        int dx = abs(x1 - x0);
-        if ((x1 - x0) > 0)
-          sx = 1;
-        else
-          sx = -1;
-
-        int dy = abs(y1 - y0);
-        if ((y1 - y0) > 0)
-          sy = 1;
-        else
-          sy = -1;
-
-        if (dy > dx)
-        {
-          steep = true;
-          std::swap(x, y);
-          std::swap(dy, dx);
-          std::swap(sy, sx);
-        }
-
-        int d = (2 * dy) - dx;
-
-        for (int i = 0; i < dx; ++i)
-        {
-            if (steep)
-                drawDab(QPointF(y, x), modTiles);
-            else
-                drawDab(QPointF(x, y), modTiles);
-
-            while (d >= 0)
-            {
-                y = y + sy;
-                d = d - (2 * dx);
-            }
-
-            x = x + sx;
-            d = d + (2 * dy);
-        }
-        drawDab(QPointF(x1, y1), modTiles);
-        return modTiles;
-    }
     return modTiles;
 }
