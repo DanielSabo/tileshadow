@@ -60,7 +60,7 @@ static QStringList findBrushFiles(QDir const &path)
 
     QFileInfoList directories;
 
-    foreach(QFileInfo info, infoList)
+    for (QFileInfo const &info: infoList)
     {
         if (info.isDir())
             directories << info;
@@ -68,7 +68,7 @@ static QStringList findBrushFiles(QDir const &path)
             result << info.filePath();
     }
 
-    foreach(QFileInfo info, directories)
+    for (QFileInfo const &info: directories)
     {
         result << findBrushFiles(info.filePath());
     }

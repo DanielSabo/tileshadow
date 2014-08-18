@@ -71,7 +71,9 @@ void LayerListWidget::updateLayers()
     QList<CanvasWidget::LayerInfo> canvasLayers = canvas->getLayerList();
 
     ui->layerList->clear();
-    foreach(CanvasWidget::LayerInfo info, canvasLayers)
+
+
+    for (CanvasWidget::LayerInfo const &info: canvasLayers)
     {
         QListWidgetItem *item = new QListWidgetItem(info.name);
         item->setFlags(item->flags() | Qt::ItemIsEditable | Qt::ItemIsUserCheckable);
