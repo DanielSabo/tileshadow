@@ -179,28 +179,29 @@ void CanvasWidget::paintGL()
     frameRate.addEvents(1);
     emit updateStats();
 
+    TileMap renderTiles;
+
     d->eventThread.resultTilesMutex.lock();
-    if (!d->eventThread.resultTiles.empty())
-    {
-        if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
-            glFinish();
-
-        for (auto &iter: d->eventThread.resultTiles)
-        {
-            render->renderTile(iter.first.x(), iter.first.y(), iter.second);
-            delete iter.second;
-        }
-        d->eventThread.resultTiles.clear();
-
-        if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
-            clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
-    }
+    d->eventThread.resultTiles.swap(renderTiles);
     d->eventThread.needResultTiles = true;
     d->eventThread.resultTilesMutex.unlock();
 
     // Render dirty tiles after result tiles to avoid stale tiles
     if (CanvasContext *ctx = getContextMaybe())
-        render->closeTiles(ctx);
+    {
+        for (auto iter: ctx->dirtyTiles)
+        {
+            CanvasTile *&ref = renderTiles[iter];
+
+            if (ref)
+                delete ref;
+
+            ref = ctx->layers.getTileMaybe(iter.x(), iter.y(), false);
+        }
+        ctx->dirtyTiles.clear();
+    }
+
+    render->renderTileMap(renderTiles);
 
     int widgetWidth  = width();
     int widgetHeight = height();

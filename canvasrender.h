@@ -42,10 +42,14 @@ public:
     GLTileMap glTiles;
 
     GLuint getGLBuf(int x, int y);
-    void renderTile(int x, int y, CanvasTile *tile);
-    void closeTiles(CanvasContext *ctx);
     void clearTiles();
     void updateBackgroundTile(CanvasContext *ctx);
+
+    void ensureTiles(const TileMap &tiles);
+    void renderTileMap(TileMap &tiles);
+
+private:
+    void renderTile(int x, int y, CanvasTile *tile);
 };
 
 #endif // CANVASRENDER_H

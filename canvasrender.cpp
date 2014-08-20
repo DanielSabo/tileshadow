@@ -174,37 +174,21 @@ GLuint CanvasRender::getGLBuf(int x, int y)
 
 void CanvasRender::renderTile(int x, int y, CanvasTile *tile)
 {
-    GLTileMap::iterator found = glTiles.find(QPoint(x, y));
+    GLuint tileBuffer = glTiles[QPoint(x, y)];
 
-    GLuint tileBuffer = 0;
-
-    if (found != glTiles.end() && found->second != 0)
+    if (!tileBuffer && tile)
     {
-        if (tile)
-            tileBuffer = found->second;
-        else
-        {
-            glFuncs->glDeleteBuffers(1, &found->second);
-            found->second = 0;
-        }
-    }
-    else if (tile)
-    {
-        glFuncs->glGenBuffers(1, &tileBuffer);
-        glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, tileBuffer);
-        glFuncs->glBufferData(GL_TEXTURE_BUFFER,
-                              sizeof(float) * TILE_COMP_TOTAL,
-                              NULL,
-                              GL_DYNAMIC_DRAW);
-        glTiles[QPoint(x, y)] = tileBuffer;
-    }
-    else
-    {
-        glTiles[QPoint(x, y)] = 0;
+        qDebug() << "renderTile can't render uninitialized tile" << x << y;
+        return;
     }
 
     if (!tile)
+    {
+        if (tileBuffer)
+            qDebug() << "renderTile can't delete" << x << y;
+
         return;
+    }
 
     if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
     {
@@ -238,29 +222,53 @@ void CanvasRender::renderTile(int x, int y, CanvasTile *tile)
     }
 }
 
-void CanvasRender::closeTiles(CanvasContext *ctx)
+void CanvasRender::ensureTiles(TileMap const &tiles)
 {
-    if (ctx->dirtyTiles.empty())
+    if (tiles.empty())
         return;
+
+    for (auto iter: tiles)
+    {
+        GLuint &ref = glTiles[iter.first];
+
+        if (iter.second)
+        {
+            if (!ref)
+            {
+                glFuncs->glGenBuffers(1, &ref);
+                glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, ref);
+                glFuncs->glBufferData(GL_TEXTURE_BUFFER,
+                                      sizeof(float) * TILE_COMP_TOTAL,
+                                      NULL,
+                                      GL_DYNAMIC_DRAW);
+            }
+        }
+        else
+        {
+            if (ref)
+                glFuncs->glDeleteBuffers(1, &ref);
+            ref = 0;
+        }
+    }
 
     if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
         glFinish();
+}
 
-    for (TileSet::iterator dirtyIter = ctx->dirtyTiles.begin();
-         dirtyIter != ctx->dirtyTiles.end();
-         dirtyIter++)
+void CanvasRender::renderTileMap(TileMap &tiles)
+{
+    if (tiles.empty())
+        return;
+
+    ensureTiles(tiles);
+
+    for (auto iter: tiles)
     {
-        int x = dirtyIter->x();
-        int y = dirtyIter->y();
-
-        CanvasTile *tile = ctx->layers.getTileMaybe(x, y, false);
-        renderTile(x, y, tile);
-
-        if (tile)
-            delete tile;
+        renderTile(iter.first.x(), iter.first.y(), iter.second);
+        if (iter.second)
+            delete iter.second;
     }
-
-    ctx->dirtyTiles.clear();
+    tiles.clear();
 
     if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
         clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
