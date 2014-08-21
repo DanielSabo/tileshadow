@@ -5,6 +5,7 @@
 #include <QFile>
 #include <QDebug>
 #include <QStringList>
+#include <QSettings>
 #include <QCoreApplication>
 
 #if defined(Q_OS_WIN32)
@@ -266,8 +267,11 @@ typedef CL_API_ENTRY cl_int
 
 static cl_context createSharedContext()
 {
-    if (QCoreApplication::arguments().contains("--disable-sharing"))
+    QSettings appSettings;
+
+    if (!appSettings.value("EnableGLSharing", QVariant::fromValue<bool>(true)).toBool())
         return 0;
+
 #if defined(Q_OS_WIN32) || (defined(Q_OS_UNIX) && !defined(Q_OS_MAC))
     cl_context result;
 
