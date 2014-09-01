@@ -11,6 +11,7 @@ typedef QList<QPair<QString, QString> > ToolList;
 namespace ToolFactory {
     ToolList listTools();
     BaseTool *loadTool(QString toolName);
+    QString defaultToolName();
 }
 
 #endif // TOOLFACTORY_H

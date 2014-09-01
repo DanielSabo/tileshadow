@@ -88,3 +88,8 @@ BaseTool *ToolFactory::loadTool(QString toolName)
 
     return result;
 }
+
+QString ToolFactory::defaultToolName()
+{
+    return QStringLiteral(":/mypaint-tools/default.myb");
+}
