@@ -62,6 +62,7 @@ public:
     int nextFrameDelay;
     QTimer frameTickTrigger;
     QElapsedTimer lastFrameTimer;
+    bool fullRedraw;
 };
 
 CanvasWidgetPrivate::CanvasWidgetPrivate()
@@ -72,6 +73,7 @@ CanvasWidgetPrivate::CanvasWidgetPrivate()
     deviceIsEraser = false;
     lastTabletEvent = {0, };
     strokeEventTimestamp = 0;
+    fullRedraw = true;
 }
 
 CanvasWidgetPrivate::~CanvasWidgetPrivate()
@@ -149,7 +151,10 @@ void CanvasWidget::initializeGL()
 
 void CanvasWidget::resizeGL(int w, int h)
 {
-    glViewport(0, 0, qMax(w, 1), qMax(h, 1));
+    Q_D(CanvasWidget);
+
+    render->resizeFramebuffer(w, h);
+    d->fullRedraw = true;
 }
 
 void CanvasWidget::paintEvent(QPaintEvent *)
@@ -214,29 +219,32 @@ void CanvasWidget::paintGL()
         ctx->dirtyTiles.clear();
     }
 
+    TileSet tilesToDraw;
+
+    //FIXME: Bounds check tiles to view
+    if (!d->fullRedraw)
+        for (auto iter = renderTiles.cbegin(); iter != renderTiles.cend(); ++iter)
+            tilesToDraw.insert(iter->first);
+
     render->renderTileMap(renderTiles);
 
-    int widgetWidth  = width();
-    int widgetHeight = height();
+    glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, render->backbufferFramebuffer);
+    glViewport(0, 0, render->viewSize.width(), render->viewSize.height());
 
-    // fragmentWidth/Height is the size of a canvas pixel in GL coordinates
-    float fragmentWidth = (2.0f / widgetWidth) * viewScale;
-    float fragmentHeight = (2.0f / widgetHeight) * viewScale;
+    int widgetWidth  = render->viewSize.width();
+    int widgetHeight = render->viewSize.height();
 
-    float tileWidth  = TILE_PIXEL_WIDTH * fragmentWidth;
-    float tileHeight = TILE_PIXEL_HEIGHT * fragmentHeight;
+    int originTileX = tile_indice(canvasOrigin.x() / viewScale, TILE_PIXEL_WIDTH);
+    int originTileY = tile_indice(canvasOrigin.y() / viewScale, TILE_PIXEL_HEIGHT);
 
-    float fragmentOriginX = canvasOrigin.x() / viewScale;
-    float fragmentOriginY = canvasOrigin.y() / viewScale;
+    float worldTileWidth = (2.0f / widgetWidth) * viewScale * TILE_PIXEL_WIDTH;
+    float worldOriginX = -canvasOrigin.x() * (2.0f / widgetWidth) - 1.0f;
 
-    int originTileX = tile_indice(fragmentOriginX, TILE_PIXEL_WIDTH);
-    int originTileY = tile_indice(fragmentOriginY, TILE_PIXEL_HEIGHT);
+    float worldTileHeight = (2.0f / widgetHeight) * viewScale * TILE_PIXEL_HEIGHT;
+    float worldOriginY = canvasOrigin.y() * (2.0f / widgetHeight) - worldTileHeight + 1.0f;
 
-    float tileShiftX = (fragmentOriginX - originTileX * TILE_PIXEL_WIDTH) * fragmentWidth;
-    float tileShiftY = (fragmentOriginY - originTileY * TILE_PIXEL_HEIGHT) * fragmentHeight;
-
-    int tileCountX = ceil((2.0f + tileShiftX) / tileWidth);
-    int tileCountY = ceil((2.0f + tileShiftY) / tileHeight);
+    int tileCountX = ceil(widgetWidth / (TILE_PIXEL_WIDTH * viewScale)) + 1;
+    int tileCountY = ceil(widgetHeight / (TILE_PIXEL_HEIGHT * viewScale)) + 1;
 
 //    glFuncs->glClearColor(0.2, 0.2, 0.4, 1.0);
 //    glFuncs->glClear(GL_COLOR_BUFFER_BIT);
@@ -245,21 +253,39 @@ void CanvasWidget::paintGL()
 
     glFuncs->glActiveTexture(GL_TEXTURE0);
     glFuncs->glUniform1i(render->locationTileImage, 0);
-    glFuncs->glUniform2f(render->locationTileSize, tileWidth, tileHeight);
+    glFuncs->glUniform2f(render->locationTileSize, worldTileWidth, worldTileHeight);
     glFuncs->glUniform2f(render->locationTilePixels, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT);
     glFuncs->glBindVertexArray(render->vertexArray);
 
-    for (int ix = 0; ix < tileCountX; ++ix)
-        for (int iy = 0; iy < tileCountY; ++iy)
-        {
-            float offsetX = (ix * tileWidth) - 1.0f - tileShiftX;
-            float offsetY = 1.0f - ((iy + 1) * tileHeight) + tileShiftY;
+    auto drawOneTile = [&](int ix, int iy) {
+        float offsetX = ix * worldTileWidth + worldOriginX;
+        float offsetY = worldOriginY - iy * worldTileHeight;
 
-            GLuint tileBuffer = render->getGLBuf(ix + originTileX, iy + originTileY);
-            glFuncs->glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, tileBuffer);
-            glFuncs->glUniform2f(render->locationTileOrigin, offsetX, offsetY);
-            glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-        }
+        GLuint tileBuffer = render->getGLBuf(ix, iy);
+        glFuncs->glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, tileBuffer);
+        glFuncs->glUniform2f(render->locationTileOrigin, offsetX, offsetY);
+        glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+    };
+
+    if (d->fullRedraw)
+    {
+        d->fullRedraw = false;
+        for (int ix = originTileX; ix < tileCountX + originTileX; ++ix)
+            for (int iy = originTileY; iy < tileCountY + originTileY; ++iy)
+                drawOneTile(ix, iy);
+    }
+    else
+    {
+        for (QPoint const &iter: tilesToDraw)
+            drawOneTile(iter.x(), iter.y());
+    }
+
+    glFuncs->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, GL_NONE);
+    glFuncs->glBlitFramebuffer(0, 0, render->viewSize.width(), render->viewSize.height(),
+                               0, 0, render->viewSize.width(), render->viewSize.height(),
+                               GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
 
     if (d->activeTool && showToolCursor)
     {
@@ -395,6 +421,8 @@ float CanvasWidget::getScale()
 
 void CanvasWidget::setScale(float newScale)
 {
+    Q_D(CanvasWidget);
+
     newScale = qBound(0.25f, newScale, 4.0f);
 
     if (newScale == viewScale)
@@ -408,6 +436,8 @@ void CanvasWidget::setScale(float newScale)
 
     canvasOrigin = (canvasOrigin + centerPoint) * (newScale / viewScale) - centerPoint;
     viewScale = newScale;
+
+    d->fullRedraw = true;
     update();
 }
 
@@ -887,6 +917,8 @@ void CanvasWidget::keyPressEvent(QKeyEvent *event)
 
 void CanvasWidget::keyReleaseEvent(QKeyEvent *event)
 {
+    Q_D(CanvasWidget);
+
     updateModifiers(event);
 
     if ((event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier | Qt::ShiftModifier)) == 0)
@@ -895,24 +927,28 @@ void CanvasWidget::keyReleaseEvent(QKeyEvent *event)
         {
             canvasOrigin.ry() -= 128;
             event->accept();
+            d->fullRedraw = true;
             update();
         }
         else if (event->key() == Qt::Key_Down)
         {
             canvasOrigin.ry() += 128;
             event->accept();
+            d->fullRedraw = true;
             update();
         }
         else if (event->key() == Qt::Key_Left)
         {
             canvasOrigin.rx() -= 128;
             event->accept();
+            d->fullRedraw = true;
             update();
         }
         else if (event->key() == Qt::Key_Right)
         {
             canvasOrigin.rx() += 128;
             event->accept();
+            d->fullRedraw = true;
             update();
         }
     }
@@ -1042,6 +1078,7 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
         QPoint dPos = event->pos() - actionOrigin;
         actionOrigin = event->pos();
         canvasOrigin -= dPos;
+        d->fullRedraw = true;
     }
     else if (action == CanvasAction::MoveLayer)
     {
@@ -1096,8 +1133,11 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
 
 void CanvasWidget::wheelEvent(QWheelEvent *event)
 {
+    Q_D(CanvasWidget);
+
     mouseEventRate.addEvents(1);
     canvasOrigin += event->pixelDelta();
+    d->fullRedraw = true;
     update();
 }
 
@@ -1262,6 +1302,8 @@ QColor CanvasWidget::getToolColor()
 
 void CanvasWidget::newDrawing()
 {
+    Q_D(CanvasWidget);
+
     CanvasContext *ctx = getContext();
 
     ctx->clearUndoHistory();
@@ -1272,6 +1314,7 @@ void CanvasWidget::newDrawing()
     ctx->layers.newLayerAt(0, QString().sprintf("Layer %02d", ++lastNewLayerNumber));
     setActiveLayer(0); // Sync up the undo layer
     canvasOrigin = QPoint(0, 0);
+    d->fullRedraw = true;
     update();
     modified = false;
     emit updateLayers();
@@ -1279,6 +1322,8 @@ void CanvasWidget::newDrawing()
 
 void CanvasWidget::openORA(QString path)
 {
+    Q_D(CanvasWidget);
+
     QRegExp layerNameReg("Layer (\\d+)");
     CanvasContext *ctx = getContext();
 
@@ -1295,6 +1340,7 @@ void CanvasWidget::openORA(QString path)
     setActiveLayer(0); // Sync up the undo layer
     canvasOrigin = QPoint(0, 0);
     ctx->dirtyTiles = ctx->layers.getTileSet();
+    d->fullRedraw = true;
     update();
     modified = false;
     emit updateLayers();

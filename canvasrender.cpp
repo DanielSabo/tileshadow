@@ -102,6 +102,8 @@ CanvasRender::CanvasRender() :
     if (cursorFrag)
         glFuncs->glDeleteShader(cursorFrag);
 
+    glFuncs->glGenFramebuffers(1, &backbufferFramebuffer);
+    glFuncs->glGenRenderbuffers(1, &backbufferRenderbuffer);
 }
 
 CanvasRender::~CanvasRender()
@@ -128,6 +130,38 @@ CanvasRender::~CanvasRender()
 
     if (backgroundGLTile)
         glFuncs->glDeleteBuffers(1, &backgroundGLTile);
+
+    if (backbufferFramebuffer)
+        glFuncs->glDeleteFramebuffers(1, &backbufferFramebuffer);
+
+    if (backbufferRenderbuffer)
+        glFuncs->glDeleteRenderbuffers(1, &backbufferRenderbuffer);
+}
+
+void CanvasRender::resizeFramebuffer(int w, int h)
+{
+    QSize view = QSize(w, h);
+
+    if (viewSize != view)
+    {
+        viewSize = view;
+
+        if (viewSize.width() <= 0)
+            viewSize.setWidth(1);
+        if (viewSize.height() <= 0)
+            viewSize.setHeight(1);
+
+        glFuncs->glBindRenderbuffer(GL_RENDERBUFFER, backbufferRenderbuffer);
+        glFuncs->glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB8, viewSize.width(), viewSize.height());
+
+        glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, backbufferFramebuffer);
+        glFuncs->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, backbufferRenderbuffer);
+
+        glFuncs->glClearColor(1.0, 0.0, 0.0, 1.0);
+        glFuncs->glClear(GL_COLOR_BUFFER_BIT);
+
+        glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
+    }
 }
 
 void CanvasRender::clearTiles()

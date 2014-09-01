@@ -2,8 +2,8 @@
 #define CANVASRENDER_H
 
 #include "canvaswidget-opencl.h"
-#include <QPointF>
-#include <QSet>
+#include <QPoint>
+#include <QRect>
 #include <QOpenGLFunctions_3_2_Core>
 #include <map>
 #include "tileset.h"
@@ -36,10 +36,17 @@ public:
     GLuint cursorVertexBuffer;
     GLuint cursorVertexArray;
 
+    GLuint backbufferFramebuffer;
+    GLuint backbufferRenderbuffer;
+
     typedef std::map<QPoint, GLuint, _tilePointCompare> GLTileMap;
 
     GLuint backgroundGLTile;
     GLTileMap glTiles;
+
+    QSize viewSize;
+
+    void resizeFramebuffer(int w, int h);
 
     GLuint getGLBuf(int x, int y);
     void clearTiles();
