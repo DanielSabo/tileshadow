@@ -83,9 +83,12 @@ public:
     BoxcarTimer mouseEventRate;
     BoxcarTimer frameRate;
 
+    bool eventFilter(QObject *obj, QEvent *event);
+
     // These are public so the parent can fake focus on the canvas
     void keyPressEvent(QKeyEvent *event);
     void keyReleaseEvent(QKeyEvent *event);
+
 protected:
     void initializeGL();
     void resizeGL(int w, int h);

@@ -9,6 +9,7 @@
 #include "imageexport.h"
 #include "toolfactory.h"
 #include <qmath.h>
+#include <QApplication>
 #include <QMouseEvent>
 #include <QTimer>
 #include <QElapsedTimer>
@@ -44,12 +45,16 @@ public:
     CanvasWidgetPrivate();
     ~CanvasWidgetPrivate();
 
+    QString penToolPath;
+    QString eraserToolPath;
+
     QString activeToolPath;
     BaseTool *activeTool;
     QMap<QString, BaseTool *> tools;
 
     CanvasEventThread eventThread;
 
+    bool deviceIsEraser;
     SavedTabletEvent lastTabletEvent;
     ulong strokeEventTimestamp; // last stroke event time, in milliseconds
 
@@ -63,6 +68,7 @@ CanvasWidgetPrivate::CanvasWidgetPrivate()
     lastFrameTimer.invalidate();
     nextFrameDelay = 15;
     activeTool = NULL;
+    deviceIsEraser = false;
     lastTabletEvent = {0, };
     strokeEventTimestamp = 0;
 }
@@ -94,6 +100,8 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
 
     setMouseTracking(true);
 
+    QApplication::instance()->installEventFilter(this);
+
     colorPickCursor = QCursor(QPixmap(":/cursors/eyedropper.png"));
     moveViewCursor = QCursor(QPixmap(":/cursors/move-view.png"));
     moveLayerCursor = QCursor(QPixmap(":/cursors/move-layer.png"));
@@ -108,6 +116,11 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
     connect(&d->frameTickTrigger, SIGNAL(timeout()), this, SLOT(update()));
 
     connect(&d->eventThread, SIGNAL(hasResultTiles()), this, SLOT(update()), Qt::QueuedConnection);
+
+    QString defaultTool = ToolFactory::defaultToolName();
+    d->penToolPath = defaultTool;
+    d->eraserToolPath = defaultTool;
+    setActiveTool(d->penToolPath);
 }
 
 CanvasWidget::~CanvasWidget()
@@ -833,6 +846,33 @@ void CanvasWidget::pickColorAt(QPoint pos)
     }
 }
 
+bool CanvasWidget::eventFilter(QObject *obj, QEvent *event)
+{
+    Q_D(CanvasWidget);
+
+    bool deviceWasEraser = d->deviceIsEraser;
+
+    if (event->type() == QEvent::TabletEnterProximity)
+    {
+        if (static_cast<QTabletEvent *>(event)->pointerType() == QTabletEvent::Eraser)
+            d->deviceIsEraser = true;
+    }
+    else if (event->type() == QEvent::TabletLeaveProximity)
+    {
+        d->deviceIsEraser = false;
+    }
+
+    if (deviceWasEraser != d->deviceIsEraser)
+    {
+        if (d->deviceIsEraser)
+            setActiveTool(d->eraserToolPath);
+        else
+            setActiveTool(d->penToolPath);
+    }
+
+    return QGLWidget::eventFilter(obj, event);
+}
+
 void CanvasWidget::keyPressEvent(QKeyEvent *event)
 {
     updateModifiers(event);
@@ -1102,6 +1142,9 @@ void CanvasWidget::setActiveTool(const QString &toolName)
 {
     Q_D(CanvasWidget);
 
+    if (d->activeToolPath == toolName)
+        return;
+
     d->activeToolPath = toolName;
 
     auto found = d->tools.find(toolName);
@@ -1131,6 +1174,11 @@ void CanvasWidget::setActiveTool(const QString &toolName)
     {
         d->activeTool->setColor(toolColor);
     }
+
+    if (d->deviceIsEraser)
+        d->eraserToolPath = d->activeToolPath;
+    else
+        d->penToolPath = d->activeToolPath;
 
     emit updateTool();
     update();
