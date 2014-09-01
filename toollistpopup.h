@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include "toollistwidget.h"
+#include "toolfactory.h"
 
 class ToolListPopupPrivate;
 class ToolListPopup : public QWidget

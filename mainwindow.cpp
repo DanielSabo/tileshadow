@@ -62,7 +62,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     showStatusBar(appSettings.value("MainWindow/statusBar", false).toBool());
 
-    canvas->setActiveTool("default.myb");
+    canvas->setActiveTool(":/mypaint-tools/default.myb");
     canvas->setToolColor(QColor(255, 0, 0));
 
 #ifdef Q_OS_MAC

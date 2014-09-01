@@ -46,6 +46,7 @@ SOURCES += main.cpp\
     mypainttool.cpp \
     tiledebugtool.cpp \
     toollistwidget.cpp \
+    toolfactory.cpp \
     layerlistwidget.cpp \
     toolsettingswidget.cpp \
     toollistpopup.cpp \
@@ -75,6 +76,7 @@ HEADERS  += mainwindow.h \
     mypainttool.h \
     tiledebugtool.h \
     toollistwidget.h \
+    toolfactory.h \
     layerlistwidget.h \
     toolsettingswidget.h \
     blendmodes.h \

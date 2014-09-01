@@ -5,10 +5,9 @@
 #include "canvascontext.h"
 #include "canvaseventthread.h"
 #include "basetool.h"
-#include "tiledebugtool.h"
-#include "mypainttool.h"
 #include "ora.h"
 #include "imageexport.h"
+#include "toolfactory.h"
 #include <qmath.h>
 #include <QMouseEvent>
 #include <QTimer>
@@ -1111,14 +1110,8 @@ void CanvasWidget::setActiveTool(const QString &toolName)
     {
         d->activeTool = found.value();
     }
-    else if (toolName.endsWith(".myb"))
+    else if ((d->activeTool = ToolFactory::loadTool(toolName)))
     {
-        d->activeTool = new MyPaintTool(QString(":/mypaint-tools/") + toolName);
-        d->tools[toolName] = d->activeTool;
-    }
-    else if (toolName == QStringLiteral("debug"))
-    {
-        d->activeTool = new TileDebugTool();
         d->tools[toolName] = d->activeTool;
     }
     else
@@ -1129,8 +1122,8 @@ void CanvasWidget::setActiveTool(const QString &toolName)
 
         if (d->activeTool == NULL)
         {
-            d->activeTool = new TileDebugTool();
-            d->tools[QStringLiteral("debug")] = d->activeTool;
+            d->activeTool = ToolFactory::loadTool(d->activeToolPath);
+            d->tools[d->activeToolPath] = d->activeTool;
         }
     }
 

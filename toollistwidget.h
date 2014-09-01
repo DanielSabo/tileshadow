@@ -3,8 +3,6 @@
 
 #include <QWidget>
 
-typedef QList<QPair<QString, QString> > ToolList;
-
 class CanvasWidget;
 class ToolListPopup;
 class ToolListWidgetPrivate;
@@ -22,7 +20,6 @@ public:
 
 protected:
     CanvasWidget *canvas;
-    ToolList toolList;
     ToolListPopup *popup;
 
 private:
@@ -31,7 +28,6 @@ private:
 
 private slots:
     void updateTool();
-    void setActiveTool();
     void showPopup();
     void canvasDestroyed(QObject *obj);
 };
