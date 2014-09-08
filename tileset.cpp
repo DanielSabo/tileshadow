@@ -20,5 +20,5 @@ void _deleteTileMap(TileMap *tiles)
     {
         delete iter->second;
     }
-    tiles->clear();
+    delete tiles;
 }
