@@ -114,15 +114,15 @@ void RoundBrushStrokeContext::drawDab(QPointF point, float pressure, TileSet &mo
                 const size_t maskComps = TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT;
 
                 drawMem = clCreateBuffer(SharedOpenCL::getSharedOpenCL()->ctx, CL_MEM_READ_WRITE,
-                                         maskComps * sizeof(float), NULL, NULL);
+                                         maskComps * sizeof(float), nullptr, nullptr);
                 float value = 0;
 
                 clSetKernelArg(fillKernel, 0, sizeof(cl_mem), (void *)&drawMem);
                 clSetKernelArg(fillKernel, 1, sizeof(float), (void *)&value);
                 clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                        fillKernel, 1,
-                                       NULL, &maskComps, NULL,
-                                       0, NULL, NULL);
+                                       nullptr, &maskComps, nullptr,
+                                       0, nullptr, nullptr);
             }
 
             modTiles.insert(QPoint(ix, iy));
@@ -135,8 +135,8 @@ void RoundBrushStrokeContext::drawDab(QPointF point, float pressure, TileSet &mo
             clSetKernelArg(circleKernel, 4, sizeof(cl_float), (void *)&floatAlpha);
             clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                    circleKernel, 2,
-                                   NULL, circleWorkSize, NULL,
-                                   0, NULL, NULL);
+                                   nullptr, circleWorkSize, nullptr,
+                                   0, nullptr, nullptr);
         }
     }
 }
@@ -165,8 +165,8 @@ void RoundBrushStrokeContext::applyLayer(const TileSet &modTiles)
         clSetKernelArg(blendKernel, 3, sizeof(cl_float4), (void *)&pixel);
         clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                blendKernel, 1,
-                               NULL, blendWorkSize, NULL,
-                               0, NULL, NULL);
+                               nullptr, blendWorkSize, nullptr,
+                               0, nullptr, nullptr);
     }
 }
 
