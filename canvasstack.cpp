@@ -34,8 +34,8 @@ void CanvasStack::removeLayerAt(int index)
 
 void CanvasStack::clearLayers()
 {
-    for (QList<CanvasLayer *>::iterator iter = layers.begin(); iter != layers.end(); ++iter)
-        delete *iter;
+    for (CanvasLayer *layer: layers)
+        delete layer;
     layers.clear();
 }
 
@@ -132,10 +132,9 @@ std::unique_ptr<CanvasTile> CanvasStack::getTileMaybe(int x, int y) const
     {
         CanvasTile *inTile = nullptr;
 
-        for (int currentLayer = 0; currentLayer < layerCount; currentLayer++)
+        for (CanvasLayer *layer: layers)
         {
             CanvasTile *auxTile = nullptr;
-            CanvasLayer *layer = layers.at(currentLayer);
 
             if (layer->visible)
                 auxTile = layer->getTileMaybe(x, y);
@@ -156,12 +155,11 @@ std::unique_ptr<CanvasTile> CanvasStack::getTileMaybe(int x, int y) const
 
 TileSet CanvasStack::getTileSet() const
 {
-    QList<CanvasLayer *>::const_iterator layersIter;
     TileSet result;
 
-    for (layersIter = layers.begin(); layersIter != layers.end(); layersIter++)
+    for (CanvasLayer *layer: layers)
     {
-        TileSet layerSet = (*layersIter)->getTileSet();
+        TileSet layerSet = layer->getTileSet();
         result.insert(layerSet.begin(), layerSet.end());
     }
 
