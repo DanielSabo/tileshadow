@@ -37,10 +37,6 @@ void CanvasStack::clearLayers()
     for (QList<CanvasLayer *>::iterator iter = layers.begin(); iter != layers.end(); ++iter)
         delete *iter;
     layers.clear();
-
-    for (TileMap::iterator iter = tiles.begin(); iter != tiles.end(); ++iter)
-        delete iter->second;
-    tiles.clear();
 }
 
 void cpuBlendInPlace(CanvasTile *inTile, CanvasTile *auxTile)
@@ -108,7 +104,7 @@ void clBlendInPlace(CanvasTile *inTile, CanvasTile *auxTile, BlendMode::Mode mod
                            0, nullptr, nullptr);
 }
 
-CanvasTile *CanvasStack::getTileMaybe(int x, int y, bool cache)
+std::unique_ptr<CanvasTile> CanvasStack::getTileMaybe(int x, int y) const
 {
     int layerCount = layers.size();
 
@@ -155,22 +151,7 @@ CanvasTile *CanvasStack::getTileMaybe(int x, int y, bool cache)
         result = inTile;
     }
 
-    if (result && cache)
-    {
-        TileMap::iterator found = tiles.find(QPoint(x, y));
-
-        if (found != tiles.end())
-        {
-            delete found->second;
-            found->second = result;
-        }
-        else
-        {
-            tiles[QPoint(x, y)] = result;
-        }
-    }
-
-    return result;
+    return std::unique_ptr<CanvasTile>(result);
 }
 
 TileSet CanvasStack::getTileSet() const
@@ -185,24 +166,4 @@ TileSet CanvasStack::getTileSet() const
     }
 
     return result;
-}
-
-float *CanvasStack::openTileAt(int x, int y)
-{
-    CanvasTile *result = getTileMaybe(x, y);
-
-    if (!result)
-        result = backgroundTile;
-
-    return result->mapHost();
-}
-
-cl_mem CanvasStack::clOpenTileAt(int x, int y)
-{
-    CanvasTile *result = getTileMaybe(x, y);
-
-    if (!result)
-        result = backgroundTileCL;
-
-    return result->unmapHost();
 }

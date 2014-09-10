@@ -40,7 +40,7 @@ QImage stackToImage(CanvasStack *stack)
         for (int ix = 0; ix < tileBounds.width(); ++ix)
         {
             float *tileData;
-            CanvasTile *tile = stack->getTileMaybe(ix + tileBounds.x(), iy + tileBounds.y());
+            std::unique_ptr<CanvasTile> tile = stack->getTileMaybe(ix + tileBounds.x(), iy + tileBounds.y());
 
             if (tile)
                 tileData = tile->mapHost();

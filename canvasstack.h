@@ -2,6 +2,7 @@
 #define CANVASSTACK_H
 
 #include <QList>
+#include <memory>
 #include "canvaswidget-opencl.h"
 #include "tileset.h"
 
@@ -21,11 +22,8 @@ public:
     QList<CanvasLayer *> layers;
 
     TileSet getTileSet() const;
-    CanvasTile *getTileMaybe(int x, int y, bool cache = true);
-    float *openTileAt(int x, int y);
-    cl_mem clOpenTileAt(int x, int y);
+    std::unique_ptr<CanvasTile> getTileMaybe(int x, int y) const;
 
-    TileMap tiles;
     CanvasTile *backgroundTile;
     CanvasTile *backgroundTileCL;
 };

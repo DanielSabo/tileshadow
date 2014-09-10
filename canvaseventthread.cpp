@@ -112,7 +112,7 @@ void CanvasEventThread::run()
                     int x = iter.x();
                     int y = iter.y();
 
-                    newTiles[QPoint(x, y)] = ctx->layers.getTileMaybe(x, y, false);
+                    newTiles[QPoint(x, y)] = ctx->layers.getTileMaybe(x, y).release();
                 }
                 ctx->dirtyTiles.clear();
 

@@ -208,7 +208,7 @@ void CanvasWidget::paintGL()
             if (ref)
                 delete ref;
 
-            ref = ctx->layers.getTileMaybe(iter.x(), iter.y(), false);
+            ref = ctx->layers.getTileMaybe(iter.x(), iter.y()).release();
         }
         ctx->dirtyTiles.clear();
     }
