@@ -1122,7 +1122,8 @@ QZipReader::Status QZipReader::status() const
 */
 void QZipReader::close()
 {
-    d->device->close();
+    if (d->ownDevice)
+        d->device->close();
 }
 
 ////////////////////////////// Writer
@@ -1358,7 +1359,8 @@ void QZipWriter::addSymLink(const QString &fileName, const QString &destination)
 void QZipWriter::close()
 {
     if (!(d->device->openMode() & QIODevice::WriteOnly)) {
-        d->device->close();
+        if (d->ownDevice)
+            d->device->close();
         return;
     }
 
@@ -1387,7 +1389,8 @@ void QZipWriter::close()
 
     d->device->write((const char *)&eod, sizeof(EndOfDirectory));
     d->device->write(d->comment);
-    d->device->close();
+    if (d->ownDevice)
+        d->device->close();
 }
 
 QT_END_NAMESPACE
