@@ -189,8 +189,9 @@ SharedOpenCL *SharedOpenCL::getSharedOpenCL()
     return singleton;
 }
 
-static cl_program compileFile (SharedOpenCL *cl, const QString &path)
+static cl_program compileFile (SharedOpenCL *cl, const QString &path, const QString &options = "")
 {
+    QByteArray options_bytes = options.toUtf8();
     cl_int err = CL_SUCCESS;
     QFile file(path);
 
@@ -218,7 +219,7 @@ static cl_program compileFile (SharedOpenCL *cl, const QString &path)
         return 0;
     }
 
-    err = clBuildProgram (prog, 0, nullptr, nullptr, nullptr, nullptr);
+    err = clBuildProgram (prog, 0, nullptr, options_bytes.constData(), nullptr, nullptr);
 
     if (err != CL_SUCCESS)
         qWarning() << "CL Program compile failed, build error " << err;
