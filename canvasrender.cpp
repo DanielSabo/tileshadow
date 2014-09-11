@@ -67,7 +67,7 @@ CanvasRender::CanvasRender() :
     glFuncs->glBufferData(GL_ARRAY_BUFFER, sizeof(positionData), positionData, GL_STATIC_DRAW);
 
     glFuncs->glEnableVertexAttribArray(0);
-    glFuncs->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL);
+    glFuncs->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 
     /* Set up cursor data & shaders */
     GLuint cursorVert = compileGLShaderFile(glFuncs, ":/CursorCircle.vert", GL_VERTEX_SHADER);
@@ -95,7 +95,7 @@ CanvasRender::CanvasRender() :
     glFuncs->glBufferData(GL_ARRAY_BUFFER, sizeof(cursorVertData), cursorVertData, GL_STATIC_DRAW);
 
     glFuncs->glEnableVertexAttribArray(0);
-    glFuncs->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL);
+    glFuncs->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 
     if (cursorVert)
         glFuncs->glDeleteShader(cursorVert);
@@ -201,13 +201,13 @@ void CanvasRender::renderTile(int x, int y, CanvasTile *tile)
                                              tileBuffer,
                                              &err);
 
-        err = clEnqueueAcquireGLObjects(cmdQueue, 1, &output, 0, NULL, NULL);
+        err = clEnqueueAcquireGLObjects(cmdQueue, 1, &output, 0, nullptr, nullptr);
 
         err = clEnqueueCopyBuffer(cmdQueue, tile->unmapHost(), output,
                                   0, 0, sizeof(float) * TILE_COMP_TOTAL,
-                                  0, NULL, NULL);
+                                  0, nullptr, nullptr);
 
-        err = clEnqueueReleaseGLObjects(cmdQueue, 1, &output, 0, NULL, NULL);
+        err = clEnqueueReleaseGLObjects(cmdQueue, 1, &output, 0, nullptr, nullptr);
 
         err = clReleaseMemObject(output);
     }
@@ -239,7 +239,7 @@ void CanvasRender::ensureTiles(TileMap const &tiles)
                 glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, ref);
                 glFuncs->glBufferData(GL_TEXTURE_BUFFER,
                                       sizeof(float) * TILE_COMP_TOTAL,
-                                      NULL,
+                                      nullptr,
                                       GL_DYNAMIC_DRAW);
             }
         }

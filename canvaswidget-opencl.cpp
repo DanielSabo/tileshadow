@@ -19,7 +19,7 @@
 
 using namespace std;
 
-static SharedOpenCL* singleton = NULL;
+static SharedOpenCL* singleton = nullptr;
 
 void _check_cl_error(const char *file, int line, cl_int err) {
     if (err != CL_SUCCESS)
@@ -111,7 +111,7 @@ OpenCLDeviceInfo::OpenCLDeviceInfo(cl_device_id d) :
     deviceName(),
     platformName()
 {
-    clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform), &platform, NULL);
+    clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform), &platform, nullptr);
 }
 
 OpenCLDeviceInfo::~OpenCLDeviceInfo()
@@ -123,10 +123,10 @@ const QString &OpenCLDeviceInfo::getDeviceName()
     if (deviceName.isEmpty())
     {
         size_t deviceNameSize = 0;
-        clGetDeviceInfo(device, CL_DEVICE_NAME, 0, NULL, &deviceNameSize);
+        clGetDeviceInfo(device, CL_DEVICE_NAME, 0, nullptr, &deviceNameSize);
 
         vector<char> deviceNameBuffer(deviceNameSize);
-        clGetDeviceInfo(device, CL_DEVICE_NAME, deviceNameSize, deviceNameBuffer.data(), NULL);
+        clGetDeviceInfo(device, CL_DEVICE_NAME, deviceNameSize, deviceNameBuffer.data(), nullptr);
 
         deviceName = QString(deviceNameBuffer.data());
     }
@@ -139,10 +139,10 @@ const QString &OpenCLDeviceInfo::getPlatformName()
     if (platformName.isEmpty())
     {
         size_t platformNameSize = 0;
-        clGetPlatformInfo(platform, CL_PLATFORM_NAME, 0, NULL, &platformNameSize);
+        clGetPlatformInfo(platform, CL_PLATFORM_NAME, 0, nullptr, &platformNameSize);
 
         vector<char> platformNameBuffer(platformNameSize);
-        clGetPlatformInfo(platform, CL_PLATFORM_NAME, platformNameSize, platformNameBuffer.data(), NULL);
+        clGetPlatformInfo(platform, CL_PLATFORM_NAME, platformNameSize, platformNameBuffer.data(), nullptr);
 
         platformName = QString(platformNameBuffer.data());
     }
@@ -153,7 +153,7 @@ const QString &OpenCLDeviceInfo::getPlatformName()
 cl_device_type OpenCLDeviceInfo::getType()
 {
     cl_device_type devType;
-    clGetDeviceInfo(device, CL_DEVICE_TYPE, sizeof(devType), &devType, NULL);
+    clGetDeviceInfo(device, CL_DEVICE_TYPE, sizeof(devType), &devType, nullptr);
 
     return devType;
 }
@@ -163,17 +163,17 @@ std::list<OpenCLDeviceInfo> enumerateOpenCLDevices()
     std::list<OpenCLDeviceInfo> deviceList;
 
     cl_uint numPlatforms;
-    clGetPlatformIDs (0, NULL, &numPlatforms);
+    clGetPlatformIDs (0, nullptr, &numPlatforms);
 
     vector<cl_platform_id> platforms(numPlatforms);
-    clGetPlatformIDs (numPlatforms, platforms.data(), NULL);
+    clGetPlatformIDs (numPlatforms, platforms.data(), nullptr);
 
     for (cl_platform_id platform: platforms)
     {
         cl_uint numDevices;
-        clGetDeviceIDs (platform, CL_DEVICE_TYPE_ALL, 0, NULL, &numDevices);
+        clGetDeviceIDs (platform, CL_DEVICE_TYPE_ALL, 0, nullptr, &numDevices);
         vector<cl_device_id> devices(numDevices);
-        clGetDeviceIDs (platform, CL_DEVICE_TYPE_ALL, numDevices, devices.data(), NULL);
+        clGetDeviceIDs (platform, CL_DEVICE_TYPE_ALL, numDevices, devices.data(), nullptr);
 
         for (cl_device_id device: devices)
             deviceList.push_back(OpenCLDeviceInfo(device));
@@ -218,19 +218,19 @@ static cl_program compileFile (SharedOpenCL *cl, const QString &path)
         return 0;
     }
 
-    err = clBuildProgram (prog, 0, NULL, NULL, NULL, NULL);
+    err = clBuildProgram (prog, 0, nullptr, nullptr, nullptr, nullptr);
 
     if (err != CL_SUCCESS)
         qWarning() << "CL Program compile failed, build error " << err;
 
     size_t error_len = 0;
-    clGetProgramBuildInfo (prog, cl->device, CL_PROGRAM_BUILD_LOG, 0, NULL, &error_len);
+    clGetProgramBuildInfo (prog, cl->device, CL_PROGRAM_BUILD_LOG, 0, nullptr, &error_len);
     if (error_len)
     {
         vector<char> error_buf(error_len);
         error_buf[0] = '\0';
 
-        clGetProgramBuildInfo (prog, cl->device, CL_PROGRAM_BUILD_LOG, error_len, error_buf.data(), NULL);
+        clGetProgramBuildInfo (prog, cl->device, CL_PROGRAM_BUILD_LOG, error_len, error_buf.data(), nullptr);
         QString errorStr = QString(error_buf.data()).trimmed();
         if (errorStr.size() > 0)
             qWarning() << errorStr;
@@ -276,9 +276,9 @@ static cl_context createSharedContext()
     cl_context result;
 
     cl_uint numPlatforms;
-    clGetPlatformIDs (0, NULL, &numPlatforms);
+    clGetPlatformIDs (0, nullptr, &numPlatforms);
     vector<cl_platform_id> platforms(numPlatforms);
-    clGetPlatformIDs (numPlatforms, platforms.data(), NULL);
+    clGetPlatformIDs (numPlatforms, platforms.data(), nullptr);
 
     clGetGLContextInfoKHR_fn clGetGLContextInfoKHR = (clGetGLContextInfoKHR_fn)clGetExtensionFunctionAddress ("clGetGLContextInfoKHR");
 
@@ -291,9 +291,9 @@ static cl_context createSharedContext()
     for (cl_platform_id platform: platforms)
     {
         size_t resultSize;
-        clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, 0, NULL, &resultSize);
+        clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, 0, nullptr, &resultSize);
         vector<char> resultStr(resultSize);
-        clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, resultSize, resultStr.data(), NULL);
+        clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, resultSize, resultStr.data(), nullptr);
         QStringList platform_extensions = QString(resultStr.data()).split(' ');
 
         if (platform_extensions.indexOf(QString("cl_khr_gl_sharing")) != -1)
@@ -328,7 +328,7 @@ static cl_context createSharedContext()
                 OpenCLDeviceInfo deviceInfo(device);
                 if (deviceInfo.getType() == CL_DEVICE_TYPE_GPU)
                 {
-                    result = clCreateContext(properties, 1, &device, NULL, NULL, &err);
+                    result = clCreateContext(properties, 1, &device, nullptr, nullptr, &err);
                     if (err == CL_SUCCESS)
                         return result;
                     else
@@ -354,7 +354,7 @@ static cl_context createSharedContext()
         0, 0,
     };
 
-    result = clCreateContext(properties, 0, 0, NULL, 0, &err);
+    result = clCreateContext(properties, 0, nullptr, nullptr, nullptr, &err);
     if (err == CL_SUCCESS && result)
         return result;
     else
@@ -381,8 +381,8 @@ SharedOpenCL::SharedOpenCL()
     platform = 0;
     device = 0;
     deviceType = 0;
-    ctx = NULL;
-    cmdQueue = NULL;
+    ctx = nullptr;
+    cmdQueue = nullptr;
     gl_sharing = false;
 
     cl_command_queue_properties command_queue_flags = 0;
@@ -392,7 +392,7 @@ SharedOpenCL::SharedOpenCL()
 
     if (ctx)
     {
-        clGetContextInfo(ctx, CL_CONTEXT_DEVICES, sizeof(device), &device, NULL);
+        clGetContextInfo(ctx, CL_CONTEXT_DEVICES, sizeof(device), &device, nullptr);
         gl_sharing = true;
     }
     else
@@ -422,7 +422,7 @@ SharedOpenCL::SharedOpenCL()
         /* FIXME: Scope issues */
         device = deviceInfoIter->device;
 
-        ctx = clCreateContext (NULL, 1, &device, NULL, NULL, &err);
+        ctx = clCreateContext (nullptr, 1, &device, nullptr, nullptr, &err);
     }
 
     OpenCLDeviceInfo deviceInfo(device);
