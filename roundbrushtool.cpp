@@ -32,7 +32,7 @@ public:
     void applyLayer(TileSet const &modTiles);
 
     TileMap srcTiles;
-    TileMap drawTiles;
+    std::map<QPoint, cl_mem, _tilePointCompare> drawTiles;
 
     float radius;
 
@@ -63,7 +63,7 @@ RoundBrushStrokeContext::~RoundBrushStrokeContext()
     for (auto iter: drawTiles)
     {
         if(iter.second)
-            delete iter.second;
+            clReleaseMemObject(iter.second);
     }
 
     for (auto iter: srcTiles)
@@ -95,38 +95,44 @@ void RoundBrushStrokeContext::drawDab(QPointF point, float pressure, TileSet &mo
     int iy_end   = tile_indice(point.y() + intRadius, TILE_PIXEL_HEIGHT);
 
     const size_t circleWorkSize[2] = {TILE_PIXEL_HEIGHT, TILE_PIXEL_WIDTH};
-    cl_kernel circleKernel = SharedOpenCL::getSharedOpenCL()->circleKernel;
+    cl_kernel circleKernel = SharedOpenCL::getSharedOpenCL()->paintKernel_maskCircle;
+    cl_kernel fillKernel = SharedOpenCL::getSharedOpenCL()->paintKernel_fillFloats;
 
-    cl_int stride = TILE_PIXEL_WIDTH;
-
-    clSetKernelArg(circleKernel, 1, sizeof(cl_int), (void *)&stride);
-    clSetKernelArg(circleKernel, 4, sizeof(cl_float), (void *)&mapped_radius);
+    clSetKernelArg(circleKernel, 3, sizeof(cl_float), (void *)&mapped_radius);
 
     for (int iy = iy_start; iy <= iy_end; ++iy)
     {
         for (int ix = ix_start; ix <= ix_end; ++ix)
         {
-            float pixel[4] = {r, g, b, mapped_alpha};
-
             cl_int offsetX = point.x() - (ix * TILE_PIXEL_WIDTH);
             cl_int offsetY = point.y() - (iy * TILE_PIXEL_HEIGHT);
 
-            CanvasTile *&drawTile = drawTiles[QPoint(ix, iy)];
+            cl_mem &drawMem = drawTiles[QPoint(ix, iy)];
 
-            if (!drawTile)
+            if (!drawMem)
             {
-                drawTile = new CanvasTile();
-                drawTile->fill(0.0f, 0.0f, 0.0f, 0.0f);
-            }
+                const size_t maskComps = TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT;
 
-            cl_mem drawMem = drawTile->unmapHost();
+                drawMem = clCreateBuffer(SharedOpenCL::getSharedOpenCL()->ctx, CL_MEM_READ_WRITE,
+                                         maskComps * sizeof(float), NULL, NULL);
+                float value = 0;
+
+                clSetKernelArg(fillKernel, 0, sizeof(cl_mem), (void *)&drawMem);
+                clSetKernelArg(fillKernel, 1, sizeof(float), (void *)&value);
+                clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
+                                       fillKernel, 1,
+                                       NULL, &maskComps, NULL,
+                                       0, NULL, NULL);
+            }
 
             modTiles.insert(QPoint(ix, iy));
 
+            cl_float floatAlpha = mapped_alpha;
+
             clSetKernelArg(circleKernel, 0, sizeof(cl_mem), (void *)&drawMem);
-            clSetKernelArg(circleKernel, 2, sizeof(cl_int), (void *)&offsetX);
-            clSetKernelArg(circleKernel, 3, sizeof(cl_int), (void *)&offsetY);
-            clSetKernelArg(circleKernel, 5, sizeof(cl_float4), (void *)&pixel);
+            clSetKernelArg(circleKernel, 1, sizeof(cl_int), (void *)&offsetX);
+            clSetKernelArg(circleKernel, 2, sizeof(cl_int), (void *)&offsetY);
+            clSetKernelArg(circleKernel, 4, sizeof(cl_float), (void *)&floatAlpha);
             clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                    circleKernel, 2,
                                    NULL, circleWorkSize, NULL,
@@ -137,25 +143,26 @@ void RoundBrushStrokeContext::drawDab(QPointF point, float pressure, TileSet &mo
 
 void RoundBrushStrokeContext::applyLayer(const TileSet &modTiles)
 {
+    float pixel[4] = {r, g, b, 1.0f};
     const size_t blendWorkSize[1]  = {TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT};
-    cl_kernel blendKernel = SharedOpenCL::getSharedOpenCL()->blendKernel_over;
+    cl_kernel blendKernel = SharedOpenCL::getSharedOpenCL()->paintKernel_applyMaskTile;
 
     for (QPoint const &tilePos: modTiles)
     {
         CanvasTile *dstTile = layer->getTile(tilePos.x(), tilePos.y());
         CanvasTile *&srcTile = srcTiles[tilePos];
-        CanvasTile *drawTile = drawTiles[tilePos];
+        cl_mem drawMem = drawTiles[tilePos];
 
         if (!srcTile)
             srcTile = dstTile->copy();
 
-        cl_mem drawMem = drawTile->unmapHost();
         cl_mem srcMem = srcTile->unmapHost();
         cl_mem dstMem = dstTile->unmapHost();
 
         clSetKernelArg(blendKernel, 0, sizeof(cl_mem), (void *)&dstMem);
         clSetKernelArg(blendKernel, 1, sizeof(cl_mem), (void *)&srcMem);
         clSetKernelArg(blendKernel, 2, sizeof(cl_mem), (void *)&drawMem);
+        clSetKernelArg(blendKernel, 3, sizeof(cl_float4), (void *)&pixel);
         clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                blendKernel, 1,
                                NULL, blendWorkSize, NULL,

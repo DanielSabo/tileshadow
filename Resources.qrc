@@ -4,6 +4,7 @@
         <file>CanvasShader.frag</file>
         <file>BaseKernels.cl</file>
         <file>MyPaintKernels.cl</file>
+        <file>PaintKernels.cl</file>
         <file>mypaint-tools/default.myb</file>
         <file>mypaint-tools/deevad/2B_pencil.myb</file>
         <file>mypaint-tools/deevad/4H_pencil.myb</file>

@@ -7,6 +7,7 @@
 #include <QStringList>
 #include <QSettings>
 #include <QCoreApplication>
+#include "canvastile.h"
 
 #if defined(Q_OS_WIN32)
 #include <windows.h>
@@ -464,5 +465,17 @@ SharedOpenCL::SharedOpenCL()
         mypaintGetColorKernelPart2 = buildOrWarn(myPaintKernelsProg, "mypaint_color_query_part2");
 
         clReleaseProgram (myPaintKernelsProg);
+    }
+
+    QString kernelDefs = QString("-DTILE_PIXEL_WIDTH=%1").arg((size_t)TILE_PIXEL_WIDTH);
+
+    cl_program paintKernelsProg = compileFile(this, ":/PaintKernels.cl", kernelDefs);
+    if (paintKernelsProg)
+    {
+        paintKernel_fillFloats = buildOrWarn(paintKernelsProg, "fillFloats");
+        paintKernel_maskCircle = buildOrWarn(paintKernelsProg, "maskCircle");
+        paintKernel_applyMaskTile = buildOrWarn(paintKernelsProg, "applyMaskTile");
+
+        clReleaseProgram(paintKernelsProg);
     }
 }

@@ -68,6 +68,10 @@ public:
     cl_kernel mypaintGetColorKernelPart1;
     cl_kernel mypaintGetColorKernelPart2;
 
+    cl_kernel paintKernel_fillFloats;
+    cl_kernel paintKernel_maskCircle;
+    cl_kernel paintKernel_applyMaskTile;
+
     bool gl_sharing;
 private:
     SharedOpenCL();
