@@ -5,6 +5,7 @@
 #include <QRect>
 #include <QDebug>
 #include <QtEndian>
+#include <QSaveFile>
 #include <QBuffer>
 #include <QXmlStreamWriter>
 #include <QXmlStreamReader>
@@ -68,8 +69,9 @@ template<typename T> QRect findTileBounds(T const *obj)
 
 void saveStackAs(CanvasStack *stack, QString path)
 {
-    /* FIXME: This should use something like QSaveFile but QZip is not compatible */
-    QZipWriter oraZipWriter(path, QIODevice::WriteOnly);
+    QSaveFile saveFile(path);
+    saveFile.open(QIODevice::WriteOnly);
+    QZipWriter oraZipWriter(&saveFile);
     oraZipWriter.setCompressionPolicy(QZipWriter::NeverCompress);
 
     QBuffer stackBuffer;
@@ -200,6 +202,9 @@ void saveStackAs(CanvasStack *stack, QString path)
     QImage thumbImage = mergedImage.scaled(128, 128, Qt::KeepAspectRatio);
     thumbImage.save(&thumbImageBuffer, "PNG");
     oraZipWriter.addFile("Thumbnails/thumbnail.png", thumbImageBuffer.buffer());
+
+    oraZipWriter.close();
+    saveFile.commit();
 }
 
 static CanvasLayer *layerFromLinear(uint16_t *layerData, QRect bounds)
