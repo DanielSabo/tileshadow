@@ -53,8 +53,8 @@ void BasicStrokeContext::drawDab(QPointF point, TileSet &modTiles)
             err = clSetKernelArg(kernel, 5, sizeof(cl_float4), (void *)&pixel);
             err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                          kernel, 2,
-                                         NULL, global_work_size, NULL,
-                                         0, NULL, NULL);
+                                         nullptr, global_work_size, nullptr,
+                                         0, nullptr, nullptr);
         }
     }
 

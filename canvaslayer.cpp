@@ -77,7 +77,7 @@ static void subrectCopy(cl_mem src, int srcX, int srcY, cl_mem dst, int dstX, in
                             0,
                             stride,
                             0,
-                            0, NULL, NULL);
+                            0, nullptr, nullptr);
 }
 
 CanvasLayer *CanvasLayer::translated(int x, int y) const
@@ -176,7 +176,7 @@ CanvasTile *CanvasLayer::takeTileMaybe(int x, int y)
         return result;
     }
     else
-        return NULL;
+        return nullptr;
 }
 
 CanvasTile *CanvasLayer::getTileMaybe(int x, int y) const
@@ -186,7 +186,7 @@ CanvasTile *CanvasLayer::getTileMaybe(int x, int y) const
     if (found != tiles->end())
         return found->second;
     else
-        return NULL;
+        return nullptr;
 }
 
 CanvasTile *CanvasLayer::getTile(int x, int y)

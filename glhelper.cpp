@@ -63,13 +63,13 @@ GLuint compileGLShaderFile(QOpenGLFunctions_3_2_Core *glFuncs, const QString &pa
 
     const char *source_str = source.data();
 
-    glFuncs->glShaderSource(shader, 1, &source_str, NULL);
+    glFuncs->glShaderSource(shader, 1, &source_str, nullptr);
     glFuncs->glCompileShader(shader);
 
     if (!getShaderInt(glFuncs, shader, GL_COMPILE_STATUS)) {
         GLint logSize = getShaderInt(glFuncs, shader, GL_INFO_LOG_LENGTH);
         char* logMsg = new char[logSize];
-        glFuncs->glGetShaderInfoLog(shader, logSize, NULL, logMsg);
+        glFuncs->glGetShaderInfoLog(shader, logSize, nullptr, logMsg);
 
         qWarning() << "Shader compile failed, couldn't build " << path;
         qWarning() << logMsg;
@@ -98,7 +98,7 @@ GLuint buildGLProgram(QOpenGLFunctions_3_2_Core *glFuncs, GLuint vertShader, GLu
     if (!getProgramInt(glFuncs, program, GL_LINK_STATUS)) {
         GLint logSize = getProgramInt(glFuncs, program, GL_INFO_LOG_LENGTH);
         char* logMsg = new char[logSize];
-        glFuncs->glGetProgramInfoLog(program, logSize, NULL, logMsg);
+        glFuncs->glGetProgramInfoLog(program, logSize, nullptr, logMsg);
 
         qWarning() << "Failed to link shader";
         qWarning() << logMsg;

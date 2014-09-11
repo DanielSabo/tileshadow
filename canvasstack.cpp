@@ -104,21 +104,21 @@ void clBlendInPlace(CanvasTile *inTile, CanvasTile *auxTile, BlendMode::Mode mod
     clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&auxMem);
     clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                            kernel,
-                           1, NULL, global_work_size, NULL,
-                           0, NULL, NULL);
+                           1, nullptr, global_work_size, nullptr,
+                           0, nullptr, nullptr);
 }
 
 CanvasTile *CanvasStack::getTileMaybe(int x, int y, bool cache)
 {
     int layerCount = layers.size();
 
-    CanvasTile *result = NULL;
+    CanvasTile *result = nullptr;
 
     if (layerCount == 0)
-        result = NULL;
+        result = nullptr;
     else if (layerCount == 1)
     {
-        CanvasTile *auxTile = NULL;
+        CanvasTile *auxTile = nullptr;
         CanvasLayer *layer = layers.at(0);
 
         if (layer->visible)
@@ -130,15 +130,15 @@ CanvasTile *CanvasStack::getTileMaybe(int x, int y, bool cache)
             clBlendInPlace(result, auxTile, layer->mode);
         }
         else
-            result = NULL;
+            result = nullptr;
     }
     else
     {
-        CanvasTile *inTile = NULL;
+        CanvasTile *inTile = nullptr;
 
         for (int currentLayer = 0; currentLayer < layerCount; currentLayer++)
         {
-            CanvasTile *auxTile = NULL;
+            CanvasTile *auxTile = nullptr;
             CanvasLayer *layer = layers.at(currentLayer);
 
             if (layer->visible)

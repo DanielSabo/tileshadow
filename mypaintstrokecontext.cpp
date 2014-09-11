@@ -116,7 +116,7 @@ MyPaintStrokeContext::MyPaintStrokeContext(CanvasLayer *layer) : StrokeContext(l
 MyPaintStrokeContext::~MyPaintStrokeContext()
 {
     mypaint_brush_unref(priv->brush);
-    priv->brush = NULL;
+    priv->brush = nullptr;
     delete priv->surface;
     delete priv;
 }
@@ -184,7 +184,7 @@ static void getColorFunction (MyPaintSurface *base_surface,
     int tile_count = (iy_end - iy_start + 1) * (ix_end - ix_start + 1);
 
     colorAccumulatorMem = clCreateBuffer (SharedOpenCL::getSharedOpenCL()->ctx, CL_MEM_READ_WRITE,
-                                          2 * TILE_PIXEL_HEIGHT * sizeof(cl_float4) * tile_count, NULL, NULL);
+                                          2 * TILE_PIXEL_HEIGHT * sizeof(cl_float4) * tile_count, nullptr, nullptr);
 
     cl_int err = CL_SUCCESS;
     cl_int stride = TILE_PIXEL_WIDTH;
@@ -244,8 +244,8 @@ __kernel void mypaint_color_query_part2(__global float4 *accum,
             err = clSetKernelArg(kernel1, 5, sizeof(cl_int), (void *)&row_count);
             err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                          kernel1, 1,
-                                         NULL, global_work_size, local_work_size,
-                                         0, NULL, NULL);
+                                         nullptr, global_work_size, local_work_size,
+                                         0, nullptr, nullptr);
             check_cl_error(err);
 
             row_count += height;
@@ -257,15 +257,15 @@ __kernel void mypaint_color_query_part2(__global float4 *accum,
     err = clSetKernelArg(kernel2, 1, sizeof(cl_int), (void *)&row_count);
     err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                  kernel2, 1,
-                                 NULL, global_work_size, NULL,
-                                 0, NULL, NULL);
+                                 nullptr, global_work_size, nullptr,
+                                 0, nullptr, nullptr);
     check_cl_error(err);
 
 
     float totalValues[5] = {0, 0, 0, 0, 0};
     clEnqueueReadBuffer(SharedOpenCL::getSharedOpenCL()->cmdQueue, colorAccumulatorMem, CL_TRUE,
                         0, sizeof(float) * 5, totalValues,
-                        0, NULL, NULL);
+                        0, nullptr, nullptr);
 
     if (totalValues[4] > 0.0f)
     {
@@ -385,8 +385,8 @@ static int drawDabFunction (MyPaintSurface *base_surface,
                 err = clSetKernelArg(kernel, 4, sizeof(float), (void *)&tileY);
                 err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                              kernel, 2,
-                                             NULL, global_work_size, local_work_size,
-                                             0, NULL, NULL);
+                                             nullptr, global_work_size, local_work_size,
+                                             0, nullptr, nullptr);
             }
         }
 

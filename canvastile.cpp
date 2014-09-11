@@ -17,9 +17,9 @@ int CanvasTile::deviceTileCount()
 CanvasTile::CanvasTile()
 {
     tileMem = 0;
-    tileData = NULL;
-    tileMem = clCreateBuffer (SharedOpenCL::getSharedOpenCL()->ctx, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
-                              TILE_COMP_TOTAL * sizeof(float), tileData, NULL);
+    tileData = nullptr;
+    tileMem = clCreateBuffer(SharedOpenCL::getSharedOpenCL()->ctx, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
+                             TILE_COMP_TOTAL * sizeof(float), tileData, nullptr);
 
     privAllocatedTileCount.ref();
     privDeviceTileCount.ref();
@@ -46,10 +46,10 @@ float *CanvasTile::mapHost()
     if (!tileData)
     {
         cl_int err = CL_SUCCESS;
-        tileData = (float *)clEnqueueMapBuffer (SharedOpenCL::getSharedOpenCL()->cmdQueue, tileMem,
-                                                      CL_TRUE, CL_MAP_READ | CL_MAP_WRITE,
-                                                      0, TILE_COMP_TOTAL * sizeof(float),
-                                                      0, NULL, NULL, &err);
+        tileData = (float *)clEnqueueMapBuffer(SharedOpenCL::getSharedOpenCL()->cmdQueue, tileMem,
+                                               CL_TRUE, CL_MAP_READ | CL_MAP_WRITE,
+                                               0, TILE_COMP_TOTAL * sizeof(float),
+                                               0, nullptr, nullptr, &err);
     }
 
     return tileData;
@@ -59,15 +59,15 @@ cl_mem CanvasTile::unmapHost()
 {
     if (tileData && tileMem)
     {
-        cl_int err = clEnqueueUnmapMemObject(SharedOpenCL::getSharedOpenCL()->cmdQueue, tileMem, tileData, 0, NULL, NULL);
-        tileData = NULL;
+        cl_int err = clEnqueueUnmapMemObject(SharedOpenCL::getSharedOpenCL()->cmdQueue, tileMem, tileData, 0, nullptr, nullptr);
+        tileData = nullptr;
     }
     else if (tileData)
     {
         tileMem = clCreateBuffer (SharedOpenCL::getSharedOpenCL()->ctx, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR ,
-                                  TILE_COMP_TOTAL * sizeof(float), tileData, NULL);
+                                  TILE_COMP_TOTAL * sizeof(float), tileData, nullptr);
         delete tileData;
-        tileData = NULL;
+        tileData = nullptr;
         privDeviceTileCount.ref();
     }
 
@@ -81,8 +81,8 @@ void CanvasTile::swapHost()
 
     if (tileMem && tileData)
     {
-        cl_int err = clEnqueueUnmapMemObject(SharedOpenCL::getSharedOpenCL()->cmdQueue, tileMem, tileData, 0, NULL, NULL);
-        tileData = NULL;
+        cl_int err = clEnqueueUnmapMemObject(SharedOpenCL::getSharedOpenCL()->cmdQueue, tileMem, tileData, 0, nullptr, nullptr);
+        tileData = nullptr;
     }
 
     if (!tileData)
@@ -91,7 +91,7 @@ void CanvasTile::swapHost()
         cl_int err = clEnqueueReadBuffer(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                          tileMem, CL_TRUE,
                                          0, TILE_COMP_TOTAL * sizeof(float), tileData,
-                                         0, NULL, NULL);
+                                         0, nullptr, nullptr);
         err = clReleaseMemObject(tileMem);
         tileMem = 0;
         privDeviceTileCount.deref();
@@ -111,8 +111,8 @@ void CanvasTile::fill(float r, float g, float b, float a)
     clSetKernelArg(kernel, 1, sizeof(cl_float4), (void *)&color);
     clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                            kernel, 1,
-                           NULL, global_work_size, NULL,
-                           0, NULL, NULL);
+                           nullptr, global_work_size, nullptr,
+                           0, nullptr, nullptr);
 }
 
 CanvasTile *CanvasTile::copy()
@@ -125,7 +125,7 @@ CanvasTile *CanvasTile::copy()
     clEnqueueCopyBuffer(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                         tileMem, result->tileMem, 0, 0,
                         TILE_COMP_TOTAL * sizeof(float),
-                        0, NULL, NULL);
+                        0, nullptr, nullptr);
 
     return result;
 }
