@@ -6,6 +6,8 @@
 #include <QColor>
 #include <QVariant>
 
+static const float SUBPIXEL_FACTOR = 8.0f;
+
 template<typename T> static inline T pow2(T const &v)
 {
     return v * v;
@@ -174,9 +176,9 @@ TileSet RoundBrushStrokeContext::startStroke(QPointF point, float pressure)
 {
     TileSet modTiles;
 
-    lastPoint = point.toPoint();
+    lastPoint = QPoint(round(point.x() * SUBPIXEL_FACTOR), round(point.y() * SUBPIXEL_FACTOR));
     lastPressure = pressure;
-    drawDab(point, pressure, modTiles);
+    drawDab(QPointF(lastPoint) / SUBPIXEL_FACTOR, pressure, modTiles);
     applyLayer(modTiles);
     return modTiles;
 }
@@ -185,26 +187,26 @@ TileSet RoundBrushStrokeContext::strokeTo(QPointF point, float pressure, float d
 {
     TileSet modTiles;
 
-    QPoint thisPoint = point.toPoint();
+    QPoint endPoint(round(point.x() * SUBPIXEL_FACTOR), round(point.y() * SUBPIXEL_FACTOR));
 
-    if (thisPoint == lastPoint)
+    if (endPoint == lastPoint)
     {
         drawDab(point, pressure, modTiles);
     }
     else
     {
-        std::vector<QPoint> line = interpolateLine(lastPoint, thisPoint);
+        std::vector<QPoint> line = interpolateLine(lastPoint, endPoint);
 
-        float lineLength = dist(lastPoint, thisPoint);
+        float lineLength = dist(lastPoint, endPoint);
         float deltaPressure = pressure - lastPressure;
 
         for (QPoint const &p: line)
         {
             float linePressure = lastPressure + deltaPressure * (dist(lastPoint, p) / lineLength);
-            drawDab(p, linePressure, modTiles);
+            drawDab(QPointF(p) / SUBPIXEL_FACTOR, linePressure, modTiles);
         }
 
-        lastPoint = thisPoint;
+        lastPoint = endPoint;
     }
 
     lastPressure = pressure;
