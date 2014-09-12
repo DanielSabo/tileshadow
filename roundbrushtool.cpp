@@ -82,7 +82,7 @@ void RoundBrushStrokeContext::drawDab(QPointF point, float pressure, TileSet &mo
     float mapped_radius = (1.0f - (pressure - 1.0f) * (pressure - 1.0f)) * radius;
           mapped_radius = mapped_radius * (1.0f - minRadiusCoef) + radius * minRadiusCoef;
 
-    if (firstDab || dist(lastDab, point) > mapped_radius * rateCoefficient || mapped_radius < 5.0f)
+    if (firstDab || dist(lastDab, point) > mapped_radius * rateCoefficient || mapped_radius < 2.0f)
         firstDab = false;
     else
         return;
