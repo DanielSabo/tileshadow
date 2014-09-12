@@ -255,8 +255,8 @@ void RoundBrushTool::reset()
     priv->g = 0.0f;
     priv->b = 0.0f;
     priv->a = 1.0f;
-    priv->minRadiusCoef = 0.0f;
-    priv->minAlphaCoef = 0.0f;
+    priv->minRadiusCoef = 0.4f;
+    priv->minAlphaCoef = 1.0f;
 }
 
 float RoundBrushTool::getPixelRadius()
