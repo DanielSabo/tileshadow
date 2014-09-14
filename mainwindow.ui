@@ -91,7 +91,7 @@
      <x>0</x>
      <y>0</y>
      <width>561</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -112,6 +112,7 @@
     </property>
     <addaction name="actionCircle_Benchmark"/>
     <addaction name="separator"/>
+    <addaction name="actionSelect_OpenCL_Device"/>
     <addaction name="actionShow_OpenCL_Information"/>
     <addaction name="actionStatus_Bar"/>
    </widget>
@@ -264,6 +265,11 @@
   <action name="actionExport">
    <property name="text">
     <string>Export...</string>
+   </property>
+  </action>
+  <action name="actionSelect_OpenCL_Device">
+   <property name="text">
+    <string>Select OpenCL Device</string>
    </property>
   </action>
  </widget>
@@ -518,6 +524,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionSelect_OpenCL_Device</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>showDeviceSelect()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>280</x>
+     <y>200</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>showOpenCLInfo()</slot>
@@ -542,5 +564,6 @@
   <slot>actionSave()</slot>
   <slot>actionNewFile()</slot>
   <slot>actionExport()</slot>
+  <slot>showDeviceSelect()</slot>
  </slots>
 </ui>

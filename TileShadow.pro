@@ -54,7 +54,8 @@ SOURCES += main.cpp\
     toolsettinginfo.cpp \
     canvasrender.cpp \
     canvaseventthread.cpp \
-    paintutils.cpp
+    paintutils.cpp \
+    deviceselectdialog.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -87,7 +88,8 @@ HEADERS  += mainwindow.h \
     toolsettinginfo.h \
     canvasrender.h \
     canvaseventthread.h \
-    paintutils.h
+    paintutils.h \
+    deviceselectdialog.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \

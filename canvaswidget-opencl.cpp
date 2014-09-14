@@ -267,11 +267,6 @@ typedef CL_API_ENTRY cl_int
 
 static cl_context createSharedContext()
 {
-    QSettings appSettings;
-
-    if (!appSettings.value("EnableGLSharing", QVariant::fromValue<bool>(true)).toBool())
-        return 0;
-
 #if defined(Q_OS_WIN32) || (defined(Q_OS_UNIX) && !defined(Q_OS_MAC))
     cl_context result;
 
@@ -387,8 +382,15 @@ SharedOpenCL::SharedOpenCL()
 
     cl_command_queue_properties command_queue_flags = 0;
 
-    /* First look for a shared device */
-    ctx = createSharedContext();
+    cl_device_type selectedDeviceType = QSettings().value("OpenCL/Device", QVariant::fromValue<int>(0)).toInt();
+
+    if (selectedDeviceType == 0)
+    {
+        /* Look for a shared device */
+        ctx = createSharedContext();
+        if (!ctx)
+            selectedDeviceType = CL_DEVICE_TYPE_CPU;
+    }
 
     if (ctx)
     {
@@ -403,7 +405,7 @@ SharedOpenCL::SharedOpenCL()
         /* Then for a CPU device */
         for (deviceInfoIter = deviceInfoList.begin(); deviceInfoIter != deviceInfoList.end(); ++deviceInfoIter)
         {
-            if (deviceInfoIter->getType() == CL_DEVICE_TYPE_CPU)
+            if (deviceInfoIter->getType() == selectedDeviceType)
             {
                 break;
             }

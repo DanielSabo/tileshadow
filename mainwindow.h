@@ -41,6 +41,7 @@ private slots:
 
 public slots:
     void showOpenCLInfo();
+    void showDeviceSelect();
     void runCircleBenchmark();
     void actionQuit();
     void actionNewFile();

@@ -17,6 +17,7 @@
 #include "toolsettingswidget.h"
 #include "toollistwidget.h"
 #include "layerlistwidget.h"
+#include "deviceselectdialog.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -227,6 +228,11 @@ void MainWindow::showOpenCLInfo()
         infoWindow->raise();
     else
         infoWindow->show();
+}
+
+void MainWindow::showDeviceSelect()
+{
+    DeviceSelectDialog().exec();
 }
 
 void MainWindow::actionQuit()
