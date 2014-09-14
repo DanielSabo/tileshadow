@@ -12,6 +12,7 @@ namespace ToolFactory {
     ToolList listTools();
     BaseTool *loadTool(QString toolName);
     QString defaultToolName();
+    QString defaultEraserName();
 }
 
 #endif // TOOLFACTORY_H

@@ -97,5 +97,10 @@ BaseTool *ToolFactory::loadTool(QString toolName)
 
 QString ToolFactory::defaultToolName()
 {
-    return QStringLiteral(":/mypaint-tools/default.myb");
+    return QStringLiteral(":/mypaint-tools/deevad/brush.myb");
+}
+
+QString ToolFactory::defaultEraserName()
+{
+    return QStringLiteral(":/mypaint-tools/deevad/thin_hard_eraser.myb");
 }

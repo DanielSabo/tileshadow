@@ -138,9 +138,8 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
 
     connect(&d->eventThread, SIGNAL(hasResultTiles()), this, SLOT(update()), Qt::QueuedConnection);
 
-    QString defaultTool = ToolFactory::defaultToolName();
-    d->penToolPath = defaultTool;
-    d->eraserToolPath = defaultTool;
+    d->penToolPath = ToolFactory::defaultToolName();
+    d->eraserToolPath = ToolFactory::defaultEraserName();
     setActiveTool(d->penToolPath);
 }
 
