@@ -183,6 +183,13 @@ void MyPaintTool::setToolSetting(QString const &name, QVariant const &value)
 
         priv->setBrushValue("opaque", opacity);
     }
+    else if (name == QStringLiteral("hardness") && value.canConvert<float>())
+    {
+        //FIXME: Should query the min and max values instead of hardcoding
+        float hardness = qBound<float>(0.0f, value.toFloat(), 1.0f);
+
+        priv->setBrushValue("hardness", hardness);
+    }
     else
     {
         BaseTool::setToolSetting(name, value);
@@ -195,6 +202,8 @@ QVariant MyPaintTool::getToolSetting(const QString &name)
         return QVariant::fromValue<float>(priv->getBrushValue("radius_logarithmic"));
     else if (name == QStringLiteral("opacity"))
         return QVariant::fromValue<float>(priv->getBrushValue("opaque"));
+    else if (name == QStringLiteral("hardness"))
+        return QVariant::fromValue<float>(priv->getBrushValue("hardness"));
     else
         return BaseTool::getToolSetting(name);
 
@@ -206,6 +215,7 @@ QList<ToolSettingInfo> MyPaintTool::listToolSettings()
 
     result.append(ToolSettingInfo::exponentSlider("size", "SizeExp", -2.0f, 6.0f));
     result.append(ToolSettingInfo::linearSlider("opacity", "Opacity", 0.0f, 1.0f));
+    result.append(ToolSettingInfo::linearSlider("hardness", "Hardness", 0.0f, 1.0f));
 
     return result;
 
