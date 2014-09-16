@@ -440,6 +440,14 @@ void MainWindow::actionResetTool()
     canvas->resetToolSettings();
 }
 
+void MainWindow::actionSetBackgroundColor()
+{
+    QColor color = canvas->getToolColor();
+
+    if (color.isValid())
+        canvas->setBackgroundColor(color);
+}
+
 void MainWindow::actionMergeLayerDown()
 {
     canvas->mergeLayerDown(canvas->getActiveLayer());

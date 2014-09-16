@@ -976,6 +976,7 @@ void CanvasWidget::flashCurrentLayer()
         return;
 
     ctx->flashStack.reset(new CanvasStack);
+    ctx->flashStack->setBackground(ctx->layers.backgroundTileCL->copy());
     (*ctx->flashStack).layers.append(new CanvasLayer(*currentLayerObj));
     render->clearTiles();
     d->renderMode = RenderMode::FlashLayer;
@@ -997,6 +998,24 @@ void CanvasWidget::hideColorPreview()
 
     d->dotPreviewColor = QColor();
     update();
+}
+
+void CanvasWidget::setBackgroundColor(const QColor &color)
+{
+    Q_D(CanvasWidget);
+
+    if (color.isValid())
+    {
+        CanvasContext *ctx = getContext();
+        ctx->layers.backgroundTile->fill(color.redF(), color.greenF(), color.blueF(), 1.0f);
+        ctx->layers.backgroundTileCL->fill(color.redF(), color.greenF(), color.blueF(), 1.0f);
+
+        render->updateBackgroundTile(ctx);
+        render->clearTiles();
+        ctx->dirtyTiles = ctx->layers.getTileSet();
+        d->fullRedraw = true;
+        update();
+    }
 }
 
 void CanvasWidget::undo()

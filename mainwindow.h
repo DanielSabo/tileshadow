@@ -56,6 +56,7 @@ public slots:
     void actionToolSizeIncrease();
     void actionToolSizeDecrease();
     void actionResetTool();
+    void actionSetBackgroundColor();
     void actionMergeLayerDown();
     void canvasStats();
     void showStatusBar(bool visible);

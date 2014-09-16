@@ -88,6 +88,8 @@ public:
     void showColorPreview(QColor const &color);
     void hideColorPreview();
 
+    void setBackgroundColor(QColor const &color);
+
     void newDrawing();
     void openORA(QString path);
     void openImage(QImage image);
