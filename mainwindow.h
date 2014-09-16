@@ -55,6 +55,7 @@ public slots:
     void actionZoomOut();
     void actionToolSizeIncrease();
     void actionToolSizeDecrease();
+    void actionResetTool();
     void canvasStats();
     void showStatusBar(bool visible);
     void updateTool();

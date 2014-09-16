@@ -136,6 +136,7 @@
     </property>
     <addaction name="actionIncrease_Tool_Size"/>
     <addaction name="actionDecrease_Tool_Size"/>
+    <addaction name="actionResetTool"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -270,6 +271,14 @@
   <action name="actionSelect_OpenCL_Device">
    <property name="text">
     <string>Select OpenCL Device</string>
+   </property>
+  </action>
+  <action name="actionResetTool">
+   <property name="text">
+    <string>Reset Tool</string>
+   </property>
+   <property name="toolTip">
+    <string>Reset Tool Settings</string>
    </property>
   </action>
  </widget>
@@ -540,6 +549,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionResetTool</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>actionResetTool()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>280</x>
+     <y>200</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>showOpenCLInfo()</slot>
@@ -565,5 +590,6 @@
   <slot>actionNewFile()</slot>
   <slot>actionExport()</slot>
   <slot>showDeviceSelect()</slot>
+  <slot>actionResetTool()</slot>
  </slots>
 </ui>

@@ -48,6 +48,7 @@ public:
     QList<ToolSettingInfo> getToolSettings();
     void setToolSetting(const QString &settingName, const QVariant &value);
     QVariant getToolSetting(const QString &settingName);
+    void resetToolSettings();
 
     void startStroke(QPointF pos, float pressure);
     void strokeTo(QPointF pos, float pressure, float dt);

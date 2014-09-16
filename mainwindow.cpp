@@ -407,6 +407,11 @@ void MainWindow::actionToolSizeDecrease()
         canvas->setToolSetting("size", QVariant(size - 0.3));
 }
 
+void MainWindow::actionResetTool()
+{
+    canvas->resetToolSettings();
+}
+
 void MainWindow::actionZoomIn()
 {
     canvas->setScale(canvas->getScale() * 2);

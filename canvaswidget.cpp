@@ -1224,6 +1224,19 @@ QVariant CanvasWidget::getToolSetting(const QString &settingName)
     return d->activeTool->getToolSetting(settingName);
 }
 
+void CanvasWidget::resetToolSettings()
+{
+    Q_D(CanvasWidget);
+
+    if (!d->activeTool)
+        return;
+
+    d->activeTool->reset();
+
+    emit updateTool();
+    update();
+}
+
 void CanvasWidget::setToolColor(const QColor &color)
 {
     Q_D(CanvasWidget);
