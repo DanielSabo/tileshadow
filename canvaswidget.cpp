@@ -287,6 +287,15 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
     if (!d->activeTool)
         return;
 
+    if (CanvasContext *ctx = getContextMaybe())
+    {
+        if (ctx->layers.layers.empty() ||
+            ctx->layers.layers.at(ctx->currentLayer)->visible == false)
+        {
+            return;
+        }
+    }
+
     BaseTool *strokeTool = d->activeTool->clone();
 
     auto msg = [strokeTool, pos, pressure](CanvasContext *ctx) {
@@ -376,9 +385,6 @@ void CanvasWidget::endStroke()
     };
 
     d->eventThread.enqueueCommand(msg);
-
-    modified = true;
-    emit canvasModified();
 }
 
 float CanvasWidget::getScale()
