@@ -10,6 +10,7 @@
 #include "toolfactory.h"
 #include <qmath.h>
 #include <QApplication>
+#include <QRegExp>
 #include <QMouseEvent>
 #include <QTimer>
 #include <QElapsedTimer>
@@ -1278,13 +1279,19 @@ void CanvasWidget::newDrawing()
 
 void CanvasWidget::openORA(QString path)
 {
+    QRegExp layerNameReg("Layer (\\d+)");
     CanvasContext *ctx = getContext();
 
     ctx->clearUndoHistory();
     ctx->clearRedoHistory();
     render->clearTiles();
-    lastNewLayerNumber = 0;
     loadStackFromORA(&ctx->layers, path);
+    lastNewLayerNumber = 0;
+    for (CanvasLayer const *layer: ctx->layers.layers)
+    {
+        if (layerNameReg.exactMatch(layer->name))
+            lastNewLayerNumber = qMax(lastNewLayerNumber, layerNameReg.cap(1).toInt());
+    }
     setActiveLayer(0); // Sync up the undo layer
     canvasOrigin = QPoint(0, 0);
     ctx->dirtyTiles = ctx->layers.getTileSet();
