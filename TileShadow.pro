@@ -49,6 +49,7 @@ SOURCES += main.cpp\
     toollistwidget.cpp \
     toolfactory.cpp \
     layerlistwidget.cpp \
+    layerlistview.cpp \
     toolsettingswidget.cpp \
     toollistpopup.cpp \
     imageexport.cpp \
@@ -82,6 +83,7 @@ HEADERS  += mainwindow.h \
     toollistwidget.h \
     toolfactory.h \
     layerlistwidget.h \
+    layerlistview.h \
     toolsettingswidget.h \
     blendmodes.h \
     toollistpopup.h \

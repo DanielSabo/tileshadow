@@ -1,8 +1,8 @@
 #include "layerlistwidget.h"
 #include "ui_layerlistwidget.h"
 
-#include <QListWidget>
 #include <QComboBox>
+#include <QDebug>
 
 #include "canvaswidget.h"
 
@@ -26,8 +26,36 @@ LayerListWidget::LayerListWidget(QWidget *parent) :
     connect(ui->downLayerButton, SIGNAL(clicked()), this, SLOT(layerListMoveDown()));
     connect(ui->upLayerButton,   SIGNAL(clicked()), this, SLOT(layerListMoveUp()));
 
-    connect(ui->layerList, SIGNAL(currentRowChanged(int)), this, SLOT(layerListSelection(int)));
-    connect(ui->layerList, SIGNAL(itemChanged(QListWidgetItem *)), this, SLOT(layerListItemEdited(QListWidgetItem *)));
+    connect(ui->layerList, &LayerListView::edited, [this](int row, int column, QVariant data){
+        if (!canvas)
+            return;
+
+        if (freezeLayerList)
+            return;
+
+        freezeLayerList = true;
+        if (column == LayerListView::VisibleColumn)
+            canvas->setLayerVisible(row, data.toBool());
+        else if (column == LayerListView::EditableColumn)
+            canvas->setLayerEditable(row, data.toBool());
+        else if (column == LayerListView::NameColumn)
+            canvas->renameLayer(row, data.toString());
+        freezeLayerList = false;
+    });
+
+    connect(ui->layerList, &LayerListView::selectionChanged, [this](int row){
+       if (!canvas)
+           return;
+
+       if (freezeLayerList)
+           return;
+
+       freezeLayerList = true;
+       canvas->setActiveLayer(row);
+       BlendMode::Mode currentMode = canvas->getLayerMode(row);
+       ui->layerModeComboBox->setCurrentIndex(ui->layerModeComboBox->findData(QVariant(currentMode)));
+       freezeLayerList = false;
+    });
 
     connect(ui->layerModeComboBox, SIGNAL(activated(int)), this, SLOT(layerModeActivated(int)));
 }
@@ -67,28 +95,18 @@ void LayerListWidget::updateLayers()
         return;
 
     freezeLayerList = true;
+    QList<CanvasWidget::LayerInfo> layerList = canvas->getLayerList();
+    int currentLayer = canvas->getActiveLayer();
+    ui->layerList->setData(layerList, currentLayer);
 
-    QList<CanvasWidget::LayerInfo> canvasLayers = canvas->getLayerList();
+    BlendMode::Mode currentMode;
 
-    ui->layerList->clear();
-
-
-    for (CanvasWidget::LayerInfo const &info: canvasLayers)
-    {
-        QListWidgetItem *item = new QListWidgetItem(info.name);
-        item->setFlags(item->flags() | Qt::ItemIsEditable | Qt::ItemIsUserCheckable);
-        item->setCheckState(info.visible ? Qt::Checked : Qt::Unchecked);
-        ui->layerList->addItem(item);
-    }
-    ui->layerList->setCurrentRow((ui->layerList->count() - 1) - canvas->getActiveLayer());
-
-    BlendMode::Mode currentMode = BlendMode::Over;
-
-    if (canvasLayers.size())
-        currentMode = canvas->getLayerMode(canvas->getActiveLayer());
+    if (layerList.size())
+        currentMode = layerList.at(currentLayer).mode;
+    else
+        currentMode = BlendMode::Over;
 
     ui->layerModeComboBox->setCurrentIndex(ui->layerModeComboBox->findData(QVariant(currentMode)));
-
     freezeLayerList = false;
 }
 
@@ -102,34 +120,8 @@ void LayerListWidget::layerModeActivated(int index)
     BlendMode::Mode newMode = BlendMode::Mode(ui->layerModeComboBox->itemData(index).toInt());
     ui->layerModeComboBox->setCurrentIndex(index);
 
-    int layerIdx = (ui->layerList->count() - 1) - ui->layerList->currentIndex().row();
-    canvas->setLayerMode(layerIdx, newMode);
+    canvas->setLayerMode(ui->layerList->getSelectedRow(), newMode);
     freezeLayerList = false;
-}
-
-void LayerListWidget::layerListItemEdited(QListWidgetItem * item)
-{
-    if (!canvas)
-        return;
-
-    freezeLayerList = true;
-    int layerIdx = (ui->layerList->count() - 1) - ui->layerList->row(item);
-    canvas->renameLayer(layerIdx, item->text());
-    canvas->setLayerVisible(layerIdx, item->checkState() == Qt::Checked);
-    freezeLayerList = false;
-}
-
-void LayerListWidget::layerListSelection(int row)
-{
-    if (!canvas)
-        return;
-
-    /* Don't update the selection while the list is changing */
-    if (freezeLayerList)
-        return;
-
-    int layerIdx = (ui->layerList->count() - 1) - row;
-    canvas->setActiveLayer(layerIdx);
 }
 
 void LayerListWidget::layerListAdd()

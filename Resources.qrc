@@ -50,6 +50,10 @@
         <file>icons/app-tileshadow-16.png</file>
         <file>icons/app-tileshadow-32.png</file>
         <file>icons/app-tileshadow-128.png</file>
+        <file>icons/tileshadow-lock-off.png</file>
+        <file>icons/tileshadow-lock.png</file>
+        <file>icons/tileshadow-visible-off.png</file>
+        <file>icons/tileshadow-visible.png</file>
         <file>CursorCircle.frag</file>
         <file>CursorCircle.vert</file>
         <file>cursors/eyedropper.png</file>

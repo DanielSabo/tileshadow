@@ -27,13 +27,11 @@ private:
     Ui::LayerListWidget *ui;
 
 public slots:
-    void layerListSelection(int row);
     void layerListAdd();
     void layerListRemove();
     void layerListDuplicate();
     void layerListMoveUp();
     void layerListMoveDown();
-    void layerListItemEdited(QListWidgetItem *item);
     void updateLayers();
 
     void layerModeActivated(int index);
