@@ -63,8 +63,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     showStatusBar(appSettings.value("MainWindow/statusBar", false).toBool());
 
-    canvas->setToolColor(QColor(255, 0, 0));
-
 #ifdef Q_OS_MAC
     // On OSX the window icon represents the current file
     setWindowIcon(QIcon(":icons/image-x-generic.png"));
