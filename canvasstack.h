@@ -24,8 +24,8 @@ public:
     TileSet getTileSet() const;
     std::unique_ptr<CanvasTile> getTileMaybe(int x, int y) const;
 
-    CanvasTile *backgroundTile;
-    CanvasTile *backgroundTileCL;
+    std::unique_ptr<CanvasTile> backgroundTile;
+    std::unique_ptr<CanvasTile> backgroundTileCL;
 };
 
 #endif // CANVASSTACK_H

@@ -4,17 +4,14 @@
 
 CanvasStack::CanvasStack()
 {
-    backgroundTile = new CanvasTile();
+    backgroundTile.reset(new CanvasTile());
     backgroundTile->fill(1.0f, 1.0f, 1.0f, 1.0f);
-    backgroundTileCL = backgroundTile->copy();
+    backgroundTileCL.reset(backgroundTile->copy());
     backgroundTileCL->unmapHost();
 }
 
 CanvasStack::~CanvasStack()
 {
-    delete backgroundTile;
-    delete backgroundTileCL;
-
     clearLayers();
 }
 
