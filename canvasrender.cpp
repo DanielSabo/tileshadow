@@ -46,10 +46,11 @@ CanvasRender::CanvasRender() :
 
     if (program)
     {
-        locationTileOrigin = glFuncs->glGetUniformLocation(program, "tileOrigin");
-        locationTileSize   = glFuncs->glGetUniformLocation(program, "tileSize");
-        locationTileImage  = glFuncs->glGetUniformLocation(program, "tileImage");
-        locationTilePixels = glFuncs->glGetUniformLocation(program, "tilePixels");
+        locationTileOrigin  = glFuncs->glGetUniformLocation(program, "tileOrigin");
+        locationTileSize    = glFuncs->glGetUniformLocation(program, "tileSize");
+        locationTileImage   = glFuncs->glGetUniformLocation(program, "tileImage");
+        locationTilePixels  = glFuncs->glGetUniformLocation(program, "tilePixels");
+        locationTileBinSize = glFuncs->glGetUniformLocation(program, "binSize");
     }
 
     glFuncs->glGenBuffers(1, &vertexBuffer);

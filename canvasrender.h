@@ -26,6 +26,7 @@ public:
     GLuint locationTileSize;
     GLuint locationTileImage;
     GLuint locationTilePixels;
+    GLuint locationTileBinSize;
 
     GLuint vertexBuffer;
     GLuint vertexArray;

@@ -245,12 +245,15 @@ void CanvasWidget::paintGL()
 //    glFuncs->glClearColor(0.2, 0.2, 0.4, 1.0);
 //    glFuncs->glClear(GL_COLOR_BUFFER_BIT);
 
+    int zoomFactor = viewScale >= 1.0f ? 1 : 1 / viewScale;
+
     glFuncs->glUseProgram(render->program);
 
     glFuncs->glActiveTexture(GL_TEXTURE0);
     glFuncs->glUniform1i(render->locationTileImage, 0);
     glFuncs->glUniform2f(render->locationTileSize, worldTileWidth, worldTileHeight);
     glFuncs->glUniform2f(render->locationTilePixels, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT);
+    glFuncs->glUniform1i(render->locationTileBinSize, zoomFactor);
     glFuncs->glBindVertexArray(render->vertexArray);
 
     auto drawOneTile = [&](int ix, int iy) {
