@@ -46,6 +46,55 @@ static BlendMode::Mode oraOpToMode(QString opName)
     return BlendMode::Over;
 }
 
+void writeBackground(QZipWriter &writer, QString const &path, CanvasTile *tile, QSize const &tileBounds)
+{
+    QSize resultBounds(TILE_PIXEL_WIDTH * tileBounds.width(),
+                       TILE_PIXEL_HEIGHT * tileBounds.height());
+    std::unique_ptr<uint16_t> layerData(new uint16_t[resultBounds.width() * resultBounds.height() * 3]);
+
+    // Save the background as an RGB png, MyPaint can't load RGBA backgrounds
+    {
+        size_t rowComps = resultBounds.width() * 3;
+
+        uint16_t *rowPtr = layerData.get();
+        float *tileData = tile->mapHost();
+
+        for (int row = 0; row < resultBounds.height(); row++)
+        {
+            int tileY = row % TILE_PIXEL_HEIGHT;
+            float *srcPtr = tileData + (TILE_PIXEL_WIDTH * 4) * tileY;
+
+            for (int col = 0; col < resultBounds.width(); col++)
+            {
+                int tileX = row % TILE_PIXEL_WIDTH;
+
+                rowPtr[col * 3 + 0] = qToBigEndian((uint16_t)(srcPtr[tileX * 4 + 0] * 0xFFFF));
+                rowPtr[col * 3 + 1] = qToBigEndian((uint16_t)(srcPtr[tileX * 4 + 1] * 0xFFFF));
+                rowPtr[col * 3 + 2] = qToBigEndian((uint16_t)(srcPtr[tileX * 4 + 2] * 0xFFFF));
+            }
+
+            rowPtr += rowComps;
+        }
+    }
+
+    unsigned char *pngData = nullptr;
+    size_t pngDataSize;
+    unsigned int png_error;
+
+    png_error = lodepng_encode_memory(&pngData, &pngDataSize,
+                                      (unsigned char*)layerData.get(),
+                                      resultBounds.width(), resultBounds.height(),
+                                      LCT_RGB, 16);
+
+    if (png_error)
+        qWarning() << "lodepng error:" << lodepng_error_text(png_error);
+
+    writer.addFile(path, QByteArray::fromRawData((const char *)pngData, pngDataSize));
+
+    if (pngData)
+        free(pngData);
+}
+
 void saveStackAs(CanvasStack *stack, QString path)
 {
     QSaveFile saveFile(path);
@@ -181,6 +230,23 @@ void saveStackAs(CanvasStack *stack, QString path)
         stackXML.writeEndElement(); // layer
     }
 
+    {
+        // Save the background tile
+        CanvasTile *background = stack->backgroundTile.get();
+        QString backgroundTilePath = QStringLiteral("data/background_tile.png");
+        writeBackground(oraZipWriter, backgroundTilePath, background, QSize(1, 1));
+        QString backgroundLayerPath = QStringLiteral("data/background_layer.png");
+        writeBackground(oraZipWriter, backgroundLayerPath, background, imageTileBounds.size());
+
+        stackXML.writeStartElement("layer");
+        stackXML.writeAttribute("src", backgroundLayerPath);
+        stackXML.writeAttribute("name", "background");
+        stackXML.writeAttribute("visibility", "visible");
+        stackXML.writeAttribute("composite-op", blendModeToOraOp(BlendMode::Over));
+        stackXML.writeAttribute("background_tile", backgroundTilePath);
+        stackXML.writeEndElement(); // layer
+    }
+
     stackXML.writeEndElement(); // stack
     stackXML.writeEndElement(); // image
     stackXML.writeEndDocument();
@@ -284,6 +350,62 @@ static CanvasLayer *layerFromLinear(uint16_t *layerData, QRect bounds)
     return result;
 }
 
+static CanvasTile *backgroundFromLinear(uint16_t *imageData, QSize imageSize)
+{
+    const size_t dataCompStride = imageSize.width() * 4;
+
+    CanvasTile *result = new CanvasTile();
+    float *newTileData = result->mapHost();
+
+    for (int row = 0; row < TILE_PIXEL_HEIGHT; ++row)
+        for (int col = 0; col < TILE_PIXEL_WIDTH; ++col)
+        {
+            int srcX = col % imageSize.width();
+            int srcY = row % imageSize.height();
+            uint16_t *inPtr = imageData + srcY * dataCompStride + srcX * 4;
+            float *outPtr = newTileData + (row * TILE_PIXEL_WIDTH * 4) + (col * 4);
+
+            outPtr[0] = float(qFromBigEndian(inPtr[0])) / 0xFFFF;
+            outPtr[1] = float(qFromBigEndian(inPtr[1])) / 0xFFFF;
+            outPtr[2] = float(qFromBigEndian(inPtr[2])) / 0xFFFF;
+            outPtr[3] = float(qFromBigEndian(inPtr[3])) / 0xFFFF;
+        }
+
+    return result;
+}
+
+static uint16_t *readZipPNG(QZipReader &reader, QString const &path, QSize *resultSize)
+{
+    *resultSize = QSize(0, 0);
+
+    if (path.isEmpty())
+        return nullptr;
+
+    QByteArray layerPNGData = reader.fileData(path);
+
+    if (!layerPNGData.size())
+    {
+        qDebug() << "Failed to read" << path;
+        return nullptr;
+    }
+
+    uint16_t *layerData;
+    unsigned int layerDataWidth;
+    unsigned int layerDataHeight;
+
+    lodepng_decode_memory((unsigned char **)&layerData, &layerDataWidth, &layerDataHeight,
+                          (unsigned char *)layerPNGData.constData(), layerPNGData.size(), LCT_RGBA, 16);
+
+    if (!layerData)
+    {
+        qDebug() << "Failed to decode" << path;
+        return nullptr;
+    }
+
+    *resultSize = QSize(layerDataWidth, layerDataHeight);
+    return layerData;
+}
+
 void loadStackFromORA(CanvasStack *stack, QString path)
 {
     QZipReader oraZipReader(path, QIODevice::ReadOnly);
@@ -316,6 +438,7 @@ void loadStackFromORA(CanvasStack *stack, QString path)
      */
 
     QList<CanvasLayer *> resultLayers;
+    std::unique_ptr<CanvasTile> resultBackgroundTile;
 
     while(!stackXML.atEnd() && !stackXML.hasError())
     {
@@ -325,6 +448,8 @@ void loadStackFromORA(CanvasStack *stack, QString path)
             stackXML.name() == "layer")
         {
             QXmlStreamAttributes attributes = stackXML.attributes();
+
+            resultBackgroundTile.reset(nullptr);
 
             int x = 0;
             int y = 0;
@@ -359,33 +484,36 @@ void loadStackFromORA(CanvasStack *stack, QString path)
             if (attributes.hasAttribute("opacity"))
                 opacity = attributes.value("opacity").toFloat();
 
+            if (attributes.hasAttribute("background_tile"))
+            {
+                QString backgroundPath = attributes.value("background_tile").toString();
+                QSize layerSize;
+                uint16_t *layerData = readZipPNG(oraZipReader, backgroundPath, &layerSize);
+
+                if (layerData)
+                {
+                    CanvasTile *bgTile = backgroundFromLinear(layerData, layerSize);
+
+                    if (bgTile)
+                        resultBackgroundTile.reset(bgTile);
+
+                    free(layerData);
+                }
+            }
+
             if (src.isEmpty())
                 continue;
 
 //            qDebug() << "Found layer" << x << y << name << src;
 
-            QByteArray layerPNGData = oraZipReader.fileData(src);
+            QSize layerSize;
 
-            if (!layerPNGData.size())
-            {
-                qDebug() << "Layer data missing";
-                continue;
-            }
-
-            uint16_t *layerData;
-            unsigned int layerDataWidth;
-            unsigned int layerDataHeight;
-
-            lodepng_decode_memory((unsigned char **)&layerData, &layerDataWidth, &layerDataHeight,
-                                  (unsigned char *)layerPNGData.constData(), layerPNGData.size(), LCT_RGBA, 16);
+            uint16_t *layerData = readZipPNG(oraZipReader, src, &layerSize);
 
             if (!layerData)
-            {
-                qDebug() << "Failed to decode";
                 continue;
-            }
 
-            CanvasLayer *maybeLayer = layerFromLinear(layerData, QRect(x, y, layerDataWidth, layerDataHeight));
+            CanvasLayer *maybeLayer = layerFromLinear(layerData, QRect(x, y, layerSize.width(), layerSize.height()));
 
             if (maybeLayer)
             {
@@ -401,10 +529,19 @@ void loadStackFromORA(CanvasStack *stack, QString path)
         }
     }
 
+    if (!resultLayers.empty() && (resultLayers.first()->name == "background") && resultBackgroundTile)
+    {
+        // qDebug() << "Discarded background layer";
+        delete resultLayers.first();
+        resultLayers.pop_front();
+    }
+
     if (!resultLayers.empty())
     {
-        // FIXME: This should probably just return the list
         stack->clearLayers();
         stack->layers = resultLayers;
+
+        if (resultBackgroundTile)
+            stack->setBackground(std::move(resultBackgroundTile));
     }
 }
