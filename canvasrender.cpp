@@ -278,7 +278,7 @@ void CanvasRender::ensureTiles(TileMap const &tiles)
     if (tiles.empty())
         return;
 
-    for (auto iter: tiles)
+    for (auto &iter: tiles)
     {
         GLuint &ref = glTiles[iter.first];
 
@@ -313,12 +313,9 @@ void CanvasRender::renderTileMap(TileMap &tiles)
 
     ensureTiles(tiles);
 
-    for (auto iter: tiles)
-    {
-        renderTile(iter.first.x(), iter.first.y(), iter.second);
-        if (iter.second)
-            delete iter.second;
-    }
+    for (auto &iter: tiles)
+        renderTile(iter.first.x(), iter.first.y(), iter.second.get());
+
     tiles.clear();
 
     if (SharedOpenCL::getSharedOpenCL()->gl_sharing)

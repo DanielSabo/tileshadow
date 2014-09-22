@@ -6,7 +6,7 @@ CanvasStack::CanvasStack()
 {
     backgroundTile.reset(new CanvasTile());
     backgroundTile->fill(1.0f, 1.0f, 1.0f, 1.0f);
-    backgroundTileCL.reset(backgroundTile->copy());
+    backgroundTileCL = backgroundTile->copy();
     backgroundTileCL->unmapHost();
 }
 
@@ -105,7 +105,7 @@ std::unique_ptr<CanvasTile> CanvasStack::getTileMaybe(int x, int y) const
 {
     int layerCount = layers.size();
 
-    CanvasTile *result = nullptr;
+    std::unique_ptr<CanvasTile> result(nullptr);
 
     if (layerCount == 0)
         result = nullptr;
@@ -120,15 +120,13 @@ std::unique_ptr<CanvasTile> CanvasStack::getTileMaybe(int x, int y) const
         if (auxTile)
         {
             result = backgroundTileCL->copy();
-            clBlendInPlace(result, auxTile, layer->mode);
+            clBlendInPlace(result.get(), auxTile, layer->mode);
         }
         else
             result = nullptr;
     }
     else
     {
-        CanvasTile *inTile = nullptr;
-
         for (CanvasLayer *layer: layers)
         {
             CanvasTile *auxTile = nullptr;
@@ -138,16 +136,14 @@ std::unique_ptr<CanvasTile> CanvasStack::getTileMaybe(int x, int y) const
 
             if (auxTile)
             {
-                if (!inTile)
-                    inTile = backgroundTileCL->copy();
-                clBlendInPlace(inTile, auxTile, layer->mode);
+                if (!result)
+                    result = backgroundTileCL->copy();
+                clBlendInPlace(result.get(), auxTile, layer->mode);
             }
         }
-
-        result = inTile;
     }
 
-    return std::unique_ptr<CanvasTile>(result);
+    return result;
 }
 
 TileSet CanvasStack::getTileSet() const

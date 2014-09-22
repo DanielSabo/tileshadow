@@ -27,7 +27,7 @@ public:
 
     CanvasTile *getTile(int x, int y);
     CanvasTile *getTileMaybe(int x, int y) const;
-    CanvasTile *takeTileMaybe(int x, int y);
+    std::unique_ptr<CanvasTile> takeTileMaybe(int x, int y);
 
     CanvasLayer *deepCopy() const;
     CanvasLayer *translated(int x, int y) const;

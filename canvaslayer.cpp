@@ -2,12 +2,13 @@
 #include "canvastile.h"
 #include "canvascontext.h"
 #include <QDebug>
+#include <utility>
 
 CanvasLayer::CanvasLayer(QString name)
     : name(name),
       visible(true),
       mode(BlendMode::Over),
-      tiles(new TileMap, _deleteTileMap)
+      tiles(new TileMap)
 {
 }
 
@@ -44,10 +45,7 @@ void CanvasLayer::prune()
                 empty = false;
 
         if (empty)
-        {
-            delete iter->second;
             tiles->erase(iter++);
-        }
         else
             ++iter;
     }
@@ -55,7 +53,7 @@ void CanvasLayer::prune()
 
 void CanvasLayer::swapOut()
 {
-    for (auto iter: *tiles)
+    for (auto &iter: *tiles)
         iter.second->swapHost();
 }
 
@@ -132,22 +130,13 @@ CanvasLayer *CanvasLayer::translated(int x, int y) const
 
 TileSet CanvasLayer::takeTiles(CanvasLayer *source)
 {
-    TileMap::iterator iter;
     TileSet result;
 
-    for (TileMap::iterator iter = tiles->begin(); iter != tiles->end(); ++iter)
-    {
-        result.insert(iter->first);
-        delete iter->second;
-    }
     tiles->clear();
+    std::swap(*tiles, *(source->tiles));
 
-    for (iter = source->tiles->begin(); iter != source->tiles->end(); ++iter)
-    {
-        result.insert(iter->first);
-        (*tiles)[iter->first] = iter->second;
-    }
-    source->tiles->clear();
+    for (auto const &iter: *tiles)
+        result.insert(iter.first);
 
     return result;
 }
@@ -165,13 +154,13 @@ TileSet CanvasLayer::getTileSet() const
     return result;
 }
 
-CanvasTile *CanvasLayer::takeTileMaybe(int x, int y)
+std::unique_ptr<CanvasTile> CanvasLayer::takeTileMaybe(int x, int y)
 {
     TileMap::iterator found = tiles->find(QPoint(x, y));
 
     if (found != tiles->end())
     {
-        CanvasTile *result = found->second;
+        std::unique_ptr<CanvasTile> result = std::move(found->second);
         tiles->erase(found);
         return result;
     }
@@ -184,7 +173,7 @@ CanvasTile *CanvasLayer::getTileMaybe(int x, int y) const
     TileMap::iterator found = tiles->find(QPoint(x, y));
 
     if (found != tiles->end())
-        return found->second;
+        return found->second.get();
     else
         return nullptr;
 }
@@ -194,13 +183,13 @@ CanvasTile *CanvasLayer::getTile(int x, int y)
     TileMap::iterator found = tiles->find(QPoint(x, y));
 
     if (found != tiles->end())
-        return found->second;
+        return found->second.get();
 
     CanvasTile *tile = new CanvasTile();
 
     tile->fill(0.0f, 0.0f, 0.0f, 0.0f);
 
-    (*tiles)[QPoint(x, y)] = tile;
+    (*tiles)[QPoint(x, y)] = std::unique_ptr<CanvasTile>(tile);
 
     return tile;
 }

@@ -13,12 +13,3 @@ bool _tilePointCompare::operator ()(const QPoint &a, const QPoint &b) const
         return true;
     return false;
 }
-
-void _deleteTileMap(TileMap *tiles)
-{
-    for (TileMap::iterator iter = tiles->begin(); iter != tiles->end(); ++iter)
-    {
-        delete iter->second;
-    }
-    delete tiles;
-}

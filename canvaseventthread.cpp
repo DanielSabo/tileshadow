@@ -112,17 +112,14 @@ void CanvasEventThread::run()
                     int x = iter.x();
                     int y = iter.y();
 
-                    newTiles[QPoint(x, y)] = ctx->layers.getTileMaybe(x, y).release();
+                    newTiles[QPoint(x, y)] = ctx->layers.getTileMaybe(x, y);
                 }
                 ctx->dirtyTiles.clear();
 
                 resultTilesMutex.lock();
                 for (auto &iter: newTiles)
                 {
-                    CanvasTile *& tile = resultTiles[iter.first];
-                    if (tile)
-                        delete tile;
-                    tile = iter.second;
+                    resultTiles[iter.first] = std::move(iter.second);
                 }
                 newTiles.clear();
                 needResultTiles = false;

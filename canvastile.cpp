@@ -115,7 +115,7 @@ void CanvasTile::fill(float r, float g, float b, float a)
                            0, nullptr, nullptr);
 }
 
-CanvasTile *CanvasTile::copy()
+std::unique_ptr<CanvasTile> CanvasTile::copy()
 {
     CanvasTile *result = new CanvasTile();
 
@@ -127,5 +127,5 @@ CanvasTile *CanvasTile::copy()
                         TILE_COMP_TOTAL * sizeof(float),
                         0, nullptr, nullptr);
 
-    return result;
+    return std::unique_ptr<CanvasTile>(result);
 }

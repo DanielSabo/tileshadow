@@ -18,34 +18,26 @@ CanvasUndoTiles::CanvasUndoTiles()
 
 CanvasUndoTiles::~CanvasUndoTiles()
 {
-    for (TileMap::iterator iter = tiles.begin(); iter != tiles.end(); ++iter)
-        delete iter->second;
     tiles.clear();
 }
 
 TileSet CanvasUndoTiles::apply(CanvasStack *stack, int *activeLayer)
 {
     TileSet modifiedTiles;
-    TileMap redoTiles;
 
     for (TileMap::iterator iter = tiles.begin(); iter != tiles.end(); ++iter)
     {
-        CanvasTile *redoTile = (*targetTileMap)[iter->first];
+        std::unique_ptr<CanvasTile> &target = (*targetTileMap)[iter->first];
 
-        if (redoTile)
-            redoTile->swapHost();
+        target->swapHost();
 
-        redoTiles[iter->first] = redoTile;
+        std::swap(target, iter->second);
 
-        if (iter->second)
-            (*targetTileMap)[iter->first] = iter->second;
-        else
+        if (!target)
             targetTileMap->erase(iter->first);
 
         modifiedTiles.insert(iter->first);
     }
-
-    tiles = redoTiles;
 
     std::swap(*activeLayer, currentLayer);
     return modifiedTiles;

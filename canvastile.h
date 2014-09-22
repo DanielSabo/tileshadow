@@ -1,6 +1,8 @@
 #ifndef CANVASTILE_H
 #define CANVASTILE_H
 
+#include <memory>
+
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
 #else
@@ -31,7 +33,7 @@ public:
     void swapHost();
 
     void fill(float r, float g, float b, float a);
-    CanvasTile *copy();
+    std::unique_ptr<CanvasTile> copy();
 
     static int allocatedTileCount();
     static int deviceTileCount();

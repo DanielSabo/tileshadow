@@ -67,12 +67,6 @@ RoundBrushStrokeContext::~RoundBrushStrokeContext()
         if(iter.second)
             clReleaseMemObject(iter.second);
     }
-
-    for (auto iter: srcTiles)
-    {
-        if(iter.second)
-            delete iter.second;
-    }
 }
 
 void RoundBrushStrokeContext::drawDab(QPointF point, float pressure, TileSet &modTiles)
@@ -152,7 +146,7 @@ void RoundBrushStrokeContext::applyLayer(const TileSet &modTiles)
     for (QPoint const &tilePos: modTiles)
     {
         CanvasTile *dstTile = layer->getTile(tilePos.x(), tilePos.y());
-        CanvasTile *&srcTile = srcTiles[tilePos];
+        std::unique_ptr<CanvasTile> &srcTile = srcTiles[tilePos];
         cl_mem drawMem = drawTiles[tilePos];
 
         if (!srcTile)

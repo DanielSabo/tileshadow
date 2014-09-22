@@ -208,14 +208,7 @@ void CanvasWidget::paintGL()
     if (CanvasContext *ctx = getContextMaybe())
     {
         for (auto iter: ctx->dirtyTiles)
-        {
-            CanvasTile *&ref = renderTiles[iter];
-
-            if (ref)
-                delete ref;
-
-            ref = ctx->layers.getTileMaybe(iter.x(), iter.y()).release();
-        }
+            renderTiles[iter] = ctx->layers.getTileMaybe(iter.x(), iter.y());
         ctx->dirtyTiles.clear();
     }
 
@@ -394,12 +387,12 @@ void CanvasWidget::endStroke()
             for (QPoint const &iter : ctx->strokeModifiedTiles)
             {
                 /* Move oldTile to the layer because we will are just going to overwrite the one it currentLayerCopy */
-                CanvasTile *oldTile = ctx->currentLayerCopy->getTileMaybe(iter.x(), iter.y());
+                std::unique_ptr<CanvasTile> oldTile = ctx->currentLayerCopy->takeTileMaybe(iter.x(), iter.y());
 
                 if (oldTile)
                     oldTile->swapHost();
 
-                undoEvent->tiles[iter] = oldTile;
+                undoEvent->tiles[iter] = std::move(oldTile);
 
                 /* FIXME: It's hypothetically possible that the stroke removed tiles */
                 (*ctx->currentLayerCopy->tiles)[iter] = (*currentLayerObj->tiles)[iter]->copy();
@@ -642,10 +635,10 @@ void CanvasWidget::translateCurrentLayer(int x,  int y)
 
     for (TileSet::iterator iter = layerTiles.begin(); iter != layerTiles.end(); iter++)
     {
-        CanvasTile *undoTile = ctx->currentLayerCopy->takeTileMaybe(iter->x(), iter->y());
+        std::unique_ptr<CanvasTile> undoTile = ctx->currentLayerCopy->takeTileMaybe(iter->x(), iter->y());
         if (undoTile)
             undoTile->swapHost();
-        undoEvent->tiles[*iter] = undoTile;
+        undoEvent->tiles[*iter] = std::move(undoTile);
     }
     ctx->undoHistory.prepend(undoEvent);
 

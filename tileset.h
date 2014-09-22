@@ -4,8 +4,8 @@
 #include <QPoint>
 #include <set>
 #include <map>
-
-class CanvasTile;
+#include <memory>
+#include "canvastile.h"
 
 struct _tilePointCompare
 {
@@ -13,8 +13,6 @@ struct _tilePointCompare
 };
 
 typedef std::set<QPoint, _tilePointCompare> TileSet;
-typedef std::map<QPoint, CanvasTile *, _tilePointCompare> TileMap;
-
-void _deleteTileMap(TileMap *tiles);
+typedef std::map<QPoint, std::unique_ptr<CanvasTile>, _tilePointCompare> TileMap;
 
 #endif // TILESET_H
