@@ -213,7 +213,6 @@ static CanvasLayer *layerFromLinear(uint16_t *layerData, QRect bounds)
     const size_t dataCompStride = bounds.width() * 4;
 
     {
-        //FIXME: Bounds are not correct
         int tileX1 = tile_indice(bounds.x(), TILE_PIXEL_WIDTH);
         int tileX2 = tile_indice(bounds.x() + bounds.width(), TILE_PIXEL_WIDTH) + 1;
         int tileY1 = tile_indice(bounds.y(), TILE_PIXEL_HEIGHT);
