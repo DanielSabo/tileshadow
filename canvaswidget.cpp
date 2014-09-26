@@ -1272,6 +1272,7 @@ void CanvasWidget::resetToolSettings()
         return;
 
     d->activeTool->reset();
+    d->activeTool->setColor(toolColor);
 
     emit updateTool();
     update();
