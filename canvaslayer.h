@@ -1,7 +1,7 @@
 #ifndef CANVASLAYER_H
 #define CANVASLAYER_H
 
-#include <QSharedPointer>
+#include <memory>
 #include "canvaswidget-opencl.h"
 #include "blendmodes.h"
 #include "tileset.h"
@@ -18,7 +18,7 @@ public:
     bool visible;
     BlendMode::Mode mode;
 
-    QSharedPointer<TileMap> tiles;
+    std::shared_ptr<TileMap> tiles;
 
     TileSet getTileSet() const;
 

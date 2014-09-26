@@ -1,7 +1,6 @@
 #ifndef CANVASUNDOEVENT_H
 #define CANVASUNDOEVENT_H
 
-#include <QSharedPointer>
 #include "canvasstack.h"
 #include "canvaslayer.h"
 
@@ -21,7 +20,7 @@ public:
     TileSet apply(CanvasStack *stack, int *activeLayer);
 
     int currentLayer;
-    QSharedPointer<TileMap> targetTileMap;
+    std::shared_ptr<TileMap> targetTileMap;
     TileMap tiles;
 };
 
