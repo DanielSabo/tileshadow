@@ -448,14 +448,10 @@ void CanvasWidget::setActiveLayer(int layerIndex)
 {
     CanvasContext *ctx = getContext();
 
-    if (!ctx)
-        return;
-
     if (layerIndex >= 0 && layerIndex < ctx->layers.layers.size())
     {
         bool update = (ctx->currentLayer != layerIndex);
-        ctx->currentLayer = layerIndex;
-        ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
+        resetCurrentLayer(ctx, layerIndex);
 
         if (update)
             emit updateLayers();
@@ -471,8 +467,7 @@ void CanvasWidget::addLayerAbove(int layerIndex)
     ctx->undoHistory.prepend(undoEvent);
 
     ctx->layers.newLayerAt(layerIndex + 1, QString().sprintf("Layer %02d", ++lastNewLayerNumber));
-    ctx->currentLayer = layerIndex + 1;
-    ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
+    resetCurrentLayer(ctx, layerIndex + 1);
     modified = true;
     emit updateLayers();
 }
@@ -499,8 +494,7 @@ void CanvasWidget::removeLayer(int layerIndex)
     ctx->layers.removeLayerAt(layerIndex);
     if (layerIndex == ctx->currentLayer)
     {
-        ctx->currentLayer = qMax(0, ctx->currentLayer - 1);
-        ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
+        resetCurrentLayer(ctx, qMax(0, ctx->currentLayer - 1));
     }
 
     update();
@@ -541,8 +535,7 @@ void CanvasWidget::moveLayer(int currentIndex, int targetIndex)
 
     // Replace the stack's list with the reordered one
     ctx->layers.layers = newLayers;
-    ctx->currentLayer = targetIndex;
-    ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
+    resetCurrentLayer(ctx, targetIndex);
 
     TileSet layerTiles = ctx->currentLayerCopy->getTileSet();
     ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
@@ -585,8 +578,7 @@ void CanvasWidget::duplicateLayer(int layerIndex)
     newLayer->name = oldLayer->name + " Copy";
 
     ctx->layers.layers.insert(layerIndex + 1, newLayer);
-    ctx->currentLayer = layerIndex + 1;
-    ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
+    resetCurrentLayer(ctx, layerIndex + 1);
 
     TileSet layerTiles = newLayer->getTileSet();
     ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
@@ -653,6 +645,16 @@ void CanvasWidget::translateCurrentLayer(int x,  int y)
 
     update();
     modified = true;
+}
+
+void CanvasWidget::resetCurrentLayer(CanvasContext *ctx, int index)
+{
+    if (index >= 0 && index < ctx->layers.layers.size())
+        ctx->currentLayer = index;
+    else
+        qWarning() << "Invalid layer index" << index;
+
+    ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
 }
 
 CanvasContext *CanvasWidget::getContext()
@@ -784,10 +786,7 @@ void CanvasWidget::undo()
         ctx->dirtyTiles.insert(changedTiles.begin(), changedTiles.end());
     }
 
-    ctx->currentLayer = newActiveLayer;
-
-    //FIXME: This only needs to copy changedTiles or if currentLayer changed
-    ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
+    resetCurrentLayer(ctx, newActiveLayer);
 
     update();
     modified = true;
@@ -816,10 +815,7 @@ void CanvasWidget::redo()
         ctx->dirtyTiles.insert(changedTiles.begin(), changedTiles.end());
     }
 
-    ctx->currentLayer = newActiveLayer;
-
-    //FIXME: This only needs to copy changedTiles or if currentLayer changed
-    ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
+    resetCurrentLayer(ctx, newActiveLayer);
 
     update();
     modified = true;

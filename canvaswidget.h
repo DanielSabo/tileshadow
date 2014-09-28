@@ -127,6 +127,8 @@ private:
     void updateLayerTranslate(int x, int y);
     void translateCurrentLayer(int x, int y);
 
+    void resetCurrentLayer(CanvasContext *ctx, int index);
+
     CanvasContext *getContext();
     CanvasContext *getContextMaybe();
 
