@@ -55,6 +55,8 @@ public:
 
     CanvasEventThread eventThread;
 
+    bool currentLayerEditable;
+
     bool deviceIsEraser;
     SavedTabletEvent lastTabletEvent;
     ulong strokeEventTimestamp; // last stroke event time, in milliseconds
@@ -74,6 +76,7 @@ CanvasWidgetPrivate::CanvasWidgetPrivate()
     lastTabletEvent = {0, };
     strokeEventTimestamp = 0;
     fullRedraw = true;
+    currentLayerEditable = false;
 }
 
 CanvasWidgetPrivate::~CanvasWidgetPrivate()
@@ -280,7 +283,7 @@ void CanvasWidget::paintGL()
                                GL_COLOR_BUFFER_BIT, GL_NEAREST);
     glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
 
-    if (d->activeTool && showToolCursor)
+    if (d->activeTool && d->currentLayerEditable && showToolCursor)
     {
         float toolSize = d->activeTool->getPixelRadius() * 2.0f * viewScale;
         if (toolSize < 2.0f)
@@ -307,14 +310,8 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
     if (!d->activeTool)
         return;
 
-    if (CanvasContext *ctx = getContextMaybe())
-    {
-        if (ctx->layers.layers.empty() ||
-            ctx->layers.layers.at(ctx->currentLayer)->visible == false)
-        {
-            return;
-        }
-    }
+    if (!d->currentLayerEditable)
+        return;
 
     BaseTool *strokeTool = d->activeTool->clone();
 
@@ -649,12 +646,17 @@ void CanvasWidget::translateCurrentLayer(int x,  int y)
 
 void CanvasWidget::resetCurrentLayer(CanvasContext *ctx, int index)
 {
+    Q_D(CanvasWidget);
+
     if (index >= 0 && index < ctx->layers.layers.size())
         ctx->currentLayer = index;
     else
         qWarning() << "Invalid layer index" << index;
 
-    ctx->currentLayerCopy.reset(ctx->layers.layers[ctx->currentLayer]->deepCopy());
+    CanvasLayer *currentLayerObj = ctx->layers.layers[ctx->currentLayer];
+    ctx->currentLayerCopy.reset(currentLayerObj->deepCopy());
+
+    d->currentLayerEditable = currentLayerObj->visible;
 }
 
 CanvasContext *CanvasWidget::getContext()
@@ -677,6 +679,8 @@ CanvasContext *CanvasWidget::getContextMaybe()
 
 void CanvasWidget::setLayerVisible(int layerIndex, bool visible)
 {
+    Q_D(CanvasWidget);
+
     CanvasContext *ctx = getContext();
 
     if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
@@ -684,6 +688,9 @@ void CanvasWidget::setLayerVisible(int layerIndex, bool visible)
 
     if (ctx->layers.layers[layerIndex]->visible == visible)
         return;
+
+    if (layerIndex == ctx->currentLayer)
+        d->currentLayerEditable = visible;
 
     ctx->undoHistory.prepend(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
