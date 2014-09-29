@@ -41,6 +41,7 @@ DeviceSelectDialog::DeviceSelectDialog(QWidget *parent) :
             gpuDev = iter;
     }
 
+#ifndef Q_OS_MAC // Disabled due to unresolved GPU freezing in shared mode
     layout->addWidget(new QLabel("Zero-copy (pick this one):"));
 
     {
@@ -53,6 +54,7 @@ DeviceSelectDialog::DeviceSelectDialog(QWidget *parent) :
         });
         layout->addWidget(button);
     }
+#endif
 
     layout->addWidget(new QLabel("Indirect:"));
 
