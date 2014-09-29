@@ -1007,9 +1007,9 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
             setCursor(moveViewCursor);
         }
         //FIXME: This shouldn't depend on the binding for color pick
-        //FIXME: This should refuse to move hidden layers
         else if ((action == CanvasAction::None || action == CanvasAction::ColorPick) &&
-                 modifiers == Qt::ControlModifier)
+                 modifiers == Qt::ControlModifier &&
+                 d->currentLayerEditable)
         {
             action = CanvasAction::MoveLayer;
             actionButton = event->button();
