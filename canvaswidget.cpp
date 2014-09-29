@@ -656,7 +656,7 @@ void CanvasWidget::resetCurrentLayer(CanvasContext *ctx, int index)
     CanvasLayer *currentLayerObj = ctx->layers.layers[ctx->currentLayer];
     ctx->currentLayerCopy.reset(currentLayerObj->deepCopy());
 
-    d->currentLayerEditable = currentLayerObj->visible;
+    d->currentLayerEditable = currentLayerObj->visible && currentLayerObj->editable;
 }
 
 CanvasContext *CanvasWidget::getContext()
@@ -686,17 +686,19 @@ void CanvasWidget::setLayerVisible(int layerIndex, bool visible)
     if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
         return;
 
-    if (ctx->layers.layers[layerIndex]->visible == visible)
-        return;
+    CanvasLayer *layerObj = ctx->layers.layers[layerIndex];
 
-    if (layerIndex == ctx->currentLayer)
-        d->currentLayerEditable = visible;
+    if (layerObj->visible == visible)
+        return;
 
     ctx->undoHistory.prepend(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
-    ctx->layers.layers[layerIndex]->visible = visible;
+    layerObj->visible = visible;
 
-    TileSet layerTiles = ctx->layers.layers[layerIndex]->getTileSet();
+    if (layerIndex == ctx->currentLayer)
+        d->currentLayerEditable = layerObj->visible && layerObj->editable;
+
+    TileSet layerTiles = layerObj->getTileSet();
 
     if(!layerTiles.empty())
     {
@@ -716,6 +718,41 @@ bool CanvasWidget::getLayerVisible(int layerIndex)
         return false;
 
     return ctx->layers.layers[layerIndex]->visible;
+}
+
+void CanvasWidget::setLayerEditable(int layerIndex, bool editable)
+{
+    Q_D(CanvasWidget);
+
+    CanvasContext *ctx = getContext();
+
+    if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
+        return;
+
+    CanvasLayer *layerObj = ctx->layers.layers[layerIndex];
+
+    if (layerObj->editable == editable)
+        return;
+
+    ctx->undoHistory.prepend(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
+
+    layerObj->editable = editable;
+
+    if (layerIndex == ctx->currentLayer)
+        d->currentLayerEditable = layerObj->visible && layerObj->editable;
+
+    modified = true;
+    emit updateLayers();
+}
+
+bool CanvasWidget::getLayerEditable(int layerIndex)
+{
+    CanvasContext *ctx = getContext();
+
+    if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
+        return false;
+
+    return ctx->layers.layers[layerIndex]->editable;
 }
 
 void CanvasWidget::setLayerMode(int layerIndex, BlendMode::Mode mode)
@@ -765,7 +802,7 @@ QList<CanvasWidget::LayerInfo> CanvasWidget::getLayerList()
     for (int i = ctx->layers.layers.size() - 1; i >= 0; --i)
     {
         CanvasLayer *layer = ctx->layers.layers[i];
-        result.append({layer->name, layer->visible, layer->mode});
+        result.append({layer->name, layer->visible, layer->editable, layer->mode});
     }
 
     return result;

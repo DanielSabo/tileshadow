@@ -16,6 +16,7 @@ public:
 
     QString name;
     bool visible;
+    bool editable;
     BlendMode::Mode mode;
 
     std::shared_ptr<TileMap> tiles;

@@ -7,6 +7,7 @@
 CanvasLayer::CanvasLayer(QString name)
     : name(name),
       visible(true),
+      editable(true),
       mode(BlendMode::Over),
       tiles(new TileMap)
 {
@@ -21,6 +22,7 @@ CanvasLayer *CanvasLayer::deepCopy() const
     CanvasLayer *result = new CanvasLayer();
     result->name = name;
     result->visible = visible;
+    result->editable = editable;
     result->mode = mode;
 
     for (TileMap::iterator iter = tiles->begin(); iter != tiles->end(); ++iter)
@@ -83,6 +85,7 @@ CanvasLayer *CanvasLayer::translated(int x, int y) const
     CanvasLayer *result = new CanvasLayer();
     result->name = name;
     result->visible = visible;
+    result->editable = editable;
     result->mode = mode;
 
     for (TileMap::iterator iter = tiles->begin(); iter != tiles->end(); ++iter)

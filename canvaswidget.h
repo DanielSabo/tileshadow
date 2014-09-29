@@ -38,6 +38,7 @@ public:
     {
         QString name;
         bool visible;
+        bool editable;
         BlendMode::Mode mode;
     };
 
@@ -72,6 +73,8 @@ public:
     void renameLayer(int layerIndex, QString name);
     void setLayerVisible(int layerIndex, bool visible);
     bool getLayerVisible(int layerIndex);
+    void setLayerEditable(int layerIndex, bool editable);
+    bool getLayerEditable(int layerIndex);
     void setLayerMode(int layerIndex, BlendMode::Mode mode);
     BlendMode::Mode getLayerMode(int layerIndex);
     QList<LayerInfo> getLayerList();
