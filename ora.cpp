@@ -176,6 +176,8 @@ void saveStackAs(CanvasStack *stack, QString path)
             stackXML.writeAttribute("visibility", "visible");
         else
             stackXML.writeAttribute("visibility", "hidden");
+        if (!currentLayer->editable)
+            stackXML.writeAttribute("edit-locked", "true");
         stackXML.writeAttribute("composite-op", blendModeToOraOp(currentLayer->mode));
         stackXML.writeAttribute("opacity", QString().sprintf("%f", 1.0));
         stackXML.writeAttribute("x", QString().sprintf("%d", bounds.x()));
@@ -334,6 +336,7 @@ void loadStackFromORA(CanvasStack *stack, QString path)
             QString name;
             QString src;
             bool visible = true;
+            bool editLocked = false;
 
             if (attributes.hasAttribute("x"))
                 x = attributes.value("x").toDouble();
@@ -349,6 +352,9 @@ void loadStackFromORA(CanvasStack *stack, QString path)
 
             if (attributes.hasAttribute("visibility"))
                 visible = attributes.value("visibility").toString() == QString("visible");
+
+            if (attributes.hasAttribute("edit-locked"))
+                editLocked = attributes.value("edit-locked").toString() == QString("true");
 
             if (attributes.hasAttribute("composite-op"))
                 mode = attributes.value("composite-op").toString();
@@ -385,6 +391,7 @@ void loadStackFromORA(CanvasStack *stack, QString path)
             {
                 maybeLayer->name = name;
                 maybeLayer->visible = visible;
+                maybeLayer->editable = !editLocked;
                 maybeLayer->mode = oraOpToMode(mode);
                 resultLayers.prepend(maybeLayer);
             }
