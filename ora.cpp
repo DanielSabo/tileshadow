@@ -46,27 +46,6 @@ static BlendMode::Mode oraOpToMode(QString opName)
     return BlendMode::Over;
 }
 
-template<typename T> QRect findTileBounds(T const *obj)
-{
-    QRect tileBounds;
-    TileSet objTiles = obj->getTileSet();
-    TileSet::iterator iter;
-
-    if (objTiles.empty())
-        tileBounds = QRect(0, 0, 1, 1);
-    else
-    {
-        tileBounds = QRect(objTiles.begin()->x(), objTiles.begin()->y(), 1, 1);
-    }
-
-    for(iter = objTiles.begin(); iter != objTiles.end(); iter++)
-    {
-        tileBounds = tileBounds.united(QRect(iter->x(), iter->y(), 1, 1));
-    }
-
-    return tileBounds;
-}
-
 void saveStackAs(CanvasStack *stack, QString path)
 {
     QSaveFile saveFile(path);
@@ -84,7 +63,10 @@ void saveStackAs(CanvasStack *stack, QString path)
 
     int layerNum = 0;
 
-    QRect imageTileBounds = findTileBounds<CanvasStack>(stack);
+    QRect imageTileBounds = tileSetBounds(stack->getTileSet());
+    if (imageTileBounds.isEmpty())
+        imageTileBounds = QRect(0, 0, 1, 1);
+
     int imageWidth = imageTileBounds.width() * TILE_PIXEL_WIDTH;
     int imageHeight = imageTileBounds.height() * TILE_PIXEL_HEIGHT;
 
@@ -96,11 +78,12 @@ void saveStackAs(CanvasStack *stack, QString path)
     for (int layerIdx = stack->layers.size() - 1; layerIdx >= 0; layerIdx--)
     {
         CanvasLayer const *currentLayer = stack->layers.at(layerIdx);
+        QRect tileBounds = tileSetBounds(currentLayer->getTileSet());
 
         QRect bounds;
         uint16_t *layerData = NULL;
 
-        if (currentLayer->tiles->empty())
+        if (tileBounds.isEmpty())
         {
             bounds = QRect(0, 0, 1, 1);
             layerData = new uint16_t[bounds.width() * bounds.height() * 4];
@@ -108,8 +91,6 @@ void saveStackAs(CanvasStack *stack, QString path)
         }
         else
         {
-            QRect tileBounds = findTileBounds<CanvasLayer>(currentLayer);
-
             bounds = QRect(tileBounds.x() * TILE_PIXEL_WIDTH,
                            tileBounds.y() * TILE_PIXEL_HEIGHT,
                            tileBounds.width() * TILE_PIXEL_WIDTH,

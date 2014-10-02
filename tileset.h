@@ -2,6 +2,7 @@
 #define TILESET_H
 
 #include <QPoint>
+#include <QRect>
 #include <set>
 #include <map>
 #include <memory>
@@ -14,5 +15,7 @@ struct _tilePointCompare
 
 typedef std::set<QPoint, _tilePointCompare> TileSet;
 typedef std::map<QPoint, std::unique_ptr<CanvasTile>, _tilePointCompare> TileMap;
+
+QRect tileSetBounds(TileSet const &objTiles);
 
 #endif // TILESET_H
