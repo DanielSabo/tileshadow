@@ -10,6 +10,13 @@
 #include <CL/cl_ext.h>
 #endif
 
+
+#ifndef CL_DEVICE_WARP_SIZE_NV
+#define CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV       0x4000
+#define CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV       0x4001
+#define CL_DEVICE_WARP_SIZE_NV                      0x4003
+#endif
+
 #include "canvaswidget-opencl.h"
 
 SystemInfoDialog::SystemInfoDialog(QWidget *parent) :
@@ -105,7 +112,6 @@ void SystemInfoDialog::showEvent(QShowEvent *event)
         clGetDeviceInfo (deviceInfo.device, CL_DEVICE_VERSION, sizeof(infoReturnStr), infoReturnStr, NULL);
         addPlatformValue(queryResultString, NULL, infoReturnStr);
 
-#ifdef CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV
         {
             cl_uint nvComputeMajor = 0;
             cl_uint nvComputeMinor = 0;
@@ -116,17 +122,15 @@ void SystemInfoDialog::showEvent(QShowEvent *event)
                 addPlatformValue(queryResultString, "NVIDIA Compute Capability", QStringLiteral("%1.%2").arg(nvComputeMajor).arg(nvComputeMinor));
             }
         }
-#endif
 
         clGetDeviceInfo (deviceInfo.device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(infoReturnInt), &infoReturnInt, NULL);
         addPlatformValue(queryResultString, "CL_DEVICE_MAX_COMPUTE_UNITS", QString::number(infoReturnInt));
 
-#ifdef CL_DEVICE_WARP_SIZE_NV
         if (CL_SUCCESS == clGetDeviceInfo (deviceInfo.device, CL_DEVICE_WARP_SIZE_NV, sizeof(infoReturnInt), &infoReturnInt, NULL))
         {
             addPlatformValue(queryResultString, "CL_DEVICE_WARP_SIZE_NV", QString::number(infoReturnInt));
         }
-#endif
+
         {
             cl_ulong byteSize;
             clGetDeviceInfo (deviceInfo.device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(byteSize), &byteSize, NULL);
