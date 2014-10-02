@@ -190,6 +190,11 @@ SharedOpenCL *SharedOpenCL::getSharedOpenCL()
     return singleton;
 }
 
+SharedOpenCL *SharedOpenCL::getSharedOpenCLMaybe()
+{
+    return singleton;
+}
+
 static cl_program compileFile (SharedOpenCL *cl, const QString &path, const QString &options = "")
 {
     QByteArray options_bytes = options.toUtf8();

@@ -45,103 +45,117 @@ void addPlatformValue(QString &str, QString const &name, QString const &value)
 
 void SystemInfoDialog::showEvent(QShowEvent *event)
 {
-    if (queryResultString.isNull())
+    QString queryResultString;
+
+    QOpenGLFunctions_3_2_Core gl = QOpenGLFunctions_3_2_Core();
+    gl.initializeOpenGLFunctions();
+
+    queryResultString.append("<html><head>\n");
+
+    queryResultString.append("<style>\n");
+    queryResultString.append(".queryContent { }\n");
+    queryResultString.append(".sectionHeader { font-size: x-large; font-weight: bold;  }\n");
+    queryResultString.append(".platformHeader { font-weight: bold; margin-left: 10px; }\n");
+    queryResultString.append(".platformValue { margin-left: 20px; white-space: normal; }\n");
+    queryResultString.append("</style>\n");
+
+    queryResultString.append("</head><body><div class=\"queryContent\">\n");
+
+    addSectionHeader(queryResultString, "OpenGL");
+
+    addPlatformHeader(queryResultString, (const char *)gl.glGetString(GL_VENDOR));
+    addPlatformValue(queryResultString, "Renderer", (const char *)gl.glGetString(GL_RENDERER));
+    addPlatformValue(queryResultString, "GL Version", (const char *)gl.glGetString(GL_VERSION));
+    addPlatformValue(queryResultString, "GLSL Version", (const char *)gl.glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+    addSectionHeader(queryResultString, "OpenCL");
+
+
+    cl_platform_id activePlatform = 0;
+    cl_device_id activeDevice = 0;
+    bool activeDeviceShared = false;
+
+    if (SharedOpenCL *context = SharedOpenCL::getSharedOpenCLMaybe())
     {
-        unsigned int num_platforms;
-        clGetPlatformIDs (0, NULL, &num_platforms);
+        activePlatform = context->platform;
+        activeDevice = context->device;
+        activeDeviceShared = context->gl_sharing;
+    }
 
-        QOpenGLFunctions_3_2_Core gl = QOpenGLFunctions_3_2_Core();
-        gl.initializeOpenGLFunctions();
+    for (auto &deviceInfo: enumerateOpenCLDevices())
+    {
+        QString devStr;
 
-        queryResultString.append("<html><head>\n");
+        devStr.append(deviceInfo.getPlatformName());
+        devStr.append(" - ");
+        devStr.append(deviceInfo.getDeviceName());
 
-        queryResultString.append("<style>\n");
-        queryResultString.append(".queryContent { }\n");
-        queryResultString.append(".sectionHeader { font-size: x-large; font-weight: bold;  }\n");
-        queryResultString.append(".platformHeader { font-weight: bold; margin-left: 10px; }\n");
-        queryResultString.append(".platformValue { margin-left: 20px; white-space: normal; }\n");
-        queryResultString.append("</style>\n");
-
-        queryResultString.append("</head><body><div class=\"queryContent\">\n");
-
-        addSectionHeader(queryResultString, "OpenGL");
-
-        addPlatformHeader(queryResultString, (const char *)gl.glGetString(GL_VENDOR));
-        addPlatformValue(queryResultString, "Renderer", (const char *)gl.glGetString(GL_RENDERER));
-        addPlatformValue(queryResultString, "GL Version", (const char *)gl.glGetString(GL_VERSION));
-        addPlatformValue(queryResultString, "GLSL Version", (const char *)gl.glGetString(GL_SHADING_LANGUAGE_VERSION));
-
-        addSectionHeader(queryResultString, "OpenCL");
-
-        std::list<OpenCLDeviceInfo> deviceInfoList = enumerateOpenCLDevices();
-        std::list<OpenCLDeviceInfo>::iterator deviceInfoIter;
-
-        for (deviceInfoIter = deviceInfoList.begin(); deviceInfoIter != deviceInfoList.end(); ++deviceInfoIter)
+        if (deviceInfo.platform == activePlatform && deviceInfo.device == activeDevice)
         {
-            QString devStr;
-
-            devStr.append(deviceInfoIter->getPlatformName());
-            devStr.append(" - ");
-            devStr.append(deviceInfoIter->getDeviceName());
-            addPlatformHeader(queryResultString, devStr);
-
-            char infoReturnStr[1024];
-            cl_uint infoReturnInt = 0;
-            clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_VERSION, sizeof(infoReturnStr), infoReturnStr, NULL);
-            addPlatformValue(queryResultString, NULL, infoReturnStr);
-
-#ifdef CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV
-            {
-                cl_uint nvComputeMajor = 0;
-                cl_uint nvComputeMinor = 0;
-                if (CL_SUCCESS == clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV, sizeof(nvComputeMajor), &nvComputeMajor, NULL)
-                    &&
-                    CL_SUCCESS == clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV, sizeof(nvComputeMinor), &nvComputeMinor, NULL))
-                {
-                    addPlatformValue(queryResultString, "NVIDIA Compute Capability", QStringLiteral("%1.%2").arg(nvComputeMajor).arg(nvComputeMinor));
-                }
-            }
-#endif
-
-            clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(infoReturnInt), &infoReturnInt, NULL);
-            addPlatformValue(queryResultString, "CL_DEVICE_MAX_COMPUTE_UNITS", QString::number(infoReturnInt));
-
-#ifdef CL_DEVICE_WARP_SIZE_NV
-            if (CL_SUCCESS == clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_WARP_SIZE_NV, sizeof(infoReturnInt), &infoReturnInt, NULL))
-            {
-                addPlatformValue(queryResultString, "CL_DEVICE_WARP_SIZE_NV", QString::number(infoReturnInt));
-            }
-#endif
-            {
-                cl_ulong byteSize;
-                clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(byteSize), &byteSize, NULL);
-                QString format = QStringLiteral("%1 bytes");
-
-                if (byteSize > 1024)
-                {
-                    byteSize /= 1024;
-                    format = QStringLiteral("%1 kB");
-                }
-
-                if (byteSize > 1024)
-                {
-                    byteSize /= 1024;
-                    format = QStringLiteral("%1 MB");
-                }
-
-                addPlatformValue(queryResultString, "CL_DEVICE_GLOBAL_MEM_SIZE", format.arg(byteSize));
-            }
-
-            {
-                cl_bool infoReturnBool;
-                clGetDeviceInfo (deviceInfoIter->device, CL_DEVICE_HOST_UNIFIED_MEMORY, sizeof(infoReturnBool), &infoReturnBool, NULL);
-                addPlatformValue(queryResultString, "CL_DEVICE_HOST_UNIFIED_MEMORY", infoReturnBool ? "True" : "False");
-            }
+            if (activeDeviceShared)
+                devStr.append(" (active shared)");
+            else
+                devStr.append(" (active)");
         }
 
-        queryResultString.append("</div>\n");
-        queryResultString.append("</body>\n");
+        addPlatformHeader(queryResultString, devStr);
+
+        char infoReturnStr[1024];
+        cl_uint infoReturnInt = 0;
+        clGetDeviceInfo (deviceInfo.device, CL_DEVICE_VERSION, sizeof(infoReturnStr), infoReturnStr, NULL);
+        addPlatformValue(queryResultString, NULL, infoReturnStr);
+
+#ifdef CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV
+        {
+            cl_uint nvComputeMajor = 0;
+            cl_uint nvComputeMinor = 0;
+            if (CL_SUCCESS == clGetDeviceInfo (deviceInfo.device, CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV, sizeof(nvComputeMajor), &nvComputeMajor, NULL)
+                &&
+                CL_SUCCESS == clGetDeviceInfo (deviceInfo.device, CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV, sizeof(nvComputeMinor), &nvComputeMinor, NULL))
+            {
+                addPlatformValue(queryResultString, "NVIDIA Compute Capability", QStringLiteral("%1.%2").arg(nvComputeMajor).arg(nvComputeMinor));
+            }
+        }
+#endif
+
+        clGetDeviceInfo (deviceInfo.device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(infoReturnInt), &infoReturnInt, NULL);
+        addPlatformValue(queryResultString, "CL_DEVICE_MAX_COMPUTE_UNITS", QString::number(infoReturnInt));
+
+#ifdef CL_DEVICE_WARP_SIZE_NV
+        if (CL_SUCCESS == clGetDeviceInfo (deviceInfo.device, CL_DEVICE_WARP_SIZE_NV, sizeof(infoReturnInt), &infoReturnInt, NULL))
+        {
+            addPlatformValue(queryResultString, "CL_DEVICE_WARP_SIZE_NV", QString::number(infoReturnInt));
+        }
+#endif
+        {
+            cl_ulong byteSize;
+            clGetDeviceInfo (deviceInfo.device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(byteSize), &byteSize, NULL);
+            QString format = QStringLiteral("%1 bytes");
+
+            if (byteSize > 1024)
+            {
+                byteSize /= 1024;
+                format = QStringLiteral("%1 kB");
+            }
+
+            if (byteSize > 1024)
+            {
+                byteSize /= 1024;
+                format = QStringLiteral("%1 MB");
+            }
+
+            addPlatformValue(queryResultString, "CL_DEVICE_GLOBAL_MEM_SIZE", format.arg(byteSize));
+        }
+
+        {
+            cl_bool infoReturnBool;
+            clGetDeviceInfo (deviceInfo.device, CL_DEVICE_HOST_UNIFIED_MEMORY, sizeof(infoReturnBool), &infoReturnBool, NULL);
+            addPlatformValue(queryResultString, "CL_DEVICE_HOST_UNIFIED_MEMORY", infoReturnBool ? "True" : "False");
+        }
     }
+
+    queryResultString.append("</div>\n");
+    queryResultString.append("</body>\n");
 
     ui->queryOutput->setText(queryResultString);
 }

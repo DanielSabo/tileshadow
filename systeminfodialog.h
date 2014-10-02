@@ -18,8 +18,6 @@ public:
 protected:
     void showEvent(QShowEvent *event);
 
-    QString queryResultString;
-
 private:
     Ui::SystemInfoDialog *ui;
 };
