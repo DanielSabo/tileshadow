@@ -32,6 +32,7 @@ public:
     TileSet dirtyTiles;
     TileSet strokeModifiedTiles;
 
+    void addUndoEvent(CanvasUndoEvent *undoEvent);
     void clearUndoHistory();
     void clearRedoHistory();
     void updateBackgroundTile();

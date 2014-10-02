@@ -395,8 +395,7 @@ void CanvasWidget::endStroke()
                 (*ctx->currentLayerCopy->tiles)[iter] = (*currentLayerObj->tiles)[iter]->copy();
             }
 
-            ctx->clearRedoHistory(); //FIXME: This should probably happen at the start of the stroke
-            ctx->undoHistory.prepend(undoEvent);
+            ctx->addUndoEvent(undoEvent);
             ctx->strokeModifiedTiles.clear();
         }
     };
@@ -459,9 +458,7 @@ void CanvasWidget::addLayerAbove(int layerIndex)
 {
     CanvasContext *ctx = getContext();
 
-    ctx->clearRedoHistory();
-    CanvasUndoLayers *undoEvent = new CanvasUndoLayers(&ctx->layers, ctx->currentLayer);
-    ctx->undoHistory.prepend(undoEvent);
+    ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
     ctx->layers.newLayerAt(layerIndex + 1, QString().sprintf("Layer %02d", ++lastNewLayerNumber));
     resetCurrentLayer(ctx, layerIndex + 1);
@@ -478,9 +475,7 @@ void CanvasWidget::removeLayer(int layerIndex)
     if (ctx->layers.layers.size() == 1)
         return;
 
-    ctx->clearRedoHistory();
-    CanvasUndoLayers *undoEvent = new CanvasUndoLayers(&ctx->layers, ctx->currentLayer);
-    ctx->undoHistory.prepend(undoEvent);
+    ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
     /* Before we delete the layer, dirty all tiles it intersects */
     TileSet layerTiles = ctx->layers.layers[layerIndex]->getTileSet();
@@ -526,9 +521,7 @@ void CanvasWidget::moveLayer(int currentIndex, int targetIndex)
     newLayers.insert(targetIndex, ctx->layers.layers.at(currentIndex));
 
     // Generate undo
-    ctx->clearRedoHistory();
-    CanvasUndoLayers *undoEvent = new CanvasUndoLayers(&ctx->layers, ctx->currentLayer);
-    ctx->undoHistory.prepend(undoEvent);
+    ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
     // Replace the stack's list with the reordered one
     ctx->layers.layers = newLayers;
@@ -552,7 +545,7 @@ void CanvasWidget::renameLayer(int layerIndex, QString name)
     if (ctx->layers.layers[layerIndex]->name == name)
         return;
 
-    ctx->undoHistory.prepend(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
+    ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
     ctx->layers.layers[layerIndex]->name = name;
     modified = true;
@@ -574,7 +567,7 @@ void CanvasWidget::mergeLayerDown(int layerIndex)
     CanvasLayer *above = layerList[layerIndex];
     CanvasLayer *below = layerList[layerIndex - 1];
 
-    ctx->undoHistory.prepend(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
+    ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
     CanvasLayer *merged = above->mergeDown(below);
 
@@ -594,9 +587,7 @@ void CanvasWidget::duplicateLayer(int layerIndex)
     if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
         return;
 
-    ctx->clearRedoHistory();
-    CanvasUndoLayers *undoEvent = new CanvasUndoLayers(&ctx->layers, ctx->currentLayer);
-    ctx->undoHistory.prepend(undoEvent);
+    ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
     CanvasLayer *oldLayer = ctx->layers.layers[layerIndex];
     CanvasLayer *newLayer = oldLayer->deepCopy();
@@ -639,8 +630,6 @@ void CanvasWidget::translateCurrentLayer(int x,  int y)
     CanvasLayer *newLayer = ctx->currentLayerCopy->translated(x, y);
     newLayer->prune();
 
-    ctx->clearRedoHistory();
-
     CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
     undoEvent->targetTileMap = currentLayer->tiles;
     undoEvent->currentLayer = ctx->currentLayer;
@@ -657,7 +646,7 @@ void CanvasWidget::translateCurrentLayer(int x,  int y)
             undoTile->swapHost();
         undoEvent->tiles[*iter] = std::move(undoTile);
     }
-    ctx->undoHistory.prepend(undoEvent);
+    ctx->addUndoEvent(undoEvent);
 
     // The dirty tiles are the (possibly moved) current layer + new layer
     layerTiles = currentLayer->getTileSet();
@@ -719,7 +708,7 @@ void CanvasWidget::setLayerVisible(int layerIndex, bool visible)
     if (layerObj->visible == visible)
         return;
 
-    ctx->undoHistory.prepend(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
+    ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
     layerObj->visible = visible;
 
@@ -762,7 +751,7 @@ void CanvasWidget::setLayerEditable(int layerIndex, bool editable)
     if (layerObj->editable == editable)
         return;
 
-    ctx->undoHistory.prepend(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
+    ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
     layerObj->editable = editable;
 
@@ -793,7 +782,7 @@ void CanvasWidget::setLayerMode(int layerIndex, BlendMode::Mode mode)
     if (ctx->layers.layers[layerIndex]->mode == mode)
         return;
 
-    ctx->undoHistory.prepend(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
+    ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
     ctx->layers.layers[layerIndex]->mode = mode;
 

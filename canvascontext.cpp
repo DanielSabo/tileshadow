@@ -12,6 +12,12 @@ CanvasContext::~CanvasContext()
     clearRedoHistory();
 }
 
+void CanvasContext::addUndoEvent(CanvasUndoEvent *undoEvent)
+{
+    clearRedoHistory();
+    undoHistory.prepend(undoEvent);
+}
+
 void CanvasContext::clearUndoHistory()
 {
     while (!undoHistory.empty())
