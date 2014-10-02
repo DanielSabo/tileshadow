@@ -38,43 +38,20 @@ void CanvasStack::clearLayers()
 
 std::unique_ptr<CanvasTile> CanvasStack::getTileMaybe(int x, int y) const
 {
-    int layerCount = layers.size();
-
     std::unique_ptr<CanvasTile> result(nullptr);
 
-    if (layerCount == 0)
-        result = nullptr;
-    else if (layerCount == 1)
+    for (CanvasLayer *layer: layers)
     {
         CanvasTile *auxTile = nullptr;
-        CanvasLayer *layer = layers.at(0);
 
         if (layer->visible)
             auxTile = layer->getTileMaybe(x, y);
 
         if (auxTile)
         {
-            result = backgroundTileCL->copy();
+            if (!result)
+                result = backgroundTileCL->copy();
             auxTile->blendOnto(result.get(), layer->mode);
-        }
-        else
-            result = nullptr;
-    }
-    else
-    {
-        for (CanvasLayer *layer: layers)
-        {
-            CanvasTile *auxTile = nullptr;
-
-            if (layer->visible)
-                auxTile = layer->getTileMaybe(x, y);
-
-            if (auxTile)
-            {
-                if (!result)
-                    result = backgroundTileCL->copy();
-                auxTile->blendOnto(result.get(), layer->mode);
-            }
         }
     }
 
