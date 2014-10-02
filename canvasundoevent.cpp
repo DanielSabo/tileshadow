@@ -29,7 +29,8 @@ TileSet CanvasUndoTiles::apply(CanvasStack *stack, int *activeLayer)
     {
         std::unique_ptr<CanvasTile> &target = (*targetTileMap)[iter->first];
 
-        target->swapHost();
+        if (target)
+            target->swapHost();
 
         std::swap(target, iter->second);
 
