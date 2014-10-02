@@ -115,6 +115,41 @@ void CanvasTile::fill(float r, float g, float b, float a)
                            0, nullptr, nullptr);
 }
 
+void CanvasTile::blendOnto(CanvasTile *target, BlendMode::Mode mode)
+{
+    const size_t global_work_size[1] = {TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT};
+    cl_mem inMem  = target->unmapHost();
+    cl_mem auxMem = unmapHost();
+
+    cl_kernel kernel;
+
+    switch (mode) {
+    case BlendMode::Multiply:
+        kernel = SharedOpenCL::getSharedOpenCL()->blendKernel_multiply;
+        break;
+    case BlendMode::ColorDodge:
+        kernel = SharedOpenCL::getSharedOpenCL()->blendKernel_colorDodge;
+        break;
+    case BlendMode::ColorBurn:
+        kernel = SharedOpenCL::getSharedOpenCL()->blendKernel_colorBurn;
+        break;
+    case BlendMode::Screen:
+        kernel = SharedOpenCL::getSharedOpenCL()->blendKernel_screen;
+        break;
+    default:
+        kernel = SharedOpenCL::getSharedOpenCL()->blendKernel_over;
+        break;
+    }
+
+    clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&inMem);
+    clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&inMem);
+    clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&auxMem);
+    clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
+                           kernel,
+                           1, nullptr, global_work_size, nullptr,
+                           0, nullptr, nullptr);
+}
+
 std::unique_ptr<CanvasTile> CanvasTile::copy()
 {
     CanvasTile *result = new CanvasTile();

@@ -2,6 +2,7 @@
 #define CANVASTILE_H
 
 #include <memory>
+#include "blendmodes.h"
 
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
@@ -33,6 +34,7 @@ public:
     void swapHost();
 
     void fill(float r, float g, float b, float a);
+    void blendOnto(CanvasTile *target, BlendMode::Mode mode);
     std::unique_ptr<CanvasTile> copy();
 
     static int allocatedTileCount();
