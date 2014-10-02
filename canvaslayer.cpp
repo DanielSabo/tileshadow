@@ -197,18 +197,15 @@ CanvasTile *CanvasLayer::getTileMaybe(int x, int y) const
 
 CanvasTile *CanvasLayer::getTile(int x, int y)
 {
-    TileMap::iterator found = tiles->find(QPoint(x, y));
+    std::unique_ptr<CanvasTile> &tile = (*tiles)[QPoint(x, y)];
 
-    if (found != tiles->end())
-        return found->second.get();
+    if (!tile)
+    {
+        tile.reset(new CanvasTile());
+        tile->fill(0.0f, 0.0f, 0.0f, 0.0f);
+    }
 
-    CanvasTile *tile = new CanvasTile();
-
-    tile->fill(0.0f, 0.0f, 0.0f, 0.0f);
-
-    (*tiles)[QPoint(x, y)] = std::unique_ptr<CanvasTile>(tile);
-
-    return tile;
+    return tile.get();
 }
 
 cl_mem CanvasLayer::clOpenTileAt(int x, int y)
