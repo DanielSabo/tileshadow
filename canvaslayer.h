@@ -32,6 +32,7 @@ public:
 
     CanvasLayer *deepCopy() const;
     CanvasLayer *translated(int x, int y) const;
+    CanvasLayer *mergeDown(CanvasLayer const *target) const;
     TileSet takeTiles(CanvasLayer *source);
     void prune();
     void swapOut();

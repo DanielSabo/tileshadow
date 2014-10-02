@@ -131,6 +131,20 @@ CanvasLayer *CanvasLayer::translated(int x, int y) const
     return result;
 }
 
+CanvasLayer *CanvasLayer::mergeDown(const CanvasLayer *target) const
+{
+    CanvasLayer *result = target->deepCopy();
+
+    for (auto &iter: *tiles)
+    {
+        CanvasTile *src = result->getTile(iter.first.x(), iter.first.y());
+        CanvasTile *aux = iter.second.get();
+        aux->blendOnto(src, mode);
+    }
+
+    return result;
+}
+
 TileSet CanvasLayer::takeTiles(CanvasLayer *source)
 {
     TileSet result;

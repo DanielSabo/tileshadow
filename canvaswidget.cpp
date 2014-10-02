@@ -559,6 +559,34 @@ void CanvasWidget::renameLayer(int layerIndex, QString name)
     emit updateLayers();
 }
 
+void CanvasWidget::mergeLayerDown(int layerIndex)
+{
+    CanvasContext *ctx = getContext();
+
+    auto &layerList = ctx->layers.layers;
+
+    if (layerIndex < 1 || layerIndex >= layerList.size())
+        return;
+
+    if (layerList.size() <= 1)
+        return;
+
+    CanvasLayer *above = layerList[layerIndex];
+    CanvasLayer *below = layerList[layerIndex - 1];
+
+    ctx->undoHistory.prepend(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
+
+    CanvasLayer *merged = above->mergeDown(below);
+
+    delete layerList.takeAt(layerIndex - 1);
+    delete layerList.takeAt(layerIndex - 1);
+    layerList.insert(layerIndex - 1, merged);
+    resetCurrentLayer(ctx, layerIndex - 1);
+
+    modified = true;
+    emit updateLayers();
+}
+
 void CanvasWidget::duplicateLayer(int layerIndex)
 {
     CanvasContext *ctx = getContext();

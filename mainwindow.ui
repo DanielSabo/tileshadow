@@ -129,6 +129,8 @@
     </property>
     <addaction name="actionUndo"/>
     <addaction name="actionRedo"/>
+    <addaction name="separator"/>
+    <addaction name="actionMerge_Layer"/>
    </widget>
    <widget class="QMenu" name="menuTool">
     <property name="title">
@@ -279,6 +281,14 @@
    </property>
    <property name="toolTip">
     <string>Reset Tool Settings</string>
+   </property>
+  </action>
+  <action name="actionMerge_Layer">
+   <property name="text">
+    <string>Merge Layer</string>
+   </property>
+   <property name="toolTip">
+    <string>Merge Layer Down</string>
    </property>
   </action>
  </widget>
@@ -565,6 +575,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionMerge_Layer</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>actionMergeLayerDown()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>280</x>
+     <y>200</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>showOpenCLInfo()</slot>
@@ -591,5 +617,6 @@
   <slot>actionExport()</slot>
   <slot>showDeviceSelect()</slot>
   <slot>actionResetTool()</slot>
+  <slot>actionMergeLayerDown()</slot>
  </slots>
 </ui>

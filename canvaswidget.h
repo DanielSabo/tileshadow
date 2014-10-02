@@ -71,6 +71,7 @@ public:
     void duplicateLayer(int layerIndex);
     void moveLayer(int currentIndex, int targetIndex);
     void renameLayer(int layerIndex, QString name);
+    void mergeLayerDown(int layerIndex);
     void setLayerVisible(int layerIndex, bool visible);
     bool getLayerVisible(int layerIndex);
     void setLayerEditable(int layerIndex, bool editable);

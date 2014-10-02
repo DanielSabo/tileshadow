@@ -410,6 +410,11 @@ void MainWindow::actionResetTool()
     canvas->resetToolSettings();
 }
 
+void MainWindow::actionMergeLayerDown()
+{
+    canvas->mergeLayerDown(canvas->getActiveLayer());
+}
+
 void MainWindow::actionZoomIn()
 {
     canvas->setScale(canvas->getScale() * 2);
