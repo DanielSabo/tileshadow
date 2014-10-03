@@ -286,8 +286,8 @@ void CanvasWidget::paintGL()
     if (d->activeTool && d->currentLayerEditable && showToolCursor)
     {
         float toolSize = d->activeTool->getPixelRadius() * 2.0f * viewScale;
-        if (toolSize < 2.0f)
-            toolSize = 2.0f;
+        if (toolSize < 6.0f)
+            toolSize = 6.0f;
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         QPoint cursorPos = mapFromGlobal(QCursor::pos());
