@@ -476,7 +476,7 @@ void CanvasWidget::removeLayer(int layerIndex)
     if (layerIndex < 0 || layerIndex > ctx->layers.layers.size())
         return;
     if (ctx->layers.layers.size() == 1)
-        return
+        return;
 
     ctx->clearRedoHistory();
     CanvasUndoLayers *undoEvent = new CanvasUndoLayers(&ctx->layers, ctx->currentLayer);
