@@ -288,6 +288,9 @@ void CanvasWidget::paintGL()
 
     if (d->activeTool && d->currentLayerEditable && showToolCursor)
     {
+        if (cursor().shape() == Qt::ArrowCursor)
+            setCursor(Qt::BlankCursor);
+
         float toolSize = d->activeTool->getPixelRadius() * 2.0f * viewScale;
         if (toolSize < 6.0f)
             toolSize = 6.0f;
@@ -303,6 +306,10 @@ void CanvasWidget::paintGL()
         glFuncs->glBindVertexArray(render->cursorVertexArray);
         glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         glDisable(GL_BLEND);
+    }
+    else if (cursor().shape() == Qt::BlankCursor)
+    {
+        setCursor(Qt::ArrowCursor);
     }
 }
 
@@ -1154,7 +1161,7 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
         {
             action = CanvasAction::None;
             actionButton = Qt::NoButton;
-            unsetCursor();
+            defaultCursor();
         }
         else if (action == CanvasAction::MoveLayer)
         {
@@ -1162,7 +1169,7 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
             offset /= viewScale;
             action = CanvasAction::None;
             actionButton = Qt::NoButton;
-            unsetCursor();
+            defaultCursor();
 
             translateCurrentLayer(offset.x(), offset.y());
         }
@@ -1258,12 +1265,14 @@ void CanvasWidget::leaveEvent(QEvent * event)
 {
     showToolCursor = false;
     update();
+    unsetCursor();
 }
 
 void CanvasWidget::enterEvent(QEvent * event)
 {
     showToolCursor = true;
     update();
+    defaultCursor();
 }
 
 void CanvasWidget::updateModifiers(QInputEvent *event)
@@ -1294,8 +1303,18 @@ void CanvasWidget::updateModifiers(QInputEvent *event)
              (modState != Qt::ControlModifier))
     {
         action = CanvasAction::None;
-        unsetCursor();
+        defaultCursor();
     }
+}
+
+void CanvasWidget::defaultCursor()
+{
+    Q_D(CanvasWidget);
+
+    if (d->activeTool && d->currentLayerEditable && showToolCursor)
+        setCursor(Qt::BlankCursor);
+    else
+        setCursor(Qt::ArrowCursor);
 }
 
 void CanvasWidget::setActiveTool(const QString &toolName)
