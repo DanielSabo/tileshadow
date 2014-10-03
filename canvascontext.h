@@ -29,6 +29,7 @@ public:
     QList<CanvasUndoEvent *> undoHistory;
     QList<CanvasUndoEvent *> redoHistory;
 
+    bool inTransientOpacity;
     TileSet dirtyTiles;
     TileSet strokeModifiedTiles;
 

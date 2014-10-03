@@ -18,6 +18,7 @@ public:
     bool visible;
     bool editable;
     BlendMode::Mode mode;
+    float opacity;
 
     std::shared_ptr<TileMap> tiles;
 

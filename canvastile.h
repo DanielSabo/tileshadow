@@ -34,7 +34,7 @@ public:
     void swapHost();
 
     void fill(float r, float g, float b, float a);
-    void blendOnto(CanvasTile *target, BlendMode::Mode mode);
+    void blendOnto(CanvasTile *target, BlendMode::Mode mode, float opacity);
     std::unique_ptr<CanvasTile> copy();
 
     static int allocatedTileCount();

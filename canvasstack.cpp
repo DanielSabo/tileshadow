@@ -44,14 +44,14 @@ std::unique_ptr<CanvasTile> CanvasStack::getTileMaybe(int x, int y) const
     {
         CanvasTile *auxTile = nullptr;
 
-        if (layer->visible)
+        if (layer->visible && layer->opacity > 0.0f)
             auxTile = layer->getTileMaybe(x, y);
 
         if (auxTile)
         {
             if (!result)
                 result = backgroundTileCL->copy();
-            auxTile->blendOnto(result.get(), layer->mode);
+            auxTile->blendOnto(result.get(), layer->mode, layer->opacity);
         }
     }
 

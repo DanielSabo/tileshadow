@@ -54,10 +54,38 @@ LayerListWidget::LayerListWidget(QWidget *parent) :
        canvas->setActiveLayer(row);
        BlendMode::Mode currentMode = canvas->getLayerMode(row);
        ui->layerModeComboBox->setCurrentIndex(ui->layerModeComboBox->findData(QVariant(currentMode)));
+       float opacity = canvas->getLayerOpacity(row);
+       ui->opacitySlider->setValue(opacity * 100.0f);
        freezeLayerList = false;
     });
 
     connect(ui->layerModeComboBox, SIGNAL(activated(int)), this, SLOT(layerModeActivated(int)));
+
+    connect(ui->opacitySlider, &QSlider::valueChanged, [this](int value){
+        if (!canvas)
+            return;
+
+        if (freezeLayerList)
+            return;
+
+        freezeLayerList = true;
+        float opacity = qMax(0.0f, qMin(value / 100.0f, 1.0f));
+        canvas->setLayerTransientOpacity(canvas->getActiveLayer(), opacity);
+        freezeLayerList = false;
+    });
+
+    connect(ui->opacitySlider, &QSlider::sliderReleased, [this](){
+        if (!canvas)
+            return;
+
+        if (freezeLayerList)
+            return;
+
+        freezeLayerList = true;
+        float opacity = qMax(0.0f, qMin(ui->opacitySlider->value() / 100.0f, 1.0f));
+        canvas->setLayerOpacity(canvas->getActiveLayer(), opacity);
+        freezeLayerList = false;
+    });
 }
 
 LayerListWidget::~LayerListWidget()
@@ -100,13 +128,21 @@ void LayerListWidget::updateLayers()
     ui->layerList->setData(layerList, currentLayer);
 
     BlendMode::Mode currentMode;
+    float opacity;
 
     if (layerList.size())
+    {
         currentMode = layerList.at(currentLayer).mode;
+        opacity = layerList.at(currentLayer).opacity;
+    }
     else
+    {
         currentMode = BlendMode::Over;
+        opacity = 1.0f;
+    }
 
     ui->layerModeComboBox->setCurrentIndex(ui->layerModeComboBox->findData(QVariant(currentMode)));
+    ui->opacitySlider->setValue(100.0f * opacity);
     freezeLayerList = false;
 }
 

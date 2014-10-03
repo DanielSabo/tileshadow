@@ -2,7 +2,8 @@
 #include <QDebug>
 
 CanvasContext::CanvasContext()
-    : currentLayer(0)
+    : currentLayer(0),
+      inTransientOpacity(false)
 {
 }
 
@@ -15,11 +16,13 @@ CanvasContext::~CanvasContext()
 void CanvasContext::addUndoEvent(CanvasUndoEvent *undoEvent)
 {
     clearRedoHistory();
+    inTransientOpacity = false;
     undoHistory.prepend(undoEvent);
 }
 
 void CanvasContext::clearUndoHistory()
 {
+    inTransientOpacity = false;
     while (!undoHistory.empty())
     {
         CanvasUndoEvent *event = undoHistory.first();

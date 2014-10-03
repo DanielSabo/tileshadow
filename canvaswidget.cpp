@@ -772,6 +772,61 @@ bool CanvasWidget::getLayerEditable(int layerIndex)
     return ctx->layers.layers[layerIndex]->editable;
 }
 
+void CanvasWidget::setLayerTransientOpacity(int layerIndex, float opacity)
+{
+    Q_D(CanvasWidget);
+
+    CanvasContext *ctx = getContext();
+
+    if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
+        return;
+
+    CanvasLayer *layerObj = ctx->layers.layers[layerIndex];
+
+    //FIXME: This should probably be clampled in the layer object
+    opacity = qMax(0.0f, qMin(opacity, 1.0f));
+
+    if (layerObj->opacity == opacity)
+        return;
+
+    if (!ctx->inTransientOpacity)
+    {
+        ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
+        ctx->inTransientOpacity = true;
+    }
+
+    layerObj->opacity = opacity;
+
+    TileSet layerTiles = layerObj->getTileSet();
+
+    if(!layerTiles.empty())
+    {
+        ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+        emit update();
+    }
+
+    modified = true;
+    emit updateLayers();
+}
+
+void CanvasWidget::setLayerOpacity(int layerIndex, float opacity)
+{
+    setLayerTransientOpacity(layerIndex, opacity);
+
+    CanvasContext *ctx = getContext();
+    ctx->inTransientOpacity = false;
+}
+
+float CanvasWidget::getLayerOpacity(int layerIndex)
+{
+    CanvasContext *ctx = getContext();
+
+    if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
+        return 0.0f;
+
+    return ctx->layers.layers[layerIndex]->opacity;
+}
+
 void CanvasWidget::setLayerMode(int layerIndex, BlendMode::Mode mode)
 {
     CanvasContext *ctx = getContext();
@@ -817,7 +872,7 @@ QList<CanvasWidget::LayerInfo> CanvasWidget::getLayerList()
         return result;
 
     for (CanvasLayer *layer: ctx->layers.layers)
-        result.append({layer->name, layer->visible, layer->editable, layer->mode});
+        result.append({layer->name, layer->visible, layer->editable, layer->opacity, layer->mode});
 
     return result;
 }
@@ -834,6 +889,7 @@ void CanvasWidget::undo()
 
     int newActiveLayer = ctx->currentLayer;
 
+    ctx->inTransientOpacity = false; //FIXME: This should be implicit
     CanvasUndoEvent *undoEvent = ctx->undoHistory.first();
     ctx->undoHistory.removeFirst();
     TileSet changedTiles = undoEvent->apply(&ctx->layers, &newActiveLayer);
@@ -863,6 +919,7 @@ void CanvasWidget::redo()
 
     int newActiveLayer = ctx->currentLayer;
 
+    ctx->inTransientOpacity = false; //FIXME: This should be implicit
     CanvasUndoEvent *undoEvent = ctx->redoHistory.first();
     ctx->redoHistory.removeFirst();
     TileSet changedTiles = undoEvent->apply(&ctx->layers, &newActiveLayer);

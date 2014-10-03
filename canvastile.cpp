@@ -115,7 +115,7 @@ void CanvasTile::fill(float r, float g, float b, float a)
                            0, nullptr, nullptr);
 }
 
-void CanvasTile::blendOnto(CanvasTile *target, BlendMode::Mode mode)
+void CanvasTile::blendOnto(CanvasTile *target, BlendMode::Mode mode, float opacity)
 {
     const size_t global_work_size[1] = {TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT};
     cl_mem inMem  = target->unmapHost();
@@ -144,6 +144,7 @@ void CanvasTile::blendOnto(CanvasTile *target, BlendMode::Mode mode)
     clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&inMem);
     clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&inMem);
     clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&auxMem);
+    clSetKernelArg(kernel, 3, sizeof(cl_float), (void *)&opacity);
     clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                            kernel,
                            1, nullptr, global_work_size, nullptr,

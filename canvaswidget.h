@@ -39,6 +39,7 @@ public:
         QString name;
         bool visible;
         bool editable;
+        float opacity;
         BlendMode::Mode mode;
     };
 
@@ -76,6 +77,9 @@ public:
     bool getLayerVisible(int layerIndex);
     void setLayerEditable(int layerIndex, bool editable);
     bool getLayerEditable(int layerIndex);
+    void setLayerTransientOpacity(int layerIndex, float opacity);
+    void setLayerOpacity(int layerIndex, float opacity);
+    float getLayerOpacity(int layerIndex);
     void setLayerMode(int layerIndex, BlendMode::Mode mode);
     BlendMode::Mode getLayerMode(int layerIndex);
     QList<LayerInfo> getLayerList();

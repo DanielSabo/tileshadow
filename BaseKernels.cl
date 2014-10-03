@@ -57,11 +57,13 @@ __kernel void floatToU8(__global float4 *in,
 
 __kernel void tileSVGOver(__global float4 *out,
                           __global float4 *in,
-                          __global float4 *aux)
+                          __global float4 *aux,
+                                   float   opacity)
 {
     float4 out_pixel;
     float4 in_pixel = in[get_global_id(0)];
     float4 aux_pixel = aux[get_global_id(0)];
+    aux_pixel.s3 *= opacity;
 
     float alpha = aux_pixel.s3;
     float dst_alpha = in_pixel.s3;
@@ -81,11 +83,13 @@ __kernel void tileSVGOver(__global float4 *out,
 
 __kernel void tileSVGMultipy(__global float4 *out,
                              __global float4 *in,
-                             __global float4 *aux)
+                             __global float4 *aux,
+                                      float   opacity)
 {
   float4 out_pixel;
   float4 in_pixel = in[get_global_id(0)];
   float4 aux_pixel = aux[get_global_id(0)];
+  aux_pixel.s3 *= opacity;
 
   /* Pre-multiply */
   in_pixel.s012 *= in_pixel.s333;
@@ -109,11 +113,13 @@ __kernel void tileSVGMultipy(__global float4 *out,
 
 __kernel void tileSVGMColorDodge(__global float4 *out,
                                  __global float4 *in,
-                                 __global float4 *aux)
+                                 __global float4 *aux,
+                                          float   opacity)
 {
   float4 out_pixel;
   float4 in_pixel = in[get_global_id(0)];
   float4 aux_pixel = aux[get_global_id(0)];
+  aux_pixel.s3 *= opacity;
 
   /* Pre-multiply */
   in_pixel.s012 *= in_pixel.s333;
@@ -141,11 +147,13 @@ __kernel void tileSVGMColorDodge(__global float4 *out,
 
 __kernel void tileSVGColorBurn(__global float4 *out,
                                __global float4 *in,
-                               __global float4 *aux)
+                               __global float4 *aux,
+                                        float   opacity)
 {
   float4 out_pixel;
   float4 in_pixel = in[get_global_id(0)];
   float4 aux_pixel = aux[get_global_id(0)];
+  aux_pixel.s3 *= opacity;
 
   /* Pre-multiply */
   in_pixel.s012 *= in_pixel.s333;
@@ -174,11 +182,13 @@ __kernel void tileSVGColorBurn(__global float4 *out,
 
 __kernel void tileSVGScreen(__global float4 *out,
                             __global float4 *in,
-                            __global float4 *aux)
+                            __global float4 *aux,
+                                     float   opacity)
 {
   float4 out_pixel;
   float4 in_pixel = in[get_global_id(0)];
   float4 aux_pixel = aux[get_global_id(0)];
+  aux_pixel.s3 *= opacity;
 
   /* Pre-multiply */
   in_pixel.s012 *= in_pixel.s333;

@@ -9,6 +9,7 @@ CanvasLayer::CanvasLayer(QString name)
       visible(true),
       editable(true),
       mode(BlendMode::Over),
+      opacity(1.0f),
       tiles(new TileMap)
 {
 }
@@ -24,6 +25,7 @@ CanvasLayer *CanvasLayer::deepCopy() const
     result->visible = visible;
     result->editable = editable;
     result->mode = mode;
+    result->opacity = opacity;
 
     for (TileMap::iterator iter = tiles->begin(); iter != tiles->end(); ++iter)
     {
@@ -87,6 +89,7 @@ CanvasLayer *CanvasLayer::translated(int x, int y) const
     result->visible = visible;
     result->editable = editable;
     result->mode = mode;
+    result->opacity = opacity;
 
     for (TileMap::iterator iter = tiles->begin(); iter != tiles->end(); ++iter)
     {
@@ -139,7 +142,7 @@ CanvasLayer *CanvasLayer::mergeDown(const CanvasLayer *target) const
     {
         CanvasTile *src = result->getTile(iter.first.x(), iter.first.y());
         CanvasTile *aux = iter.second.get();
-        aux->blendOnto(src, mode);
+        aux->blendOnto(src, mode, opacity);
     }
 
     return result;
