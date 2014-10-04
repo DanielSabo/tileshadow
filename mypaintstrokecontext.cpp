@@ -310,8 +310,8 @@ static int drawDabFunction (MyPaintSurface *base_surface,
     if (aspect_ratio < 1.0f)
         aspect_ratio = 1.0f;
 
-    if (lock_alpha > 0.0f)
-        qWarning() << "drawDab called with unsupported values lock_alpha = " << lock_alpha << endl;
+    if (lock_alpha > 0.0f && lock_alpha < 1.0f)
+        qWarning() << "drawDab called with unsupported values lock_alpha =" << lock_alpha;
 
     if (colorize != 0.0f)
         qWarning() << "drawDab called with unsupported values colorize = " << colorize << endl;
@@ -335,7 +335,11 @@ static int drawDabFunction (MyPaintSurface *base_surface,
         int ix_end   = tile_indice(lastPixelX, TILE_PIXEL_WIDTH);
         int iy_end   = tile_indice(lastPixelY, TILE_PIXEL_HEIGHT);
 
-        cl_kernel kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabKernel;
+        cl_kernel kernel;
+        if (lock_alpha > 0.0f)
+            kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabLockedKernel;
+        else
+            kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabKernel;
 
         cl_int err = CL_SUCCESS;
         cl_int stride = TILE_PIXEL_WIDTH;

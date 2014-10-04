@@ -190,6 +190,12 @@ void MyPaintTool::setToolSetting(QString const &name, QVariant const &value)
 
         priv->setBrushValue("hardness", hardness);
     }
+    else if (name == QStringLiteral("lock_alpha") && value.canConvert<bool>())
+    {
+        float lock_alpha = value.toBool() ? 1.0f : 0.0f;
+
+        priv->setBrushValue("lock_alpha", lock_alpha);
+    }
     else
     {
         BaseTool::setToolSetting(name, value);
@@ -204,6 +210,8 @@ QVariant MyPaintTool::getToolSetting(const QString &name)
         return QVariant::fromValue<float>(priv->getBrushValue("opaque"));
     else if (name == QStringLiteral("hardness"))
         return QVariant::fromValue<float>(priv->getBrushValue("hardness"));
+    else if (name == QStringLiteral("lock_alpha"))
+        return QVariant::fromValue<bool>(priv->getBrushValue("lock_alpha") > 0.0f);
     else
         return BaseTool::getToolSetting(name);
 
@@ -216,6 +224,7 @@ QList<ToolSettingInfo> MyPaintTool::listToolSettings()
     result.append(ToolSettingInfo::exponentSlider("size", "SizeExp", -2.0f, 6.0f));
     result.append(ToolSettingInfo::linearSlider("opacity", "Opacity", 0.0f, 1.0f));
     result.append(ToolSettingInfo::linearSlider("hardness", "Hardness", 0.0f, 1.0f));
+    result.append(ToolSettingInfo::checkbox("lock_alpha", "Lock Alpha"));
 
     return result;
 

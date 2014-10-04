@@ -159,3 +159,49 @@ __kernel void mypaint_dab(__global float4 *buf,
       buf[idx] = pixel;
     }
 }
+
+__kernel void mypaint_dab_locked(__global float4 *buf,
+                                          int     offset,
+                                          int     stride,
+                                          float   x,
+                                          float   y,
+                                          float   radius,
+                                          float   hardness,
+                                          float   aspect_ratio,
+                                          float   sn,
+                                          float   cs,
+                                          float   slope1,
+                                          float   slope2,
+                                          float   color_alpha, /* Max alpha value (ignored) */
+                                          float4  color)
+{
+  int gidx = get_global_id(0);
+  int gidy = get_global_id(1);
+
+  float yy = (gidy - y);
+  float xx = (gidx - x);
+
+  float segment1_offset = 1.0f;
+  float segment1_slope  = slope1;
+  float segment2_offset = -slope2;
+  float segment2_slope  = slope2;
+
+  float rr = calculate_rr (xx, yy, radius, aspect_ratio, sn, cs);
+  float alpha = calculate_alpha(rr, hardness, segment1_offset, segment1_slope, segment2_offset, segment2_slope);
+
+  if (alpha > 0.0f)
+    {
+      const int idx = gidx + gidy * stride + offset;
+      float4 pixel = buf[idx];
+
+      if (pixel.s3)
+        {
+          alpha = alpha * color.s3;
+          float a_term = 1.0f - alpha;
+
+          pixel.s012 = color.s012 * alpha + pixel.s012 * a_term;
+        }
+
+      buf[idx] = pixel;
+    }
+}

@@ -67,6 +67,7 @@ public:
     cl_kernel blendKernel_screen;
 
     cl_kernel mypaintDabKernel;
+    cl_kernel mypaintDabLockedKernel;
     cl_kernel mypaintGetColorKernelPart1;
     cl_kernel mypaintGetColorKernelPart2;
 
