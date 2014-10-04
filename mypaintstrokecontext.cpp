@@ -267,12 +267,24 @@ __kernel void mypaint_color_query_part2(__global float4 *accum,
                         0, sizeof(float) * 5, totalValues,
                         0, nullptr, nullptr);
 
-    if (totalValues[4] > 0.0f)
+    if (totalValues[4] > 0.0f && totalValues[3] > 0.0f)
     {
-        *color_r = totalValues[0] / totalValues[4];
-        *color_g = totalValues[1] / totalValues[4];
-        *color_b = totalValues[2] / totalValues[4];
-        *color_a = totalValues[3] / totalValues[4];
+        totalValues[0] /= totalValues[4];
+        totalValues[1] /= totalValues[4];
+        totalValues[2] /= totalValues[4];
+        totalValues[3] /= totalValues[4];
+
+        *color_r = qBound(0.0f, totalValues[0] / totalValues[3], 1.0f);
+        *color_g = qBound(0.0f, totalValues[1] / totalValues[3], 1.0f);
+        *color_b = qBound(0.0f, totalValues[2] / totalValues[3], 1.0f);
+        *color_a = qBound(0.0f, totalValues[3], 1.0f);
+    }
+    else
+    {
+        *color_r = 0.0f;
+        *color_g = 0.0f;
+        *color_b = 0.0f;
+        *color_a = 0.0f;
     }
 
     clReleaseMemObject(colorAccumulatorMem);

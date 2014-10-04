@@ -83,8 +83,9 @@ __kernel void mypaint_color_query_part1(__global float4 *buf,
       float xx = (ix - x);
       float yy = (gidy - y);
       float pixel_weight = color_query_weight (xx, yy, radius);
+      float4 pixel = buf[ix + gidy * stride + offset];
 
-      total_accum  += buf[ix + gidy * stride + offset] * pixel_weight;
+      total_accum  += pixel * (float4)(pixel.s333, 1.0f) * pixel_weight;
       total_weight += pixel_weight;
     }
 
