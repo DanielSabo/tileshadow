@@ -5,6 +5,7 @@
 #include "toolsettinginfo.h"
 #include <qmath.h>
 #include <QSlider>
+#include <QCheckBox>
 #include <QVBoxLayout>
 #include <QLabel>
 
@@ -27,17 +28,20 @@ public:
     void colorDialChanged(const QColor &color);
 
     void updateFloatSetting(const QString &settingID, float value);
+    void updateBoolSetting(const QString &settingID, bool value);
     void addExponentSlider(const QString &settingID, const QString &name, float min, float max);
     void addLinearSlider(const QString &settingID, const QString &name, float min, float max);
+    void addCheckbox(const QString &settingID, const QString &name);
 
     void removeSettings();
     void addSetting(const ToolSettingInfo &info);
 
     struct SettingItem
     {
+        ToolSettingInfoType::Type type;
         QString name;
         QLabel *label;
-        QSlider *input;
+        QWidget *input;
     };
 
     QMap<QString, SettingItem> items;
@@ -70,6 +74,16 @@ void ToolSettingsWidgetPrivate::updateFloatSetting(const QString &settingID, flo
     freezeUpdates = false;
 }
 
+void ToolSettingsWidgetPrivate::updateBoolSetting(const QString &settingID, bool value)
+{
+    if (freezeUpdates)
+        return;
+
+    freezeUpdates = true;
+    canvas->setToolSetting(settingID, QVariant::fromValue<bool>(value));
+    freezeUpdates = false;
+}
+
 void ToolSettingsWidgetPrivate::addExponentSlider(const QString &settingID, const QString &name, float min, float max)
 {
     Q_Q(ToolSettingsWidget);
@@ -86,7 +100,7 @@ void ToolSettingsWidgetPrivate::addExponentSlider(const QString &settingID, cons
     q->layout()->addWidget(slider);
     QObject::connect(slider, &QSlider::valueChanged, [=] (int value) { updateFloatSetting(settingID, float(value) / 100.0f); });
 
-    items[settingID] = {name, label, slider};
+    items[settingID] = {ToolSettingInfoType::ExponentSlider, name, label, slider};
 }
 
 void ToolSettingsWidgetPrivate::addLinearSlider(const QString &settingID, const QString &name, float min, float max)
@@ -105,7 +119,18 @@ void ToolSettingsWidgetPrivate::addLinearSlider(const QString &settingID, const 
     q->layout()->addWidget(slider);
     QObject::connect(slider, &QSlider::valueChanged, [=] (int value) { updateFloatSetting(settingID, float(value) / 100.0f); });
 
-    items[settingID] = {name, label, slider};
+    items[settingID] = {ToolSettingInfoType::LinearSlider, name, label, slider};
+}
+
+void ToolSettingsWidgetPrivate::addCheckbox(const QString &settingID, const QString &name)
+{
+    Q_Q(ToolSettingsWidget);
+
+    QCheckBox *check = new QCheckBox(name, q);
+    q->layout()->addWidget(check);
+    QObject::connect(check, &QCheckBox::stateChanged, [=] (int state) { updateBoolSetting(settingID, state == Qt::Checked); });
+
+    items[settingID] = {ToolSettingInfoType::Checkbox, name, nullptr, check};
 }
 
 void ToolSettingsWidgetPrivate::removeSettings()
@@ -114,8 +139,10 @@ void ToolSettingsWidgetPrivate::removeSettings()
               iter != items.end();
               iter = items.erase(iter))
     {
-        delete iter.value().label;
-        delete iter.value().input;
+        if (iter.value().label)
+            delete iter.value().label;
+        if (iter.value().input)
+            delete iter.value().input;
     }
 }
 
@@ -125,6 +152,8 @@ void ToolSettingsWidgetPrivate::addSetting(const ToolSettingInfo &info)
         addExponentSlider(info.settingID, info.name, info.min, info.max);
     else if (info.type == ToolSettingInfoType::LinearSlider)
         addLinearSlider(info.settingID, info.name, info.min, info.max);
+    else if (info.type == ToolSettingInfoType::Checkbox)
+        addCheckbox(info.settingID, info.name);
     else
         qDebug() << "Attempted to add unknown setting type" << info.type << info.settingID;
 }
@@ -193,12 +222,29 @@ void ToolSettingsWidget::updateTool()
 
     for (auto iter = d->items.begin(); iter != d->items.end(); ++iter)
     {
-        //FIXME: Don't assume everything is a float and a QSlider
-        QVariant value = d->canvas->getToolSetting(iter.key());
-        if (value.canConvert<float>())
+        ToolSettingInfoType::Type type = iter.value().type;
+        if (type == ToolSettingInfoType::ExponentSlider ||
+            type == ToolSettingInfoType::LinearSlider)
         {
-            //FIXME: Don't hardcode 100.0f here
-            iter.value().input->setValue(value.toFloat() * 100.0f);
+            bool ok;
+            float value = d->canvas->getToolSetting(iter.key()).toFloat(&ok);
+            QSlider *input = qobject_cast<QSlider *>(iter.value().input);
+
+            if (ok && input)
+            {
+                //FIXME: Don't hardcode 100.0f here
+                input->setValue(value * 100.0f);
+            }
+        }
+        else if (type == ToolSettingInfoType::Checkbox)
+        {
+            bool value = d->canvas->getToolSetting(iter.key()).toBool();
+            QCheckBox *input = qobject_cast<QCheckBox *>(iter.value().input);
+
+            if (input)
+            {
+                input->setCheckState(value ? Qt::Checked : Qt::Unchecked);
+            }
         }
     }
 

@@ -22,6 +22,17 @@ ToolSettingInfo ToolSettingInfo::linearSlider(const QString &settingID, const QS
     return result;
 }
 
+ToolSettingInfo ToolSettingInfo::checkbox(const QString &settingID, const QString &name)
+{
+    ToolSettingInfo result(ToolSettingInfoType::Checkbox);
+    result.settingID = settingID;
+    result.name = name;
+    result.min = 0;
+    result.max = 1;
+
+    return result;
+}
+
 ToolSettingInfo::ToolSettingInfo(ToolSettingInfoType::Type type)
     : type(type)
 {
