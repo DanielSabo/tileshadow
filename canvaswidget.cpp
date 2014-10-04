@@ -777,7 +777,7 @@ void CanvasWidget::setLayerTransientOpacity(int layerIndex, float opacity)
     Q_D(CanvasWidget);
 
     //FIXME: This should probably be clampled in the layer object
-    opacity = qMax(0.0f, qMin(opacity, 1.0f));
+    opacity = qBound(0.0f, opacity, 1.0f);
 
     auto msg = [layerIndex, opacity](CanvasContext *ctx) {
         if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())

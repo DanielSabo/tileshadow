@@ -69,7 +69,7 @@ LayerListWidget::LayerListWidget(QWidget *parent) :
             return;
 
         freezeLayerList = true;
-        float opacity = qMax(0.0f, qMin(value / 100.0f, 1.0f));
+        float opacity = qBound(0.0f, value / 100.0f, 1.0f);
         canvas->setLayerTransientOpacity(canvas->getActiveLayer(), opacity);
         freezeLayerList = false;
     });
@@ -82,7 +82,7 @@ LayerListWidget::LayerListWidget(QWidget *parent) :
             return;
 
         freezeLayerList = true;
-        float opacity = qMax(0.0f, qMin(ui->opacitySlider->value() / 100.0f, 1.0f));
+        float opacity = qBound(0.0f, ui->opacitySlider->value() / 100.0f, 1.0f);
         canvas->setLayerOpacity(canvas->getActiveLayer(), opacity);
         freezeLayerList = false;
     });
