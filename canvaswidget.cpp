@@ -776,37 +776,38 @@ void CanvasWidget::setLayerTransientOpacity(int layerIndex, float opacity)
 {
     Q_D(CanvasWidget);
 
-    CanvasContext *ctx = getContext();
-
-    if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
-        return;
-
-    CanvasLayer *layerObj = ctx->layers.layers[layerIndex];
-
     //FIXME: This should probably be clampled in the layer object
     opacity = qMax(0.0f, qMin(opacity, 1.0f));
 
-    if (layerObj->opacity == opacity)
-        return;
+    auto msg = [layerIndex, opacity](CanvasContext *ctx) {
+        if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
+            return;
 
-    if (!ctx->inTransientOpacity)
-    {
-        ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
-        ctx->inTransientOpacity = true;
-    }
+        CanvasLayer *layerObj = ctx->layers.layers[layerIndex];
 
-    layerObj->opacity = opacity;
+        if (layerObj->opacity == opacity)
+            return;
 
-    TileSet layerTiles = layerObj->getTileSet();
+        if (!ctx->inTransientOpacity)
+        {
+            ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
+            ctx->inTransientOpacity = true;
+        }
 
-    if(!layerTiles.empty())
-    {
-        ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
-        emit update();
-    }
+        layerObj->opacity = opacity;
+
+        TileSet layerTiles = layerObj->getTileSet();
+
+        if(!layerTiles.empty())
+        {
+            ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+        }
+    };
+
+    d->eventThread.enqueueCommand(msg);
 
     modified = true;
-    emit updateLayers();
+    emit canvasModified();
 }
 
 void CanvasWidget::setLayerOpacity(int layerIndex, float opacity)
@@ -815,6 +816,7 @@ void CanvasWidget::setLayerOpacity(int layerIndex, float opacity)
 
     CanvasContext *ctx = getContext();
     ctx->inTransientOpacity = false;
+    emit updateLayers();
 }
 
 float CanvasWidget::getLayerOpacity(int layerIndex)
