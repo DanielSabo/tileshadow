@@ -14,7 +14,7 @@
 #include <cstdint>
 
 #include "lodepng.h"
-#include "imageexport.h"
+#include "imagefiles.h"
 
 static QString blendModeToOraOp(BlendMode::Mode mode)
 {

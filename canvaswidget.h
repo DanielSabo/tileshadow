@@ -82,6 +82,7 @@ public:
 
     void newDrawing();
     void openORA(QString path);
+    void openImage(QImage image);
     void saveAsORA(QString path);
     QImage asImage();
 

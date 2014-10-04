@@ -6,7 +6,7 @@
 #include "canvaseventthread.h"
 #include "basetool.h"
 #include "ora.h"
-#include "imageexport.h"
+#include "imagefiles.h"
 #include "toolfactory.h"
 #include <qmath.h>
 #include <QApplication>
@@ -1395,6 +1395,36 @@ void CanvasWidget::openORA(QString path)
     {
         if (layerNameReg.exactMatch(layer->name))
             lastNewLayerNumber = qMax(lastNewLayerNumber, layerNameReg.cap(1).toInt());
+    }
+    setActiveLayer(0); // Sync up the undo layer
+    canvasOrigin = QPoint(0, 0);
+    ctx->dirtyTiles = ctx->layers.getTileSet();
+    d->fullRedraw = true;
+    update();
+    modified = false;
+    emit updateLayers();
+}
+
+void CanvasWidget::openImage(QImage image)
+{
+    Q_D(CanvasWidget);
+
+    CanvasContext *ctx = getContext();
+
+    ctx->clearUndoHistory();
+    ctx->clearRedoHistory();
+    render->clearTiles();
+    lastNewLayerNumber = 0;
+    ctx->layers.clearLayers();
+    ctx->layers.newLayerAt(0, QString().sprintf("Layer %02d", ++lastNewLayerNumber));
+    if (image.isNull())
+    {
+        qWarning() << "CanvasWidget::openImage called with a null image";
+    }
+    else
+    {
+        std::unique_ptr<CanvasLayer> imported = layerFromImage(image);
+        ctx->layers.layers.at(0)->takeTiles(imported.get());
     }
     setActiveLayer(0); // Sync up the undo layer
     canvasOrigin = QPoint(0, 0);

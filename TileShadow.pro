@@ -52,7 +52,7 @@ SOURCES += main.cpp\
     layerlistview.cpp \
     toolsettingswidget.cpp \
     toollistpopup.cpp \
-    imageexport.cpp \
+    imagefiles.cpp \
     toolsettinginfo.cpp \
     canvasrender.cpp \
     canvaseventthread.cpp \
@@ -87,7 +87,7 @@ HEADERS  += mainwindow.h \
     toolsettingswidget.h \
     blendmodes.h \
     toollistpopup.h \
-    imageexport.h \
+    imagefiles.h \
     strokecontext.h \
     toolsettinginfo.h \
     canvasrender.h \

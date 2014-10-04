@@ -12,6 +12,7 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QImageWriter>
+#include <QImageReader>
 #include "canvastile.h"
 #include "hsvcolordial.h"
 #include "toolsettingswidget.h"
@@ -253,14 +254,43 @@ void MainWindow::actionOpenFile()
     if (!promptSave())
         return;
 
-    QString filename = QFileDialog::getOpenFileName(this, "Open", QDir::homePath(), "OpenRaster (*.ora)");
+    QList<QByteArray> readerKnownFormats = QImageReader::supportedImageFormats();
+    QList<QByteArray> importFormats;
+    importFormats.append("png");
+    importFormats.append("bmp");
+    importFormats.append("jpg");
+    importFormats.append("jpeg");
+
+    QStringList importWildcards;
+    importWildcards.append("*.ora");
+
+    for(int i = 0; i < importFormats.size(); ++i)
+        if (readerKnownFormats.contains(importFormats[i]))
+            importWildcards.append(QStringLiteral("*.") + importFormats[i]);
+
+    QString formats = QStringLiteral("(") + importWildcards.join(" ") + ")";
+
+    QString filename = QFileDialog::getOpenFileName(this, "Open", QDir::homePath(), formats);
 
     if (filename.isEmpty())
         return;
 
-    canvas->openORA(filename);
-    setWindowFilePath(filename);
-    updateTitle();
+    if (filename.endsWith(".ora"))
+    {
+        canvas->openORA(filename);
+        setWindowFilePath(filename);
+        updateTitle();
+    }
+    else
+    {
+        QImage image(filename);
+        if (!image.isNull())
+        {
+            canvas->openImage(image);
+            setWindowFilePath("");
+            updateTitle();
+        }
+    }
 }
 
 void MainWindow::actionSave()
