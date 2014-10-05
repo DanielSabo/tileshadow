@@ -576,6 +576,10 @@ void CanvasWidget::mergeLayerDown(int layerIndex)
     layerList.insert(layerIndex - 1, merged);
     resetCurrentLayer(ctx, layerIndex - 1);
 
+    TileSet layerTiles = merged->getTileSet();
+    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+
+    update();
     modified = true;
     emit updateLayers();
 }
