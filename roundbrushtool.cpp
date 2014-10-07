@@ -8,19 +8,12 @@
 
 static const float SUBPIXEL_FACTOR = 8.0f;
 
-template<typename T> static inline T pow2(T const &v)
+template<typename T> static inline float dist(T a, T b)
 {
-    return v * v;
-}
+    float dx = a.x() - b.x();
+    float dy = a.y() - b.y();
 
-static inline float dist(QPoint a, QPoint b)
-{
-    return sqrt(pow2((a.x() - b.x())) + pow2((a.y() - b.y())));
-}
-
-static inline float dist(QPointF a, QPointF b)
-{
-    return sqrt(pow2((a.x() - b.x())) + pow2((a.y() - b.y())));
+    return sqrt(dx * dx + dy * dy);
 }
 
 class RoundBrushStrokeContext : public StrokeContext
