@@ -32,7 +32,6 @@ SOURCES += main.cpp\
     glhelper.cpp \
     mypaintstrokecontext.cpp \
     canvascontext.cpp \
-    basicstrokecontext.cpp \
     benchmarkdialog.cpp \
     boxcartimer.cpp \
     canvastile.cpp \
@@ -66,7 +65,6 @@ HEADERS  += mainwindow.h \
     glhelper.h \
     mypaintstrokecontext.h \
     canvascontext.h \
-    basicstrokecontext.h \
     benchmarkdialog.h \
     boxcartimer.h \
     canvastile.h \
