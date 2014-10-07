@@ -69,6 +69,8 @@ void saveStackAs(CanvasStack *stack, QString path)
 
     int imageWidth = imageTileBounds.width() * TILE_PIXEL_WIDTH;
     int imageHeight = imageTileBounds.height() * TILE_PIXEL_HEIGHT;
+    int imageX = imageTileBounds.x() * TILE_PIXEL_WIDTH;
+    int imageY = imageTileBounds.y() * TILE_PIXEL_HEIGHT;
 
     stackXML.writeAttribute("w", QString().sprintf("%d", imageWidth));
     stackXML.writeAttribute("h", QString().sprintf("%d", imageHeight));
@@ -174,8 +176,8 @@ void saveStackAs(CanvasStack *stack, QString path)
             stackXML.writeAttribute("edit-locked", "true");
         stackXML.writeAttribute("composite-op", blendModeToOraOp(currentLayer->mode));
         stackXML.writeAttribute("opacity", QString().sprintf("%f", currentLayer->opacity));
-        stackXML.writeAttribute("x", QString().sprintf("%d", bounds.x()));
-        stackXML.writeAttribute("y", QString().sprintf("%d", bounds.y()));
+        stackXML.writeAttribute("x", QString().sprintf("%d", bounds.x() - imageX));
+        stackXML.writeAttribute("y", QString().sprintf("%d", bounds.y() - imageY));
         stackXML.writeEndElement(); // layer
     }
 
