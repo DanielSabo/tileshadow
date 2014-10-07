@@ -112,9 +112,22 @@ void saveStackAs(CanvasStack *stack, QString path)
 
                         for (int row = 0; row < TILE_PIXEL_HEIGHT; row++)
                         {
-                            for (int col = 0; col < TILE_PIXEL_WIDTH * 4; col++)
+                            for (int col = 0; col < TILE_PIXEL_WIDTH; col++)
                             {
-                                rowPtr[col] = qToBigEndian((uint16_t)(tileData[col] * 0xFFFF));
+
+                                rowPtr[col * 4 + 3] = qToBigEndian((uint16_t)(tileData[col * 4 + 3] * 0xFFFF));
+                                if (rowPtr[col * 4 + 3])
+                                {
+                                    rowPtr[col * 4 + 0] = qToBigEndian((uint16_t)(tileData[col * 4 + 0] * 0xFFFF));
+                                    rowPtr[col * 4 + 1] = qToBigEndian((uint16_t)(tileData[col * 4 + 1] * 0xFFFF));
+                                    rowPtr[col * 4 + 2] = qToBigEndian((uint16_t)(tileData[col * 4 + 2] * 0xFFFF));
+                                }
+                                else
+                                {
+                                    rowPtr[col * 4 + 0] = 0;
+                                    rowPtr[col * 4 + 1] = 0;
+                                    rowPtr[col * 4 + 2] = 0;
+                                }
                             }
 
                             rowPtr += rowComps;
