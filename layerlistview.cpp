@@ -74,10 +74,8 @@ QSize LayerListView::sizeHint() const
 {
     Q_D(const LayerListView);
 
-    QSize result = d->rowSize;
-    result.rheight() *= qMax<int>(1, things.size());
-
-    return result;
+    return QSize(d->rowSize.width(),
+                 d->rowSize.height() * qMax<int>(1, things.size()));
 }
 
 void LayerListView::setData(const QList<CanvasWidget::LayerInfo> &data, int selection)
@@ -305,13 +303,9 @@ void LayerListView::recalulateSize()
         textWidth = qMax(textWidth, fontMetrics().boundingRect(thing.name).width());
     }
 
-    int rowWidth = d->iconSize * 2 + d->hPad * 4 + textWidth;
+    d->rowSize.setWidth(d->iconSize * 2 + d->hPad * 4 + textWidth);
 
-    if (rowWidth != d->rowSize.width())
-    {
-        d->rowSize.setWidth(d->iconSize * 2 + d->hPad * 4 + textWidth);
-        emit updateGeometry();
-    }
+    emit updateGeometry();
 }
 
 int LayerListView::rowFixup(int row)
