@@ -84,6 +84,8 @@ public:
     BlendMode::Mode getLayerMode(int layerIndex);
     QList<LayerInfo> getLayerList();
 
+    void flashCurrentLayer();
+
     void newDrawing();
     void openORA(QString path);
     void openImage(QImage image);
@@ -155,6 +157,9 @@ signals:
 public slots:
     void undo();
     void redo();
+
+private slots:
+    void endLayerFlash();
 };
 
 #endif // CANVASWIDGET_H

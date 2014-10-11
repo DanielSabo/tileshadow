@@ -32,6 +32,14 @@ static const QGLFormat &getFormatSingleton()
     return *single;
 }
 
+namespace RenderMode
+{
+    enum {
+        Normal,
+        FlashLayer
+    } typedef Mode;
+}
+
 struct SavedTabletEvent
 {
     bool valid;
@@ -65,6 +73,8 @@ public:
     QTimer frameTickTrigger;
     QElapsedTimer lastFrameTimer;
     bool fullRedraw;
+    RenderMode::Mode renderMode;
+    QTimer layerFlashTimeout;
 };
 
 CanvasWidgetPrivate::CanvasWidgetPrivate()
@@ -77,6 +87,8 @@ CanvasWidgetPrivate::CanvasWidgetPrivate()
     strokeEventTimestamp = 0;
     fullRedraw = true;
     currentLayerEditable = false;
+    renderMode = RenderMode::Normal;
+    layerFlashTimeout.setSingleShot(true);
 }
 
 CanvasWidgetPrivate::~CanvasWidgetPrivate()
@@ -120,6 +132,7 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
 
     //FIXME: (As of QT5.2) Old style connect because timeout has QPrivateSignal, this should be fixed in some newer QT version
     connect(&d->frameTickTrigger, SIGNAL(timeout()), this, SLOT(update()));
+    connect(&d->layerFlashTimeout, SIGNAL(timeout()), this, SLOT(endLayerFlash()));
 
     connect(&d->eventThread, SIGNAL(hasResultTiles()), this, SLOT(update()), Qt::QueuedConnection);
 
@@ -201,26 +214,40 @@ void CanvasWidget::paintGL()
     emit updateStats();
 
     TileMap renderTiles;
-
-    d->eventThread.resultTilesMutex.lock();
-    d->eventThread.resultTiles.swap(renderTiles);
-    d->eventThread.needResultTiles = true;
-    d->eventThread.resultTilesMutex.unlock();
-
-    // Render dirty tiles after result tiles to avoid stale tiles
-    if (CanvasContext *ctx = getContextMaybe())
-    {
-        for (auto iter: ctx->dirtyTiles)
-            renderTiles[iter] = ctx->layers.getTileMaybe(iter.x(), iter.y());
-        ctx->dirtyTiles.clear();
-    }
-
     TileSet tilesToDraw;
 
-    //FIXME: Bounds check tiles to view
-    if (!d->fullRedraw)
-        for (auto iter = renderTiles.cbegin(); iter != renderTiles.cend(); ++iter)
-            tilesToDraw.insert(iter->first);
+    if (d->renderMode == RenderMode::FlashLayer)
+    {
+        CanvasContext *ctx = getContext();
+        if (ctx->flashStack)
+        {
+            TileSet flashSet = ctx->flashStack->getTileSet();
+            for (auto iter: flashSet)
+                renderTiles[iter] = ctx->flashStack->getTileMaybe(iter.x(), iter.y());
+            tilesToDraw = ctx->layers.getTileSet();
+            ctx->flashStack.reset();
+        }
+    }
+    else
+    {
+        d->eventThread.resultTilesMutex.lock();
+        d->eventThread.resultTiles.swap(renderTiles);
+        d->eventThread.needResultTiles = true;
+        d->eventThread.resultTilesMutex.unlock();
+
+        // Render dirty tiles after result tiles to avoid stale tiles
+        if (CanvasContext *ctx = getContextMaybe())
+        {
+            for (auto iter: ctx->dirtyTiles)
+                renderTiles[iter] = ctx->layers.getTileMaybe(iter.x(), iter.y());
+            ctx->dirtyTiles.clear();
+        }
+
+        //FIXME: Bounds check tiles to view
+        if (!d->fullRedraw)
+            for (auto iter = renderTiles.cbegin(); iter != renderTiles.cend(); ++iter)
+                tilesToDraw.insert(iter->first);
+    }
 
     render->renderTileMap(renderTiles);
 
@@ -895,6 +922,24 @@ QList<CanvasWidget::LayerInfo> CanvasWidget::getLayerList()
     return result;
 }
 
+void CanvasWidget::flashCurrentLayer()
+{
+    Q_D(CanvasWidget);
+
+    CanvasContext *ctx = getContext();
+    CanvasLayer *currentLayerObj = ctx->layers.layers.at(ctx->currentLayer);
+
+    if (!currentLayerObj->visible)
+        return;
+
+    ctx->flashStack.reset(new CanvasStack);
+    (*ctx->flashStack).layers.append(new CanvasLayer(*currentLayerObj));
+    render->clearTiles();
+    d->renderMode = RenderMode::FlashLayer;
+    d->layerFlashTimeout.start(300);
+    update();
+}
+
 void CanvasWidget::undo()
 {
     CanvasContext *ctx = getContext();
@@ -953,6 +998,23 @@ void CanvasWidget::redo()
     update();
     modified = true;
     emit updateLayers();
+}
+
+void CanvasWidget::endLayerFlash()
+{
+    Q_D(CanvasWidget);
+
+    if (d->renderMode == RenderMode::FlashLayer)
+    {
+        d->layerFlashTimeout.stop();
+
+        CanvasContext *ctx = getContext();
+        ctx->flashStack.reset();
+        ctx->dirtyTiles = ctx->layers.getTileSet();
+        render->clearTiles();
+        d->renderMode = RenderMode::Normal;
+        update();
+    }
 }
 
 bool CanvasWidget::getModified()

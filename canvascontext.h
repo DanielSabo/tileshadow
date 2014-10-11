@@ -25,6 +25,7 @@ public:
     int currentLayer;
     QScopedPointer<CanvasLayer> currentLayerCopy;
     CanvasStack layers;
+    std::unique_ptr<CanvasStack> flashStack;
 
     QList<CanvasUndoEvent *> undoHistory;
     QList<CanvasUndoEvent *> redoHistory;

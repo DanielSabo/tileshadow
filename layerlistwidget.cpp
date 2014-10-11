@@ -52,6 +52,7 @@ LayerListWidget::LayerListWidget(QWidget *parent) :
 
        freezeLayerList = true;
        canvas->setActiveLayer(row);
+       canvas->flashCurrentLayer();
        BlendMode::Mode currentMode = canvas->getLayerMode(row);
        ui->layerModeComboBox->setCurrentIndex(ui->layerModeComboBox->findData(QVariant(currentMode)));
        float opacity = canvas->getLayerOpacity(row);
