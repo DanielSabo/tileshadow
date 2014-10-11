@@ -26,6 +26,8 @@ public:
 
     std::unique_ptr<CanvasTile> backgroundTile;
     std::unique_ptr<CanvasTile> backgroundTileCL;
+
+    void setBackground(std::unique_ptr<CanvasTile> newBackground);
 };
 
 #endif // CANVASSTACK_H

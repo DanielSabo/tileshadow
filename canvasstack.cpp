@@ -4,10 +4,10 @@
 
 CanvasStack::CanvasStack()
 {
-    backgroundTile.reset(new CanvasTile());
-    backgroundTile->fill(1.0f, 1.0f, 1.0f, 1.0f);
-    backgroundTileCL = backgroundTile->copy();
-    backgroundTileCL->unmapHost();
+    std::unique_ptr<CanvasTile> newBackground(new CanvasTile());
+    newBackground->fill(1.0f, 1.0f, 1.0f, 1.0f);
+
+    setBackground(std::move(newBackground));
 }
 
 CanvasStack::~CanvasStack()
@@ -69,4 +69,11 @@ TileSet CanvasStack::getTileSet() const
     }
 
     return result;
+}
+
+void CanvasStack::setBackground(std::unique_ptr<CanvasTile> newBackground)
+{
+    backgroundTileCL = newBackground->copy();
+    backgroundTileCL->unmapHost();
+    backgroundTile = std::move(newBackground);
 }
