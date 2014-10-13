@@ -25,6 +25,42 @@ void GLShaderProgram::cleanup(QOpenGLFunctions_3_2_Core *glFuncs)
         glFuncs->glDeleteVertexArrays(1, &vertexArray);
 }
 
+static void buildProgram(QOpenGLFunctions_3_2_Core *glFuncs,
+                         GLShaderProgram &shader,
+                         QString const &vertPath,
+                         QString const &fragPath)
+{
+    if (shader.program)
+        qWarning() << "Leaking shader program";
+
+    GLuint vertexShader = compileGLShaderFile(glFuncs, vertPath, GL_VERTEX_SHADER);
+    GLuint fragmentShader = compileGLShaderFile(glFuncs, fragPath, GL_FRAGMENT_SHADER);
+    shader.program = buildGLProgram(glFuncs, vertexShader, fragmentShader);
+
+    if (vertexShader)
+        glFuncs->glDeleteShader(vertexShader);
+    if (fragmentShader)
+        glFuncs->glDeleteShader(fragmentShader);
+}
+
+static void uploadVertexData2f(QOpenGLFunctions_3_2_Core *glFuncs,
+                               GLShaderProgram &shader,
+                               std::vector<float> data)
+{
+    if (shader.vertexBuffer || shader.vertexArray)
+        qWarning() << "Leaking shader data";
+
+    glFuncs->glGenBuffers(1, &shader.vertexBuffer);
+    glFuncs->glGenVertexArrays(1, &shader.vertexArray);
+    glFuncs->glBindVertexArray(shader.vertexArray);
+    glFuncs->glBindBuffer(GL_ARRAY_BUFFER, shader.vertexBuffer);
+
+    glFuncs->glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), data.data(), GL_STATIC_DRAW);
+
+    glFuncs->glEnableVertexAttribArray(0);
+    glFuncs->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+}
+
 CanvasRender::CanvasRender() :
     glFuncs(new QOpenGLFunctions_3_2_Core()),
     backgroundGLTile(0)
@@ -44,14 +80,7 @@ CanvasRender::CanvasRender() :
 #endif
 
     /* Set up canvas tile data & shaders */
-    GLuint vertexShader = compileGLShaderFile(glFuncs, ":/CanvasShader.vert", GL_VERTEX_SHADER);
-    GLuint fragmentShader = compileGLShaderFile(glFuncs, ":/CanvasShader.frag", GL_FRAGMENT_SHADER);
-    tileShader.program = buildGLProgram(glFuncs, vertexShader, fragmentShader);
-
-    if (vertexShader)
-        glFuncs->glDeleteShader(vertexShader);
-    if (fragmentShader)
-        glFuncs->glDeleteShader(fragmentShader);
+    buildProgram(glFuncs, tileShader, ":/CanvasShader.vert", ":/CanvasShader.frag");
 
     if (tileShader.program)
     {
@@ -62,32 +91,16 @@ CanvasRender::CanvasRender() :
         tileShader.binSize    = glFuncs->glGetUniformLocation(tileShader.program, "binSize");
     }
 
-    glFuncs->glGenBuffers(1, &tileShader.vertexBuffer);
-    glFuncs->glGenVertexArrays(1, &tileShader.vertexArray);
-    glFuncs->glBindVertexArray(tileShader.vertexArray);
-    glFuncs->glBindBuffer(GL_ARRAY_BUFFER, tileShader.vertexBuffer);
-
-    float positionData[] = {
+    std::vector<float> shaderVerts({
         0.0f, 0.0f,
         1.0f, 0.0f,
         1.0f, 1.0f,
         0.0f, 1.0f,
-    };
-
-    glFuncs->glBufferData(GL_ARRAY_BUFFER, sizeof(positionData), positionData, GL_STATIC_DRAW);
-
-    glFuncs->glEnableVertexAttribArray(0);
-    glFuncs->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+    });
+    uploadVertexData2f(glFuncs, tileShader, shaderVerts);
 
     /* Set up cursor data & shaders */
-    vertexShader = compileGLShaderFile(glFuncs, ":/CursorCircle.vert", GL_VERTEX_SHADER);
-    fragmentShader = compileGLShaderFile(glFuncs, ":/CursorCircle.frag", GL_FRAGMENT_SHADER);
-    cursorShader.program = buildGLProgram(glFuncs, vertexShader, fragmentShader);
-
-    if (vertexShader)
-        glFuncs->glDeleteShader(vertexShader);
-    if (fragmentShader)
-        glFuncs->glDeleteShader(fragmentShader);
+    buildProgram(glFuncs, cursorShader, ":/CursorCircle.vert", ":/CursorCircle.frag");
 
     if (cursorShader.program)
     {
@@ -95,32 +108,16 @@ CanvasRender::CanvasRender() :
         cursorShader.pixelRadius = glFuncs->glGetUniformLocation(cursorShader.program, "pixelRadius");
     }
 
-    float cursorVertData[] = {
+    shaderVerts = std::vector<float>({
         -1.0f, -1.0f,
         1.0f,  -1.0f,
         1.0f,  1.0f,
         -1.0f, 1.0f,
-    };
-
-    glFuncs->glGenBuffers(1, &cursorShader.vertexBuffer);
-    glFuncs->glGenVertexArrays(1, &cursorShader.vertexArray);
-    glFuncs->glBindVertexArray(cursorShader.vertexArray);
-    glFuncs->glBindBuffer(GL_ARRAY_BUFFER, cursorShader.vertexBuffer);
-
-    glFuncs->glBufferData(GL_ARRAY_BUFFER, sizeof(cursorVertData), cursorVertData, GL_STATIC_DRAW);
-
-    glFuncs->glEnableVertexAttribArray(0);
-    glFuncs->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+    });
+    uploadVertexData2f(glFuncs, cursorShader, shaderVerts);
 
     /* Color dot data & shaders */
-    vertexShader = compileGLShaderFile(glFuncs, ":/CursorCircle.vert", GL_VERTEX_SHADER);
-    fragmentShader = compileGLShaderFile(glFuncs, ":/ColorDot.frag", GL_FRAGMENT_SHADER);
-    colorDotShader.program = buildGLProgram(glFuncs, vertexShader, fragmentShader);
-
-    if (vertexShader)
-        glFuncs->glDeleteShader(vertexShader);
-    if (fragmentShader)
-        glFuncs->glDeleteShader(fragmentShader);
+    buildProgram(glFuncs, colorDotShader, ":/CursorCircle.vert", ":/ColorDot.frag");
 
     if (colorDotShader.program)
     {
@@ -129,22 +126,13 @@ CanvasRender::CanvasRender() :
         colorDotShader.previewColor =  glFuncs->glGetUniformLocation(colorDotShader.program, "previewColor");
     }
 
-    float dotVertData[] = {
+    shaderVerts = std::vector<float>({
         -1.0f, -1.0f,
         1.0f,  -1.0f,
         1.0f,  1.0f,
         -1.0f, 1.0f,
-    };
-
-    glFuncs->glGenBuffers(1, &colorDotShader.vertexBuffer);
-    glFuncs->glGenVertexArrays(1, &colorDotShader.vertexArray);
-    glFuncs->glBindVertexArray(colorDotShader.vertexArray);
-    glFuncs->glBindBuffer(GL_ARRAY_BUFFER, colorDotShader.vertexBuffer);
-
-    glFuncs->glBufferData(GL_ARRAY_BUFFER, sizeof(dotVertData), dotVertData, GL_STATIC_DRAW);
-
-    glFuncs->glEnableVertexAttribArray(0);
-    glFuncs->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+    });
+    uploadVertexData2f(glFuncs, colorDotShader, shaderVerts);
 
     /* Framebuffers */
     glFuncs->glGenFramebuffers(1, &backbufferFramebuffer);
