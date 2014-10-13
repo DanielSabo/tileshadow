@@ -47,6 +47,12 @@ public:
         GLuint pixelRadius;
     } cursorShader;
 
+    struct : GLShaderProgram {
+        GLuint dimensions;
+        GLuint pixelRadius;
+        GLuint previewColor;
+    } colorDotShader;
+
     GLuint backbufferFramebuffer;
     GLuint backbufferRenderbuffer;
 

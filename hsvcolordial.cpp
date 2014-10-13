@@ -242,7 +242,9 @@ void HSVColorDial::mouseMoveEvent(QMouseEvent *event)
         d->h = h;
         d->renderedInnerBox = QImage();
         update();
-        emit updateColor(QColor::fromHsvF(d->h, d->s, d->v));
+        QColor value = QColor::fromHsvF(d->h, d->s, d->v);
+        emit dragColor(value);
+        emit updateColor(value);
     }
     else if(d->inBoxDrag)
     {
@@ -256,7 +258,9 @@ void HSVColorDial::mouseMoveEvent(QMouseEvent *event)
         d->s = s;
         d->v = v;
         update();
-        emit updateColor(QColor::fromHsvF(d->h, d->s, d->v));
+        QColor value = QColor::fromHsvF(d->h, d->s, d->v);
+        emit dragColor(value);
+        emit updateColor(value);
     }
 }
 
@@ -279,9 +283,11 @@ void HSVColorDial::mousePressEvent(QMouseEvent *event)
         d->h = h;
         d->renderedInnerBox = QImage();
         update();
-        emit updateColor(QColor::fromHsvF(d->h, d->s, d->v));
         d->inDialDrag = true;
         d->inBoxDrag = false;
+        QColor value = QColor::fromHsvF(d->h, d->s, d->v);
+        emit dragColor(value);
+        emit updateColor(value);
     }
     else if (d->boxRect.contains(event->pos()))
     {
@@ -295,9 +301,11 @@ void HSVColorDial::mousePressEvent(QMouseEvent *event)
         d->s = s;
         d->v = v;
         update();
-        emit updateColor(QColor::fromHsvF(d->h, d->s, d->v));
         d->inDialDrag = false;
         d->inBoxDrag = true;
+        QColor value = QColor::fromHsvF(d->h, d->s, d->v);
+        emit dragColor(value);
+        emit updateColor(value);
     }
 }
 
@@ -318,7 +326,15 @@ void HSVColorDial::mouseReleaseEvent(QMouseEvent *event)
         d->h = h;
         d->renderedInnerBox = QImage();
         update();
-        emit updateColor(QColor::fromHsvF(d->h, d->s, d->v));
+        QColor value = QColor::fromHsvF(d->h, d->s, d->v);
+        emit releaseColor(value);
+        emit updateColor(value);
+    }
+    else if (d->inBoxDrag)
+    {
+        QColor value = QColor::fromHsvF(d->h, d->s, d->v);
+        emit releaseColor(value);
+        emit updateColor(value);
     }
 
     d->inDialDrag = false;

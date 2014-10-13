@@ -85,6 +85,8 @@ public:
     QList<LayerInfo> getLayerList();
 
     void flashCurrentLayer();
+    void showColorPreview(QColor const &color);
+    void hideColorPreview();
 
     void newDrawing();
     void openORA(QString path);

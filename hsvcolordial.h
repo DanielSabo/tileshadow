@@ -30,6 +30,8 @@ private:
     Q_DECLARE_PRIVATE(HSVColorDial)
 
 signals:
+    void dragColor(QColor const &color);
+    void releaseColor(QColor const &color);
     void updateColor(QColor const &color);
 
 public slots:

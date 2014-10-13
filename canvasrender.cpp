@@ -100,6 +100,41 @@ CanvasRender::CanvasRender() :
     glFuncs->glEnableVertexAttribArray(0);
     glFuncs->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 
+    /* Color dot data & shaders */
+    vertexShader = compileGLShaderFile(glFuncs, ":/CursorCircle.vert", GL_VERTEX_SHADER);
+    fragmentShader = compileGLShaderFile(glFuncs, ":/ColorDot.frag", GL_FRAGMENT_SHADER);
+    colorDotShader.program = buildGLProgram(glFuncs, vertexShader, fragmentShader);
+
+    if (vertexShader)
+        glFuncs->glDeleteShader(vertexShader);
+    if (fragmentShader)
+        glFuncs->glDeleteShader(fragmentShader);
+
+    if (colorDotShader.program)
+    {
+        colorDotShader.dimensions = glFuncs->glGetUniformLocation(colorDotShader.program, "dimensions");
+        colorDotShader.pixelRadius = glFuncs->glGetUniformLocation(colorDotShader.program, "pixelRadius");
+        colorDotShader.previewColor =  glFuncs->glGetUniformLocation(colorDotShader.program, "previewColor");
+    }
+
+    float dotVertData[] = {
+        -1.0f, -1.0f,
+        1.0f,  -1.0f,
+        1.0f,  1.0f,
+        -1.0f, 1.0f,
+    };
+
+    glFuncs->glGenBuffers(1, &colorDotShader.vertexBuffer);
+    glFuncs->glGenVertexArrays(1, &colorDotShader.vertexArray);
+    glFuncs->glBindVertexArray(colorDotShader.vertexArray);
+    glFuncs->glBindBuffer(GL_ARRAY_BUFFER, colorDotShader.vertexBuffer);
+
+    glFuncs->glBufferData(GL_ARRAY_BUFFER, sizeof(dotVertData), dotVertData, GL_STATIC_DRAW);
+
+    glFuncs->glEnableVertexAttribArray(0);
+    glFuncs->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+    /* Framebuffers */
     glFuncs->glGenFramebuffers(1, &backbufferFramebuffer);
     glFuncs->glGenRenderbuffers(1, &backbufferRenderbuffer);
 }
@@ -125,6 +160,15 @@ CanvasRender::~CanvasRender()
 
     if (cursorShader.vertexArray)
         glFuncs->glDeleteVertexArrays(1, &cursorShader.vertexArray);
+
+    if (colorDotShader.program)
+        glFuncs->glDeleteProgram(colorDotShader.program);
+
+    if (colorDotShader.vertexBuffer)
+        glFuncs->glDeleteBuffers(1, &colorDotShader.vertexBuffer);
+
+    if (colorDotShader.vertexArray)
+        glFuncs->glDeleteVertexArrays(1, &colorDotShader.vertexArray);
 
     if (backgroundGLTile)
         glFuncs->glDeleteBuffers(1, &backgroundGLTile);

@@ -75,6 +75,7 @@ public:
     bool fullRedraw;
     RenderMode::Mode renderMode;
     QTimer layerFlashTimeout;
+    QColor dotPreviewColor;
 };
 
 CanvasWidgetPrivate::CanvasWidgetPrivate()
@@ -89,6 +90,7 @@ CanvasWidgetPrivate::CanvasWidgetPrivate()
     currentLayerEditable = false;
     renderMode = RenderMode::Normal;
     layerFlashTimeout.setSingleShot(true);
+    dotPreviewColor = QColor();
 }
 
 CanvasWidgetPrivate::~CanvasWidgetPrivate()
@@ -339,6 +341,48 @@ void CanvasWidget::paintGL()
     else if (cursor().shape() == Qt::BlankCursor)
     {
         setCursor(Qt::ArrowCursor);
+    }
+
+    if (d->dotPreviewColor.isValid())
+    {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        float dotRadius = 10.5f;
+        glFuncs->glUseProgram(render->colorDotShader.program);
+        glFuncs->glUniform4f(render->colorDotShader.previewColor,
+                             d->dotPreviewColor.redF(),
+                             d->dotPreviewColor.greenF(),
+                             d->dotPreviewColor.blueF(),
+                             d->dotPreviewColor.alphaF());
+        glFuncs->glUniform1f(render->colorDotShader.pixelRadius, dotRadius);
+        glFuncs->glBindVertexArray(render->colorDotShader.vertexArray);
+
+        float dotHeight = dotRadius * 2.0f / widgetHeight;
+        float dotWidth  = dotRadius * 2.0f / widgetWidth;
+
+        float xShift = dotWidth * 6.0f;
+        float yShift = dotHeight * 6.0f;
+
+        glFuncs->glUniform4f(render->colorDotShader.dimensions,
+                             0.0f, 0.0f, dotWidth, dotHeight);
+        glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+        glFuncs->glUniform4f(render->colorDotShader.dimensions,
+                             -xShift, 0.0f, dotWidth, dotHeight);
+        glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+        glFuncs->glUniform4f(render->colorDotShader.dimensions,
+                             xShift, 0.0f, dotWidth, dotHeight);
+        glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+        glFuncs->glUniform4f(render->colorDotShader.dimensions,
+                             0.0f, -yShift, dotWidth, dotHeight);
+        glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+        glFuncs->glUniform4f(render->colorDotShader.dimensions,
+                             0.0f, yShift, dotWidth, dotHeight);
+        glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        glDisable(GL_BLEND);
     }
 }
 
@@ -937,6 +981,22 @@ void CanvasWidget::flashCurrentLayer()
     render->clearTiles();
     d->renderMode = RenderMode::FlashLayer;
     d->layerFlashTimeout.start(300);
+    update();
+}
+
+void CanvasWidget::showColorPreview(const QColor &color)
+{
+    Q_D(CanvasWidget);
+
+    d->dotPreviewColor = color;
+    update();
+}
+
+void CanvasWidget::hideColorPreview()
+{
+    Q_D(CanvasWidget);
+
+    d->dotPreviewColor = QColor();
     update();
 }
 

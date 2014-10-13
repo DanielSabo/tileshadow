@@ -25,6 +25,7 @@ public:
 
     bool freezeUpdates;
 
+    void colorDialDrag(const QColor &color);
     void colorDialChanged(const QColor &color);
 
     void updateFloatSetting(const QString &settingID, float value);
@@ -54,6 +55,17 @@ ToolSettingsWidgetPrivate::ToolSettingsWidgetPrivate(ToolSettingsWidget *q)
 {
 }
 
+void ToolSettingsWidgetPrivate::colorDialDrag(const QColor &color)
+{
+    if (freezeUpdates)
+        return;
+
+    freezeUpdates = true;
+    canvas->setToolColor(color);
+    canvas->showColorPreview(color);
+    freezeUpdates = false;
+}
+
 void ToolSettingsWidgetPrivate::colorDialChanged(const QColor &color)
 {
     if (freezeUpdates)
@@ -61,6 +73,7 @@ void ToolSettingsWidgetPrivate::colorDialChanged(const QColor &color)
 
     freezeUpdates = true;
     canvas->setToolColor(color);
+    canvas->hideColorPreview();
     freezeUpdates = false;
 }
 
@@ -174,7 +187,8 @@ ToolSettingsWidget::ToolSettingsWidget(QWidget *parent) :
     d->toolColorDial->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     d->toolColorDial->setMinimumSize(QSize(80, 80));
     d->toolColorDial->setBaseSize(QSize(80, 80));
-    connect(d->toolColorDial, &HSVColorDial::updateColor, [=] (const QColor &color) { d->colorDialChanged(color); });
+    connect(d->toolColorDial, &HSVColorDial::dragColor, [=] (const QColor &color) { d->colorDialDrag(color); });
+    connect(d->toolColorDial, &HSVColorDial::releaseColor, [=] (const QColor &color) { d->colorDialChanged(color); });
     layout->addWidget(d->toolColorDial);
 }
 
