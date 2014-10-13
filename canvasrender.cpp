@@ -13,6 +13,18 @@
 #include <CL/cl_gl.h>
 #endif
 
+void GLShaderProgram::cleanup(QOpenGLFunctions_3_2_Core *glFuncs)
+{
+    if (program)
+        glFuncs->glDeleteProgram(program);
+
+    if (vertexBuffer)
+        glFuncs->glDeleteBuffers(1, &vertexBuffer);
+
+    if (vertexArray)
+        glFuncs->glDeleteVertexArrays(1, &vertexArray);
+}
+
 CanvasRender::CanvasRender() :
     glFuncs(new QOpenGLFunctions_3_2_Core()),
     backgroundGLTile(0)
@@ -143,32 +155,9 @@ CanvasRender::~CanvasRender()
 {
     clearTiles();
 
-    if (tileShader.vertexBuffer)
-        glFuncs->glDeleteBuffers(1, &tileShader.vertexBuffer);
-
-    if (tileShader.vertexArray)
-        glFuncs->glDeleteVertexArrays(1, &tileShader.vertexArray);
-
-    if (tileShader.program)
-        glFuncs->glDeleteProgram(tileShader.program);
-
-    if (cursorShader.program)
-        glFuncs->glDeleteProgram(cursorShader.program);
-
-    if (cursorShader.vertexBuffer)
-        glFuncs->glDeleteBuffers(1, &cursorShader.vertexBuffer);
-
-    if (cursorShader.vertexArray)
-        glFuncs->glDeleteVertexArrays(1, &cursorShader.vertexArray);
-
-    if (colorDotShader.program)
-        glFuncs->glDeleteProgram(colorDotShader.program);
-
-    if (colorDotShader.vertexBuffer)
-        glFuncs->glDeleteBuffers(1, &colorDotShader.vertexBuffer);
-
-    if (colorDotShader.vertexArray)
-        glFuncs->glDeleteVertexArrays(1, &colorDotShader.vertexArray);
+    tileShader.cleanup(glFuncs);
+    cursorShader.cleanup(glFuncs);
+    colorDotShader.cleanup(glFuncs);
 
     if (backgroundGLTile)
         glFuncs->glDeleteBuffers(1, &backgroundGLTile);

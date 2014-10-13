@@ -19,6 +19,8 @@ struct GLShaderProgram
         vertexBuffer(0),
         vertexArray(0) {}
 
+    void cleanup(QOpenGLFunctions_3_2_Core *glFuncs);
+
     GLuint program;
 
     GLuint vertexBuffer;
