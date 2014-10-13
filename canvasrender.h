@@ -12,6 +12,19 @@
 #include "canvasundoevent.h"
 #include "strokecontext.h"
 
+struct GLShaderProgram
+{
+    GLShaderProgram() :
+        program(0),
+        vertexBuffer(0),
+        vertexArray(0) {}
+
+    GLuint program;
+
+    GLuint vertexBuffer;
+    GLuint vertexArray;
+};
+
 class CanvasContext;
 class CanvasRender
 {
@@ -21,21 +34,18 @@ public:
 
     QOpenGLFunctions_3_2_Core *glFuncs;
 
-    GLuint program;
-    GLuint locationTileOrigin;
-    GLuint locationTileSize;
-    GLuint locationTileImage;
-    GLuint locationTilePixels;
-    GLuint locationTileBinSize;
+    struct : GLShaderProgram {
+        GLuint tileOrigin;
+        GLuint tileSize;
+        GLuint tileImage;
+        GLuint tilePixels;
+        GLuint binSize;
+    } tileShader;
 
-    GLuint vertexBuffer;
-    GLuint vertexArray;
-
-    GLuint cursorProgram;
-    GLuint cursorProgramDimensions;
-    GLuint cursorProgramPixelRadius;
-    GLuint cursorVertexBuffer;
-    GLuint cursorVertexArray;
+    struct : GLShaderProgram {
+        GLuint dimensions;
+        GLuint pixelRadius;
+    } cursorShader;
 
     GLuint backbufferFramebuffer;
     GLuint backbufferRenderbuffer;

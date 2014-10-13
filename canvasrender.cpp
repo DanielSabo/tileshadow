@@ -15,9 +15,6 @@
 
 CanvasRender::CanvasRender() :
     glFuncs(new QOpenGLFunctions_3_2_Core()),
-    program(0),
-    cursorProgram(0),
-    vertexBuffer(0),
     backgroundGLTile(0)
 {
     if (!glFuncs->initializeOpenGLFunctions())
@@ -37,26 +34,26 @@ CanvasRender::CanvasRender() :
     /* Set up canvas tile data & shaders */
     GLuint vertexShader = compileGLShaderFile(glFuncs, ":/CanvasShader.vert", GL_VERTEX_SHADER);
     GLuint fragmentShader = compileGLShaderFile(glFuncs, ":/CanvasShader.frag", GL_FRAGMENT_SHADER);
-    program = buildGLProgram(glFuncs, vertexShader, fragmentShader);
+    tileShader.program = buildGLProgram(glFuncs, vertexShader, fragmentShader);
 
     if (vertexShader)
         glFuncs->glDeleteShader(vertexShader);
     if (fragmentShader)
         glFuncs->glDeleteShader(fragmentShader);
 
-    if (program)
+    if (tileShader.program)
     {
-        locationTileOrigin  = glFuncs->glGetUniformLocation(program, "tileOrigin");
-        locationTileSize    = glFuncs->glGetUniformLocation(program, "tileSize");
-        locationTileImage   = glFuncs->glGetUniformLocation(program, "tileImage");
-        locationTilePixels  = glFuncs->glGetUniformLocation(program, "tilePixels");
-        locationTileBinSize = glFuncs->glGetUniformLocation(program, "binSize");
+        tileShader.tileOrigin = glFuncs->glGetUniformLocation(tileShader.program, "tileOrigin");
+        tileShader.tileSize   = glFuncs->glGetUniformLocation(tileShader.program, "tileSize");
+        tileShader.tileImage  = glFuncs->glGetUniformLocation(tileShader.program, "tileImage");
+        tileShader.tilePixels = glFuncs->glGetUniformLocation(tileShader.program, "tilePixels");
+        tileShader.binSize    = glFuncs->glGetUniformLocation(tileShader.program, "binSize");
     }
 
-    glFuncs->glGenBuffers(1, &vertexBuffer);
-    glFuncs->glGenVertexArrays(1, &vertexArray);
-    glFuncs->glBindVertexArray(vertexArray);
-    glFuncs->glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+    glFuncs->glGenBuffers(1, &tileShader.vertexBuffer);
+    glFuncs->glGenVertexArrays(1, &tileShader.vertexArray);
+    glFuncs->glBindVertexArray(tileShader.vertexArray);
+    glFuncs->glBindBuffer(GL_ARRAY_BUFFER, tileShader.vertexBuffer);
 
     float positionData[] = {
         0.0f, 0.0f,
@@ -71,14 +68,19 @@ CanvasRender::CanvasRender() :
     glFuncs->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 
     /* Set up cursor data & shaders */
-    GLuint cursorVert = compileGLShaderFile(glFuncs, ":/CursorCircle.vert", GL_VERTEX_SHADER);
-    GLuint cursorFrag = compileGLShaderFile(glFuncs, ":/CursorCircle.frag", GL_FRAGMENT_SHADER);
-    cursorProgram = buildGLProgram(glFuncs, cursorVert, cursorFrag);
+    vertexShader = compileGLShaderFile(glFuncs, ":/CursorCircle.vert", GL_VERTEX_SHADER);
+    fragmentShader = compileGLShaderFile(glFuncs, ":/CursorCircle.frag", GL_FRAGMENT_SHADER);
+    cursorShader.program = buildGLProgram(glFuncs, vertexShader, fragmentShader);
 
-    if (cursorProgram)
+    if (vertexShader)
+        glFuncs->glDeleteShader(vertexShader);
+    if (fragmentShader)
+        glFuncs->glDeleteShader(fragmentShader);
+
+    if (cursorShader.program)
     {
-        cursorProgramDimensions = glFuncs->glGetUniformLocation(cursorProgram, "dimensions");
-        cursorProgramPixelRadius = glFuncs->glGetUniformLocation(cursorProgram, "pixelRadius");
+        cursorShader.dimensions = glFuncs->glGetUniformLocation(cursorShader.program, "dimensions");
+        cursorShader.pixelRadius = glFuncs->glGetUniformLocation(cursorShader.program, "pixelRadius");
     }
 
     float cursorVertData[] = {
@@ -88,20 +90,15 @@ CanvasRender::CanvasRender() :
         -1.0f, 1.0f,
     };
 
-    glFuncs->glGenBuffers(1, &cursorVertexBuffer);
-    glFuncs->glGenVertexArrays(1, &cursorVertexArray);
-    glFuncs->glBindVertexArray(cursorVertexArray);
-    glFuncs->glBindBuffer(GL_ARRAY_BUFFER, cursorVertexBuffer);
+    glFuncs->glGenBuffers(1, &cursorShader.vertexBuffer);
+    glFuncs->glGenVertexArrays(1, &cursorShader.vertexArray);
+    glFuncs->glBindVertexArray(cursorShader.vertexArray);
+    glFuncs->glBindBuffer(GL_ARRAY_BUFFER, cursorShader.vertexBuffer);
 
     glFuncs->glBufferData(GL_ARRAY_BUFFER, sizeof(cursorVertData), cursorVertData, GL_STATIC_DRAW);
 
     glFuncs->glEnableVertexAttribArray(0);
     glFuncs->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-    if (cursorVert)
-        glFuncs->glDeleteShader(cursorVert);
-    if (cursorFrag)
-        glFuncs->glDeleteShader(cursorFrag);
 
     glFuncs->glGenFramebuffers(1, &backbufferFramebuffer);
     glFuncs->glGenRenderbuffers(1, &backbufferRenderbuffer);
@@ -111,23 +108,23 @@ CanvasRender::~CanvasRender()
 {
     clearTiles();
 
-    if (vertexBuffer)
-        glFuncs->glDeleteBuffers(1, &vertexBuffer);
+    if (tileShader.vertexBuffer)
+        glFuncs->glDeleteBuffers(1, &tileShader.vertexBuffer);
 
-    if (vertexArray)
-        glFuncs->glDeleteVertexArrays(1, &vertexArray);
+    if (tileShader.vertexArray)
+        glFuncs->glDeleteVertexArrays(1, &tileShader.vertexArray);
 
-    if (program)
-        glFuncs->glDeleteProgram(program);
+    if (tileShader.program)
+        glFuncs->glDeleteProgram(tileShader.program);
 
-    if (cursorProgram)
-        glFuncs->glDeleteProgram(cursorProgram);
+    if (cursorShader.program)
+        glFuncs->glDeleteProgram(cursorShader.program);
 
-    if (cursorVertexBuffer)
-        glFuncs->glDeleteBuffers(1, &cursorVertexBuffer);
+    if (cursorShader.vertexBuffer)
+        glFuncs->glDeleteBuffers(1, &cursorShader.vertexBuffer);
 
-    if (cursorVertexArray)
-        glFuncs->glDeleteVertexArrays(1, &cursorVertexArray);
+    if (cursorShader.vertexArray)
+        glFuncs->glDeleteVertexArrays(1, &cursorShader.vertexArray);
 
     if (backgroundGLTile)
         glFuncs->glDeleteBuffers(1, &backgroundGLTile);

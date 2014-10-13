@@ -247,14 +247,16 @@ void CanvasWidget::paintGL()
 
     int zoomFactor = viewScale >= 1.0f ? 1 : 1 / viewScale;
 
-    glFuncs->glUseProgram(render->program);
+    auto const &tileShader = render->tileShader;
+
+    glFuncs->glUseProgram(tileShader.program);
 
     glFuncs->glActiveTexture(GL_TEXTURE0);
-    glFuncs->glUniform1i(render->locationTileImage, 0);
-    glFuncs->glUniform2f(render->locationTileSize, worldTileWidth, worldTileHeight);
-    glFuncs->glUniform2f(render->locationTilePixels, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT);
-    glFuncs->glUniform1i(render->locationTileBinSize, zoomFactor);
-    glFuncs->glBindVertexArray(render->vertexArray);
+    glFuncs->glUniform1i(tileShader.tileImage, 0);
+    glFuncs->glUniform2f(tileShader.tileSize, worldTileWidth, worldTileHeight);
+    glFuncs->glUniform2f(tileShader.tilePixels, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT);
+    glFuncs->glUniform1i(tileShader.binSize, zoomFactor);
+    glFuncs->glBindVertexArray(tileShader.vertexArray);
 
     auto drawOneTile = [&](int ix, int iy) {
         float offsetX = ix * worldTileWidth + worldOriginX;
@@ -262,7 +264,7 @@ void CanvasWidget::paintGL()
 
         GLuint tileBuffer = render->getGLBuf(ix, iy);
         glFuncs->glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA8, tileBuffer);
-        glFuncs->glUniform2f(render->locationTileOrigin, offsetX, offsetY);
+        glFuncs->glUniform2f(tileShader.tileOrigin, offsetX, offsetY);
         glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
     };
@@ -297,13 +299,13 @@ void CanvasWidget::paintGL()
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         QPoint cursorPos = mapFromGlobal(QCursor::pos());
-        glFuncs->glUseProgram(render->cursorProgram);
-        glFuncs->glUniform4f(render->cursorProgramDimensions,
+        glFuncs->glUseProgram(render->cursorShader.program);
+        glFuncs->glUniform4f(render->cursorShader.dimensions,
                              (float(cursorPos.x()) / widgetWidth * 2.0f) - 1.0f,
                              1.0f - (float(cursorPos.y()) / widgetHeight * 2.0f),
                              toolSize / widgetWidth, toolSize / widgetHeight);
-        glFuncs->glUniform1f(render->cursorProgramPixelRadius, toolSize / 2.0f);
-        glFuncs->glBindVertexArray(render->cursorVertexArray);
+        glFuncs->glUniform1f(render->cursorShader.pixelRadius, toolSize / 2.0f);
+        glFuncs->glBindVertexArray(render->cursorShader.vertexArray);
         glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         glDisable(GL_BLEND);
     }
