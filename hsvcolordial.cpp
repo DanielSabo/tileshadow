@@ -204,15 +204,15 @@ void HSVColorDial::paintEvent(QPaintEvent *event)
         painter.drawLine(p1, p2);
     }
     { /* Selected saturation, value */
-        float yFactor = 1.0f - powf(d->v, BOX_VALUE_FACTOR);
-        float xFactor = 1.0f - powf(d->s, BOX_VALUE_FACTOR);
+        float yFactor = 1.0f - powf(d->v, 1.0 / BOX_VALUE_FACTOR);
+        float xFactor = 1.0f - powf(d->s, 1.0 / BOX_VALUE_FACTOR);
         const int SELECT_CIRCLE_RADIUS = 3;
 
-        QPoint selectedPoint = QPoint(xFactor * d->boxRect.width(), yFactor * d->boxRect.height()) + d->boxRect.topLeft();
-        QRect selectedBox = QRect(selectedPoint.x() - SELECT_CIRCLE_RADIUS + dialOffsetX,
-                                  selectedPoint.y() - SELECT_CIRCLE_RADIUS,
-                                  SELECT_CIRCLE_RADIUS * 2,
-                                  SELECT_CIRCLE_RADIUS * 2);
+        QPoint selectedPoint = QPoint(round(xFactor * d->boxRect.width()), round(yFactor * d->boxRect.height())) + d->boxRect.topLeft();
+        QRect selectedBox = QRect(selectedPoint.x() - SELECT_CIRCLE_RADIUS - 1 + dialOffsetX,
+                                  selectedPoint.y() - SELECT_CIRCLE_RADIUS - 1,
+                                  SELECT_CIRCLE_RADIUS * 2 + 1,
+                                  SELECT_CIRCLE_RADIUS * 2 + 1);
 
         QPen pen;
 
@@ -250,10 +250,10 @@ void HSVColorDial::mouseMoveEvent(QMouseEvent *event)
     {
         float s = event->x() - dialOffsetX - d->boxRect.x();
         s = 1.0f - qBound(0.0f, s, float(d->boxRect.width())) / d->boxRect.width();
-        s = powf(s, 1.0 / BOX_VALUE_FACTOR);
+        s = powf(s, BOX_VALUE_FACTOR);
         float v = event->y() - d->boxRect.y();
         v = 1.0f - qBound(0.0f, v, float(d->boxRect.height())) / d->boxRect.height();
-        v = powf(v, 1.0 / BOX_VALUE_FACTOR);
+        v = powf(v, BOX_VALUE_FACTOR);
 
         d->s = s;
         d->v = v;
@@ -293,10 +293,10 @@ void HSVColorDial::mousePressEvent(QMouseEvent *event)
     {
         float s = event->x() - dialOffsetX - d->boxRect.x();
         s = 1.0f - qBound(0.0f, s, float(d->boxRect.width())) / d->boxRect.width();
-        s = powf(s, 1.0 / BOX_VALUE_FACTOR);
+        s = powf(s, BOX_VALUE_FACTOR);
         float v = event->y() - d->boxRect.y();
         v = 1.0f - qBound(0.0f, v, float(d->boxRect.height())) / d->boxRect.height();
-        v = powf(v, 1.0 / BOX_VALUE_FACTOR);
+        v = powf(v, BOX_VALUE_FACTOR);
 
         d->s = s;
         d->v = v;
