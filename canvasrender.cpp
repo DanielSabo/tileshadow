@@ -188,10 +188,16 @@ void CanvasRender::clearTiles()
     GLTileMap::iterator iter;
     for (iter = glTiles.begin(); iter != glTiles.end(); ++iter)
     {
-        GLuint tileBuffer = iter->second;
+        auto &ref = iter->second;
 
-        if (tileBuffer)
-            glFuncs->glDeleteBuffers(1, &tileBuffer);
+        if (ref.clBuf)
+        {
+            cl_int err = clReleaseMemObject(ref.clBuf);
+            check_cl_error(err);
+        }
+
+        if (ref.glBuf)
+            glFuncs->glDeleteBuffers(1, &ref.glBuf);
     }
     glTiles.clear();
 }
@@ -223,8 +229,8 @@ GLuint CanvasRender::getGLBuf(int x, int y)
 
     if (found != glTiles.end())
     {
-        if (found->second)
-            return found->second;
+        if (found->second.glBuf)
+            return found->second.glBuf;
         else
             return backgroundGLTile;
     }
@@ -234,9 +240,9 @@ GLuint CanvasRender::getGLBuf(int x, int y)
 
 void CanvasRender::renderTile(int x, int y, CanvasTile *tile)
 {
-    GLuint tileBuffer = glTiles[QPoint(x, y)];
+    auto &ref = glTiles[QPoint(x, y)];
 
-    if (!tileBuffer && tile)
+    if (!ref.glBuf && tile)
     {
         qDebug() << "renderTile can't render uninitialized tile" << x << y;
         return;
@@ -244,7 +250,7 @@ void CanvasRender::renderTile(int x, int y, CanvasTile *tile)
 
     if (!tile)
     {
-        if (tileBuffer)
+        if (ref.glBuf)
             qDebug() << "renderTile can't delete" << x << y;
 
         return;
@@ -254,36 +260,28 @@ void CanvasRender::renderTile(int x, int y, CanvasTile *tile)
     {
         cl_int err = CL_SUCCESS;
         cl_command_queue cmdQueue = SharedOpenCL::getSharedOpenCL()->cmdQueue;
-        cl_context context = SharedOpenCL::getSharedOpenCL()->ctx;
 
-        cl_mem output = clCreateFromGLBuffer(context,
-                                             CL_MEM_WRITE_ONLY,
-                                             tileBuffer,
-                                             &err);
-
-        err = clEnqueueAcquireGLObjects(cmdQueue, 1, &output, 0, nullptr, nullptr);
+        err = clEnqueueAcquireGLObjects(cmdQueue, 1, &ref.clBuf, 0, nullptr, nullptr);
 
         cl_mem input = tile->unmapHost();
 
         cl_kernel kernel = SharedOpenCL::getSharedOpenCL()->floatToU8;
 
         err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&input);
-        err = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&output);
+        err = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&ref.clBuf);
 
         size_t workSize = TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT;
 
-        err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
+        err = clEnqueueNDRangeKernel(cmdQueue,
                                      kernel, 1,
                                      nullptr, &workSize, nullptr,
                                      0, nullptr, nullptr);
 
-        err = clEnqueueReleaseGLObjects(cmdQueue, 1, &output, 0, nullptr, nullptr);
-
-        err = clReleaseMemObject(output);
+        err = clEnqueueReleaseGLObjects(cmdQueue, 1, &ref.clBuf, 0, nullptr, nullptr);
     }
     else
     {
-        glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, tileBuffer);
+        glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, ref.glBuf);
         GLubyte *dstData = (GLubyte *)glFuncs->glMapBuffer(GL_TEXTURE_BUFFER, GL_WRITE_ONLY);
         float *srcData = tile->mapHost();
         for (int i = 0; i < TILE_COMP_TOTAL; ++i)
@@ -297,31 +295,54 @@ void CanvasRender::ensureTiles(TileMap const &tiles)
     if (tiles.empty())
         return;
 
+    cl_context context = 0;
+    bool gl_sharing = SharedOpenCL::getSharedOpenCL()->gl_sharing;
+    if (gl_sharing)
+        context = SharedOpenCL::getSharedOpenCL()->ctx;
+
     for (auto &iter: tiles)
     {
-        GLuint &ref = glTiles[iter.first];
+        auto &ref = glTiles[iter.first];
 
         if (iter.second)
         {
-            if (!ref)
+            if (!ref.glBuf)
             {
-                glFuncs->glGenBuffers(1, &ref);
-                glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, ref);
+                glFuncs->glGenBuffers(1, &ref.glBuf);
+                glFuncs->glBindBuffer(GL_TEXTURE_BUFFER, ref.glBuf);
                 glFuncs->glBufferData(GL_TEXTURE_BUFFER,
                                       sizeof(GLubyte) * TILE_COMP_TOTAL,
                                       nullptr,
                                       GL_DYNAMIC_DRAW);
+
+                if (gl_sharing)
+                {
+                    cl_int err;
+                    ref.clBuf = clCreateFromGLBuffer(context,
+                                                     CL_MEM_WRITE_ONLY,
+                                                     ref.glBuf,
+                                                     &err);
+                    check_cl_error(err);
+                }
             }
         }
         else
         {
-            if (ref)
-                glFuncs->glDeleteBuffers(1, &ref);
-            ref = 0;
+            if (ref.glBuf)
+                glFuncs->glDeleteBuffers(1, &ref.glBuf);
+
+            if (ref.clBuf)
+            {
+                cl_int err = clReleaseMemObject(ref.clBuf);
+                check_cl_error(err);
+            }
+
+            ref.glBuf = 0;
+            ref.clBuf = 0;
         }
     }
 
-    if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
+    if (gl_sharing)
         glFinish();
 }
 

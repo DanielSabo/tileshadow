@@ -58,7 +58,12 @@ public:
     GLuint backbufferFramebuffer;
     GLuint backbufferRenderbuffer;
 
-    typedef std::map<QPoint, GLuint, _tilePointCompare> GLTileMap;
+    typedef struct {
+        GLuint glBuf;
+        cl_mem clBuf;
+    } RenderTile;
+
+    typedef std::map<QPoint, RenderTile, _tilePointCompare> GLTileMap;
 
     GLuint backgroundGLTile;
     GLTileMap glTiles;
