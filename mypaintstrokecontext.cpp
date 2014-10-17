@@ -206,9 +206,9 @@ __kernel void mypaint_color_query_part2(__global float4 *accum,
 */
 
     /* Part 1 */
-    err = clSetKernelArg(kernel1, 6, sizeof(cl_mem), (void *)&colorAccumulatorMem);
-    err = clSetKernelArg(kernel1, 7, sizeof(cl_int), (void *)&stride);
-    err = clSetKernelArg(kernel1, 8, sizeof(float),  (void *)&radius);
+    err = clSetKernelArg<cl_mem>(kernel1, 6, colorAccumulatorMem);
+    err = clSetKernelArg<cl_int>(kernel1, 7, stride);
+    err = clSetKernelArg<cl_float>(kernel1, 8, radius);
 
     cl_int row_count = 0;
 
@@ -236,12 +236,12 @@ __kernel void mypaint_color_query_part2(__global float4 *accum,
 
             cl_mem data = layer->clOpenTileAt(ix, iy);
 
-            err = clSetKernelArg(kernel1, 0, sizeof(cl_mem), (void *)&data);
-            err = clSetKernelArg(kernel1, 1, sizeof(float), (void *)&tileX);
-            err = clSetKernelArg(kernel1, 2, sizeof(float), (void *)&tileY);
-            err = clSetKernelArg(kernel1, 3, sizeof(cl_int), (void *)&offset);
-            err = clSetKernelArg(kernel1, 4, sizeof(cl_int), (void *)&width);
-            err = clSetKernelArg(kernel1, 5, sizeof(cl_int), (void *)&row_count);
+            err = clSetKernelArg<cl_mem>(kernel1, 0, data);
+            err = clSetKernelArg<cl_float>(kernel1, 1, tileX);
+            err = clSetKernelArg<cl_float>(kernel1, 2, tileY);
+            err = clSetKernelArg<cl_int>(kernel1, 3, offset);
+            err = clSetKernelArg<cl_int>(kernel1, 4, width);
+            err = clSetKernelArg<cl_int>(kernel1, 5, row_count);
             err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                          kernel1, 1,
                                          nullptr, global_work_size, local_work_size,
@@ -253,8 +253,8 @@ __kernel void mypaint_color_query_part2(__global float4 *accum,
     }
 
     size_t global_work_size[1] = {1};
-    err = clSetKernelArg(kernel2, 0, sizeof(cl_mem), (void *)&colorAccumulatorMem);
-    err = clSetKernelArg(kernel2, 1, sizeof(cl_int), (void *)&row_count);
+    err = clSetKernelArg<cl_mem>(kernel2, 0, colorAccumulatorMem);
+    err = clSetKernelArg<cl_int>(kernel2, 1, row_count);
     err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                  kernel2, 1,
                                  nullptr, global_work_size, nullptr,
@@ -351,7 +351,7 @@ static int drawDabFunction (MyPaintSurface *base_surface,
             };
         */
         // float color[4] = {color_r, color_g, color_b, color_a};
-        float color[4] = {color_r, color_g, color_b, opaque};
+        cl_float4 color = {color_r, color_g, color_b, opaque};
 
         float angle_rad = angle / 360 * 2 * M_PI;
         float sn = sinf(angle_rad);
@@ -359,16 +359,16 @@ static int drawDabFunction (MyPaintSurface *base_surface,
         float slope1 = -(1.0f / hardness - 1.0f);
         float slope2 = -(hardness / (1.0f - hardness));
 
-        err = clSetKernelArg(kernel, 2, sizeof(cl_int), (void *)&stride);
-        err = clSetKernelArg(kernel, 5, sizeof(float), (void *)&radius);
-        err = clSetKernelArg(kernel, 6, sizeof(float), (void *)&hardness);
-        err = clSetKernelArg(kernel, 7, sizeof(float), (void *)&aspect_ratio);
-        err = clSetKernelArg(kernel, 8, sizeof(float), (void *)&sn);
-        err = clSetKernelArg(kernel, 9, sizeof(float), (void *)&cs);
-        err = clSetKernelArg(kernel, 10, sizeof(float), (void *)&slope1);
-        err = clSetKernelArg(kernel, 11, sizeof(float), (void *)&slope2);
-        err = clSetKernelArg(kernel, 12, sizeof(float), (void *)&color_a);
-        err = clSetKernelArg(kernel, 13, sizeof(cl_float4), (void *)&color);
+        err = clSetKernelArg<cl_int>(kernel, 2, stride);
+        err = clSetKernelArg<cl_float>(kernel, 5, radius);
+        err = clSetKernelArg<cl_float>(kernel, 6, hardness);
+        err = clSetKernelArg<cl_float>(kernel, 7, aspect_ratio);
+        err = clSetKernelArg<cl_float>(kernel, 8, sn);
+        err = clSetKernelArg<cl_float>(kernel, 9, cs);
+        err = clSetKernelArg<cl_float>(kernel, 10, slope1);
+        err = clSetKernelArg<cl_float>(kernel, 11, slope2);
+        err = clSetKernelArg<cl_float>(kernel, 12, color_a);
+        err = clSetKernelArg<cl_float4>(kernel, 13, color);
 
         for (int iy = iy_start; iy <= iy_end; ++iy)
         {
@@ -395,10 +395,10 @@ static int drawDabFunction (MyPaintSurface *base_surface,
                 surface->strokeContext->priv->modTiles.insert(QPoint(ix, iy));
                 cl_mem data = layer->clOpenTileAt(ix, iy);
 
-                err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&data);
-                err = clSetKernelArg(kernel, 1, sizeof(cl_int), (void *)&offset);
-                err = clSetKernelArg(kernel, 3, sizeof(float), (void *)&tileX);
-                err = clSetKernelArg(kernel, 4, sizeof(float), (void *)&tileY);
+                err = clSetKernelArg<cl_mem>(kernel, 0, data);
+                err = clSetKernelArg<cl_int>(kernel, 1, offset);
+                err = clSetKernelArg<cl_float>(kernel, 3, tileX);
+                err = clSetKernelArg<cl_float>(kernel, 4, tileY);
                 err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                              kernel, 2,
                                              nullptr, global_work_size, local_work_size,
