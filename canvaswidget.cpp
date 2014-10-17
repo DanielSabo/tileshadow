@@ -1203,7 +1203,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
     Q_D(CanvasWidget);
 
     QPointF pos = (event->localPos() + canvasOrigin) / viewScale;
-    float pressure = 1.0f;
+    float pressure = 0.5f;
     ulong timestamp = event->timestamp();
     bool wasTablet = false;
     Qt::MouseButton button = event->button();
@@ -1313,7 +1313,7 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
         QPointF pos = (event->localPos() + canvasOrigin) / viewScale;
         ulong newTimestamp = event->timestamp();
 
-        strokeTo(pos, 1.0f, float(newTimestamp) - d->strokeEventTimestamp);
+        strokeTo(pos, 0.5f, float(newTimestamp) - d->strokeEventTimestamp);
 
         d->strokeEventTimestamp = newTimestamp;
     }
