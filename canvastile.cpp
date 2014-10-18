@@ -105,10 +105,10 @@ void CanvasTile::fill(float r, float g, float b, float a)
     cl_kernel kernel = SharedOpenCL::getSharedOpenCL()->fillKernel;
     const size_t global_work_size[1] = {TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT};
 
-    float color[4] = {r, g, b, a};
+    cl_float4 color = {r, g, b, a};
 
-    clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&tileMem);
-    clSetKernelArg(kernel, 1, sizeof(cl_float4), (void *)&color);
+    clSetKernelArg<cl_mem>(kernel, 0, tileMem);
+    clSetKernelArg<cl_float4>(kernel, 1, color);
     clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                            kernel, 1,
                            nullptr, global_work_size, nullptr,
@@ -141,10 +141,10 @@ void CanvasTile::blendOnto(CanvasTile *target, BlendMode::Mode mode, float opaci
         break;
     }
 
-    clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&inMem);
-    clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&inMem);
-    clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&auxMem);
-    clSetKernelArg(kernel, 3, sizeof(cl_float), (void *)&opacity);
+    clSetKernelArg<cl_mem>(kernel, 0, inMem);
+    clSetKernelArg<cl_mem>(kernel, 1, inMem);
+    clSetKernelArg<cl_mem>(kernel, 2, auxMem);
+    clSetKernelArg<cl_float>(kernel, 3, opacity);
     clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                            kernel,
                            1, nullptr, global_work_size, nullptr,

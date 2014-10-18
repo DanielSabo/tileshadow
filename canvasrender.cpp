@@ -267,8 +267,8 @@ void CanvasRender::renderTile(int x, int y, CanvasTile *tile)
 
         cl_kernel kernel = SharedOpenCL::getSharedOpenCL()->floatToU8;
 
-        err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&input);
-        err = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&ref.clBuf);
+        err = clSetKernelArg<cl_mem>(kernel, 0, input);
+        err = clSetKernelArg<cl_mem>(kernel, 1, ref.clBuf);
 
         size_t workSize = TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT;
 
