@@ -17,6 +17,11 @@ void _check_cl_error(const char *file, int line, cl_int err);
 #define CL_DIM2(a, b) {(size_t)(a), (size_t)(b)}
 #define CL_DIM3(a, b, c) {(size_t)(a), (size_t)(b), (size_t)(c)}
 
+template <typename T> static inline cl_int clSetKernelArg(cl_kernel kernel, cl_uint idx, T const &value)
+{
+    return clSetKernelArg(kernel, idx, sizeof(T), &value);
+}
+
 class OpenCLDeviceInfo
 {
 public:
