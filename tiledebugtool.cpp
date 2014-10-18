@@ -43,19 +43,19 @@ void TileDebugStrokeContext::drawDab(QPointF point, TileSet &modTiles)
     cl_int err = CL_SUCCESS;
     cl_int stride = TILE_PIXEL_WIDTH;
 
-    err = clSetKernelArg(kernel, 1, sizeof(cl_int), (void *)&stride);
-    err = clSetKernelArg(kernel, 4, sizeof(cl_float), (void *)&floatRadius);
+    err = clSetKernelArg<cl_int>(kernel, 1, stride);
+    err = clSetKernelArg<cl_float>(kernel, 4, floatRadius);
 
     for (int iy = iy_start; iy <= iy_end; ++iy)
     {
         for (int ix = ix_start; ix <= ix_end; ++ix)
         {
-            float pixel[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+            cl_float4 pixel = {1.0f, 1.0f, 1.0f, 1.0f};
 
             int index = (ix + iy) % 3;
             if (index < 0)
                 index = (3 + index) % 3;
-            pixel[index] = 0.0f;
+            pixel.s[index] = 0.0f;
 
             cl_int offsetX = point.x() - (ix * TILE_PIXEL_WIDTH);
             cl_int offsetY = point.y() - (iy * TILE_PIXEL_HEIGHT);
@@ -63,10 +63,10 @@ void TileDebugStrokeContext::drawDab(QPointF point, TileSet &modTiles)
 
             modTiles.insert(QPoint(ix, iy));
 
-            err = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&data);
-            err = clSetKernelArg(kernel, 2, sizeof(cl_int), (void *)&offsetX);
-            err = clSetKernelArg(kernel, 3, sizeof(cl_int), (void *)&offsetY);
-            err = clSetKernelArg(kernel, 5, sizeof(cl_float4), (void *)&pixel);
+            err = clSetKernelArg<cl_mem>(kernel, 0, data);
+            err = clSetKernelArg<cl_int>(kernel, 2, offsetX);
+            err = clSetKernelArg<cl_int>(kernel, 3, offsetY);
+            err = clSetKernelArg<cl_float4>(kernel, 5, pixel);
             err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                          kernel, 2,
                                          nullptr, global_work_size, nullptr,

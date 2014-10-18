@@ -87,7 +87,7 @@ void RoundBrushStrokeContext::drawDab(QPointF point, float pressure, TileSet &mo
     cl_kernel circleKernel = SharedOpenCL::getSharedOpenCL()->paintKernel_maskCircle;
     cl_kernel fillKernel = SharedOpenCL::getSharedOpenCL()->paintKernel_fillFloats;
 
-    clSetKernelArg(circleKernel, 3, sizeof(cl_float), (void *)&mapped_radius);
+    clSetKernelArg<cl_float>(circleKernel, 3, mapped_radius);
 
     for (int iy = iy_start; iy <= iy_end; ++iy)
     {
@@ -106,8 +106,8 @@ void RoundBrushStrokeContext::drawDab(QPointF point, float pressure, TileSet &mo
                                          maskComps * sizeof(float), nullptr, nullptr);
                 float value = 0;
 
-                clSetKernelArg(fillKernel, 0, sizeof(cl_mem), (void *)&drawMem);
-                clSetKernelArg(fillKernel, 1, sizeof(float), (void *)&value);
+                clSetKernelArg<cl_mem>(fillKernel, 0, drawMem);
+                clSetKernelArg<float>(fillKernel, 1, value);
                 clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                        fillKernel, 1,
                                        nullptr, &maskComps, nullptr,
@@ -116,12 +116,10 @@ void RoundBrushStrokeContext::drawDab(QPointF point, float pressure, TileSet &mo
 
             modTiles.insert(QPoint(ix, iy));
 
-            cl_float floatAlpha = mapped_alpha;
-
-            clSetKernelArg(circleKernel, 0, sizeof(cl_mem), (void *)&drawMem);
-            clSetKernelArg(circleKernel, 1, sizeof(cl_int), (void *)&offsetX);
-            clSetKernelArg(circleKernel, 2, sizeof(cl_int), (void *)&offsetY);
-            clSetKernelArg(circleKernel, 4, sizeof(cl_float), (void *)&floatAlpha);
+            clSetKernelArg<cl_mem>(circleKernel, 0, drawMem);
+            clSetKernelArg<cl_int>(circleKernel, 1, offsetX);
+            clSetKernelArg<cl_int>(circleKernel, 2, offsetY);
+            clSetKernelArg<cl_float>(circleKernel, 4, mapped_alpha);
             clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                    circleKernel, 2,
                                    nullptr, circleWorkSize, nullptr,
@@ -132,7 +130,7 @@ void RoundBrushStrokeContext::drawDab(QPointF point, float pressure, TileSet &mo
 
 void RoundBrushStrokeContext::applyLayer(const TileSet &modTiles)
 {
-    float pixel[4] = {r, g, b, 1.0f};
+    cl_float4 pixel = {r, g, b, 1.0f};
     const size_t blendWorkSize[1]  = {TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT};
     cl_kernel blendKernel = SharedOpenCL::getSharedOpenCL()->paintKernel_applyMaskTile;
 
@@ -148,10 +146,10 @@ void RoundBrushStrokeContext::applyLayer(const TileSet &modTiles)
         cl_mem srcMem = srcTile->unmapHost();
         cl_mem dstMem = dstTile->unmapHost();
 
-        clSetKernelArg(blendKernel, 0, sizeof(cl_mem), (void *)&dstMem);
-        clSetKernelArg(blendKernel, 1, sizeof(cl_mem), (void *)&srcMem);
-        clSetKernelArg(blendKernel, 2, sizeof(cl_mem), (void *)&drawMem);
-        clSetKernelArg(blendKernel, 3, sizeof(cl_float4), (void *)&pixel);
+        clSetKernelArg<cl_mem>(blendKernel, 0, dstMem);
+        clSetKernelArg<cl_mem>(blendKernel, 1, srcMem);
+        clSetKernelArg<cl_mem>(blendKernel, 2, drawMem);
+        clSetKernelArg<cl_float4>(blendKernel, 3, pixel);
         clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                blendKernel, 1,
                                nullptr, blendWorkSize, nullptr,
