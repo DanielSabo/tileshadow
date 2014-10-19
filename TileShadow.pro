@@ -120,8 +120,10 @@ OTHER_FILES += \
     CanvasShader.vert \
     BaseKernels.cl \
     MyPaintKernels.cl \
+    PaintKernels.cl \
     CursorCircle.frag \
-    CursorCircle.vert
+    CursorCircle.vert \
+    ColorDot.frag
 
 RESOURCES += \
     Resources.qrc
