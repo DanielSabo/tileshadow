@@ -5,8 +5,8 @@ __kernel void fillFloats(__global float *buf,
 }
 
 __kernel void maskCircle(__global float *buf,
-                                  int     x,
-                                  int     y,
+                                  float   x,
+                                  float   y,
                                   float   r,
                                   float   circle_alpha)
 {

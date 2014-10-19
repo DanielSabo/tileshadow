@@ -93,8 +93,8 @@ void RoundBrushStrokeContext::drawDab(QPointF point, float pressure, TileSet &mo
     {
         for (int ix = ix_start; ix <= ix_end; ++ix)
         {
-            cl_int offsetX = point.x() - (ix * TILE_PIXEL_WIDTH);
-            cl_int offsetY = point.y() - (iy * TILE_PIXEL_HEIGHT);
+            cl_float offsetX = point.x() - (ix * TILE_PIXEL_WIDTH);
+            cl_float offsetY = point.y() - (iy * TILE_PIXEL_HEIGHT);
 
             cl_mem &drawMem = drawTiles[QPoint(ix, iy)];
 
@@ -117,8 +117,8 @@ void RoundBrushStrokeContext::drawDab(QPointF point, float pressure, TileSet &mo
             modTiles.insert(QPoint(ix, iy));
 
             clSetKernelArg<cl_mem>(circleKernel, 0, drawMem);
-            clSetKernelArg<cl_int>(circleKernel, 1, offsetX);
-            clSetKernelArg<cl_int>(circleKernel, 2, offsetY);
+            clSetKernelArg<cl_float>(circleKernel, 1, offsetX);
+            clSetKernelArg<cl_float>(circleKernel, 2, offsetY);
             clSetKernelArg<cl_float>(circleKernel, 4, mapped_alpha);
             clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                    circleKernel, 2,
