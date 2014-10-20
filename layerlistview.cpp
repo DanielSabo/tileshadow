@@ -20,6 +20,10 @@ public:
     int focusRow;
     int focusColumn;
 
+    QFont unnamedItemFont;
+    QString unnamedItemText;
+    int unnamedItemWidth;
+
     QSize rowSize;
 
     QLineEdit *nameEditor;
@@ -44,6 +48,11 @@ LayerListView::LayerListView(QWidget *parent) :
     setFont(QApplication::font("QAbstractItemView"));
     setBackgroundRole(QPalette::Base);
     setAutoFillBackground(true);
+
+    d->unnamedItemFont = font();
+    d->unnamedItemFont.setItalic(true);
+    d->unnamedItemText = tr("Unnamed");
+    d->unnamedItemWidth = QFontMetrics(d->unnamedItemFont).boundingRect(d->unnamedItemText).width();
 
     visibleIcon = QIcon(":/icons/tileshadow-visible.png");
     visibleIcon.addFile(":/icons/tileshadow-visible.png", QSize(), QIcon::Normal, QIcon::On);
@@ -168,7 +177,17 @@ void LayerListView::paintEvent(QPaintEvent *event)
             painter.setPen(palette().color(QPalette::Inactive, QPalette::HighlightedText));
         else
             painter.setPen(palette().color(QPalette::Normal, QPalette::Text));
-        painter.drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, thing.name);
+
+        if (thing.name.isEmpty())
+        {
+            painter.setFont(d->unnamedItemFont);
+            painter.drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, d->unnamedItemText);
+        }
+        else
+        {
+            painter.drawText(textRect, Qt::AlignLeft | Qt::AlignVCenter, thing.name);
+        }
+
         painter.restore();
     }
 }
@@ -296,7 +315,7 @@ void LayerListView::recalulateSize()
 {
     Q_D(LayerListView);
 
-    int textWidth = 0;
+    int textWidth = d->unnamedItemWidth;
 
     for (CanvasWidget::LayerInfo const &thing: things)
     {
