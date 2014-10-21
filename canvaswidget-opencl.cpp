@@ -446,9 +446,10 @@ SharedOpenCL::SharedOpenCL()
     cmdQueue = clCreateCommandQueue (ctx, device, command_queue_flags, &err);
 
     /* Compile base kernels */
+    QString kernelDefs = QStringLiteral("-cl-denorms-are-zero -cl-no-signed-zeros");
+            kernelDefs += QString(" -DTILE_PIXEL_WIDTH=%1").arg((size_t)TILE_PIXEL_WIDTH);
 
-    cl_program baseKernelProg = compileFile(this, ":/BaseKernels.cl");
-
+    cl_program baseKernelProg = compileFile(this, ":/BaseKernels.cl", kernelDefs);
     if (baseKernelProg)
     {
         circleKernel = buildOrWarn(baseKernelProg, "circle");
@@ -463,7 +464,7 @@ SharedOpenCL::SharedOpenCL()
         clReleaseProgram (baseKernelProg);
     }
 
-    cl_program myPaintKernelsProg = compileFile(this, ":/MyPaintKernels.cl");
+    cl_program myPaintKernelsProg = compileFile(this, ":/MyPaintKernels.cl", kernelDefs);
     if (myPaintKernelsProg)
     {
         mypaintDabKernel = buildOrWarn(myPaintKernelsProg, "mypaint_dab");
@@ -473,8 +474,6 @@ SharedOpenCL::SharedOpenCL()
 
         clReleaseProgram (myPaintKernelsProg);
     }
-
-    QString kernelDefs = QString("-DTILE_PIXEL_WIDTH=%1").arg((size_t)TILE_PIXEL_WIDTH);
 
     cl_program paintKernelsProg = compileFile(this, ":/PaintKernels.cl", kernelDefs);
     if (paintKernelsProg)
