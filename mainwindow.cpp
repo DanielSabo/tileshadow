@@ -25,6 +25,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    statusBarLabel = new QLabel();
+    ui->statusBar->addWidget(statusBarLabel);
 
     canvas = ui->mainCanvas;
 
@@ -113,6 +115,7 @@ void MainWindow::showStatusBar(bool show)
         ui->statusBar->show();
     else
         ui->statusBar->hide();
+    statusBarLabel->setText("");
 }
 
 void MainWindow::updateStatus()
@@ -132,7 +135,7 @@ void MainWindow::updateStatus()
 
     message += " Tiles: " + QString::number(deviceAllocated) + "MB + " + QString::number(allocated) + "MB";
 
-    ui->statusBar->showMessage(message);
+    statusBarLabel->setText(message);
 }
 
 void MainWindow::updateTool()

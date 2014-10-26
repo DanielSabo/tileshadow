@@ -30,6 +30,7 @@ private:
     QScopedPointer<SystemInfoDialog> infoWindow;
     QScopedPointer<BenchmarkDialog> benchmarkWindow;
     CanvasWidget *canvas;
+    QLabel *statusBarLabel;
 
     void updateTitle();
     void updateStatus();
