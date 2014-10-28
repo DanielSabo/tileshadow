@@ -212,7 +212,8 @@ void CanvasWidget::paintGL()
     QOpenGLFunctions_3_2_Core *glFuncs = render->glFuncs;
 
     frameRate.addEvents(1);
-    emit updateStats();
+    // Emit updateStats() outside of the paintEvent
+    QMetaObject::invokeMethod(this, "updateStats", Qt::QueuedConnection);
 
     TileMap renderTiles;
     TileSet tilesToDraw;
