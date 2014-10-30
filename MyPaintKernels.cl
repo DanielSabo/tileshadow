@@ -58,7 +58,6 @@ __kernel void mypaint_color_query_part1(__global float4 *buf,
                                                  int     width,
                                                  int     accum_offset,
                                         __global float4 *accum,
-                                                 int     stride,
                                                  float   radius)
 {
   /* The real mypaint function renders a dab with these constants
@@ -83,7 +82,7 @@ __kernel void mypaint_color_query_part1(__global float4 *buf,
       float xx = (ix - x);
       float yy = (gidy - y);
       float pixel_weight = color_query_weight (xx, yy, radius);
-      float4 pixel = buf[ix + gidy * stride + offset];
+      float4 pixel = buf[ix + gidy * TILE_PIXEL_WIDTH + offset];
 
       total_accum  += pixel * (float4)(pixel.s333, 1.0f) * pixel_weight;
       total_weight += pixel_weight;
@@ -114,7 +113,6 @@ __kernel void mypaint_color_query_part2(__global float4 *accum,
 /* FIXME: OpenCL may not support more than 8 args, need to combine some things */
 __kernel void mypaint_dab(__global float4 *buf,
                                    int     offset,
-                                   int     stride,
                                    float   x,
                                    float   y,
                                    float   radius,
@@ -143,7 +141,7 @@ __kernel void mypaint_dab(__global float4 *buf,
 
   if (alpha > 0.0f)
     {
-      const int idx = gidx + gidy * stride + offset;
+      const int idx = gidx + gidy * TILE_PIXEL_WIDTH + offset;
       float4 pixel = buf[idx];
       
       alpha = alpha * color.s3;
@@ -162,7 +160,6 @@ __kernel void mypaint_dab(__global float4 *buf,
 
 __kernel void mypaint_dab_locked(__global float4 *buf,
                                           int     offset,
-                                          int     stride,
                                           float   x,
                                           float   y,
                                           float   radius,
@@ -191,7 +188,7 @@ __kernel void mypaint_dab_locked(__global float4 *buf,
 
   if (alpha > 0.0f)
     {
-      const int idx = gidx + gidy * stride + offset;
+      const int idx = gidx + gidy * TILE_PIXEL_WIDTH + offset;
       float4 pixel = buf[idx];
 
       if (pixel.s3)

@@ -187,28 +187,10 @@ static void getColorFunction (MyPaintSurface *base_surface,
                                           2 * TILE_PIXEL_HEIGHT * sizeof(cl_float4) * tile_count, nullptr, nullptr);
 
     cl_int err = CL_SUCCESS;
-    cl_int stride = TILE_PIXEL_WIDTH;
-
-/*
-__kernel void mypaint_color_query_part1(__global float4 *buf,
-                                                  float   x,
-                                                  float   y,
-                                                  int     offset,
-                                                  int     width,
-                                                  int     height,
-                                         __global float4 *accum,
-                                                  int     stride,
-                                                  float   radius)
-
-__kernel void mypaint_color_query_part2(__global float4 *accum,
-                                                 int     count)
-{
-*/
 
     /* Part 1 */
     err = clSetKernelArg<cl_mem>(kernel1, 6, colorAccumulatorMem);
-    err = clSetKernelArg<cl_int>(kernel1, 7, stride);
-    err = clSetKernelArg<cl_float>(kernel1, 8, radius);
+    err = clSetKernelArg<cl_float>(kernel1, 7, radius);
 
     cl_int row_count = 0;
 
@@ -229,7 +211,7 @@ __kernel void mypaint_color_query_part2(__global float4 *accum,
 
             cl_int width = TILE_PIXEL_WIDTH - offsetX - extraX;
             cl_int height = TILE_PIXEL_HEIGHT - offsetY - extraY;
-            cl_int offset = offsetX + offsetY * stride;
+            cl_int offset = offsetX + offsetY * TILE_PIXEL_WIDTH;
 
             size_t global_work_size[1] = CL_DIM1(height);
             size_t local_work_size[1] = CL_DIM1(1);
@@ -342,7 +324,6 @@ static int drawDabFunction (MyPaintSurface *base_surface,
             kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabKernel;
 
         cl_int err = CL_SUCCESS;
-        cl_int stride = TILE_PIXEL_WIDTH;
         /*
         float segments[4] =
             {
@@ -359,16 +340,15 @@ static int drawDabFunction (MyPaintSurface *base_surface,
         float slope1 = -(1.0f / hardness - 1.0f);
         float slope2 = -(hardness / (1.0f - hardness));
 
-        err = clSetKernelArg<cl_int>(kernel, 2, stride);
-        err = clSetKernelArg<cl_float>(kernel, 5, radius);
-        err = clSetKernelArg<cl_float>(kernel, 6, hardness);
-        err = clSetKernelArg<cl_float>(kernel, 7, aspect_ratio);
-        err = clSetKernelArg<cl_float>(kernel, 8, sn);
-        err = clSetKernelArg<cl_float>(kernel, 9, cs);
-        err = clSetKernelArg<cl_float>(kernel, 10, slope1);
-        err = clSetKernelArg<cl_float>(kernel, 11, slope2);
-        err = clSetKernelArg<cl_float>(kernel, 12, color_a);
-        err = clSetKernelArg<cl_float4>(kernel, 13, color);
+        err = clSetKernelArg<cl_float>(kernel, 4, radius);
+        err = clSetKernelArg<cl_float>(kernel, 5, hardness);
+        err = clSetKernelArg<cl_float>(kernel, 6, aspect_ratio);
+        err = clSetKernelArg<cl_float>(kernel, 7, sn);
+        err = clSetKernelArg<cl_float>(kernel, 8, cs);
+        err = clSetKernelArg<cl_float>(kernel, 9, slope1);
+        err = clSetKernelArg<cl_float>(kernel, 10, slope2);
+        err = clSetKernelArg<cl_float>(kernel, 11, color_a);
+        err = clSetKernelArg<cl_float4>(kernel, 12, color);
 
         for (int iy = iy_start; iy <= iy_end; ++iy)
         {
@@ -387,7 +367,7 @@ static int drawDabFunction (MyPaintSurface *base_surface,
 
                 int width = TILE_PIXEL_WIDTH - offsetX - extraX;
                 int height = TILE_PIXEL_HEIGHT - offsetY - extraY;
-                cl_int offset = offsetX + offsetY * stride;
+                cl_int offset = offsetX + offsetY * TILE_PIXEL_WIDTH;
 
                 size_t global_work_size[2] = CL_DIM2(width, height);
                 size_t local_work_size[2] = CL_DIM2(width, 1);
@@ -397,8 +377,8 @@ static int drawDabFunction (MyPaintSurface *base_surface,
 
                 err = clSetKernelArg<cl_mem>(kernel, 0, data);
                 err = clSetKernelArg<cl_int>(kernel, 1, offset);
-                err = clSetKernelArg<cl_float>(kernel, 3, tileX);
-                err = clSetKernelArg<cl_float>(kernel, 4, tileY);
+                err = clSetKernelArg<cl_float>(kernel, 2, tileX);
+                err = clSetKernelArg<cl_float>(kernel, 3, tileY);
                 err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
                                              kernel, 2,
                                              nullptr, global_work_size, local_work_size,
