@@ -1,1 +1,197 @@
-{"comment": "Default brush", "version": 3, "settings": {"tracking_noise": {"inputs": {}, "base_value": 0.0}, "speed2_gamma": {"inputs": {}, "base_value": 4.0}, "speed2_slowness": {"inputs": {}, "base_value": 0.8}, "pressure_gain_log": {"inputs": {}, "base_value": 0.0}, "stroke_holdtime": {"inputs": {}, "base_value": 0.0}, "stroke_duration_logarithmic": {"inputs": {}, "base_value": 4.0}, "slow_tracking": {"inputs": {}, "base_value": 0.0}, "change_color_v": {"inputs": {}, "base_value": 0.0}, "elliptical_dab_ratio": {"inputs": {}, "base_value": 1.0}, "change_color_h": {"inputs": {}, "base_value": 0.0}, "change_color_l": {"inputs": {}, "base_value": 0.0}, "offset_by_speed_slowness": {"inputs": {}, "base_value": 1.0}, "speed1_gamma": {"inputs": {}, "base_value": 4.0}, "slow_tracking_per_dab": {"inputs": {}, "base_value": 0.0}, "colorize": {"inputs": {}, "base_value": 0.0}, "dabs_per_basic_radius": {"inputs": {}, "base_value": 0.0}, "opaque": {"inputs": {}, "base_value": 1.0}, "color_s": {"inputs": {}, "base_value": 0.0}, "opaque_multiply": {"inputs": {"pressure": [[0.0, 0.0], [1.0, 1.0]]}, "base_value": 0.0}, "elliptical_dab_angle": {"inputs": {}, "base_value": 90.0}, "lock_alpha": {"inputs": {}, "base_value": 0.0}, "snap_to_pixel": {"inputs": {}, "base_value": 0.0}, "eraser": {"inputs": {}, "base_value": 0.0}, "opaque_linearize": {"inputs": {}, "base_value": 0.9}, "stroke_threshold": {"inputs": {}, "base_value": 0.0}, "color_h": {"inputs": {}, "base_value": 0.0}, "smudge_radius_log": {"inputs": {}, "base_value": 0.0}, "speed1_slowness": {"inputs": {}, "base_value": 0.04}, "smudge": {"inputs": {}, "base_value": 0.0}, "change_color_hsv_s": {"inputs": {}, "base_value": 0.0}, "radius_by_random": {"inputs": {}, "base_value": 0.0}, "dabs_per_second": {"inputs": {}, "base_value": 0.0}, "color_v": {"inputs": {}, "base_value": 0.0}, "custom_input": {"inputs": {}, "base_value": 0.0}, "hardness": {"inputs": {}, "base_value": 0.8}, "restore_color": {"inputs": {}, "base_value": 0.0}, "smudge_length": {"inputs": {}, "base_value": 0.5}, "radius_logarithmic": {"inputs": {}, "base_value": 2.0}, "change_color_hsl_s": {"inputs": {}, "base_value": 0.0}, "custom_input_slowness": {"inputs": {}, "base_value": 0.0}, "offset_by_speed": {"inputs": {}, "base_value": 0.0}, "dabs_per_actual_radius": {"inputs": {}, "base_value": 2.0}, "offset_by_random": {"inputs": {}, "base_value": 0.0}, "direction_filter": {"inputs": {}, "base_value": 2.0}, "anti_aliasing": {"inputs": {}, "base_value": 1.0}}}
+{
+  "comment": "Default brush",
+  "version": 3,
+  "settings": {
+    "tracking_noise": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "speed2_gamma": {
+      "inputs": {},
+      "base_value": 4.0
+    },
+    "speed2_slowness": {
+      "inputs": {},
+      "base_value": 0.8
+    },
+    "pressure_gain_log": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "stroke_holdtime": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "custom_input_slowness": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "slow_tracking": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "change_color_v": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "elliptical_dab_angle": {
+      "inputs": {},
+      "base_value": 90.0
+    },
+    "change_color_h": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "change_color_l": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "offset_by_speed_slowness": {
+      "inputs": {},
+      "base_value": 1.0
+    },
+    "stroke_threshold": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "slow_tracking_per_dab": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "colorize": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "dabs_per_basic_radius": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "opaque": {
+      "inputs": {},
+      "base_value": 1.0
+    },
+    "custom_input": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "opaque_multiply": {
+      "inputs": {
+        "pressure": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            1.0
+          ]
+        ]
+      },
+      "base_value": 0.0
+    },
+    "elliptical_dab_ratio": {
+      "inputs": {},
+      "base_value": 1.0
+    },
+    "lock_alpha": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "snap_to_pixel": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "eraser": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "restore_color": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "speed1_gamma": {
+      "inputs": {},
+      "base_value": 4.0
+    },
+    "color_h": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "smudge_radius_log": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "speed1_slowness": {
+      "inputs": {},
+      "base_value": 0.04
+    },
+    "smudge": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "change_color_hsv_s": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "radius_by_random": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "dabs_per_second": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "color_v": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "color_s": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "hardness": {
+      "inputs": {},
+      "base_value": 0.8
+    },
+    "opaque_linearize": {
+      "inputs": {},
+      "base_value": 0.9
+    },
+    "smudge_length": {
+      "inputs": {},
+      "base_value": 0.5
+    },
+    "radius_logarithmic": {
+      "inputs": {},
+      "base_value": 2.0
+    },
+    "direction_filter": {
+      "inputs": {},
+      "base_value": 2.0
+    },
+    "stroke_duration_logarithmic": {
+      "inputs": {},
+      "base_value": 4.0
+    },
+    "offset_by_speed": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "dabs_per_actual_radius": {
+      "inputs": {},
+      "base_value": 2.0
+    },
+    "offset_by_random": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "change_color_hsl_s": {
+      "inputs": {},
+      "base_value": 0.0
+    },
+    "anti_aliasing": {
+      "inputs": {},
+      "base_value": 1.0
+    }
+  }
+}
