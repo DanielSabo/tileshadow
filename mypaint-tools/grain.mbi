@@ -1,0 +1,253 @@
+{
+  "comment": "MyPaint brush file",
+  "group": "",
+  "image_settings": {
+    "masks": [
+      "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"
+    ]
+  },
+  "parent_brush_name": "",
+  "settings": {
+    "anti_aliasing": {
+      "base_value": 1.0,
+      "inputs": {}
+    },
+    "change_color_h": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "change_color_hsl_s": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "change_color_hsv_s": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "change_color_l": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "change_color_v": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "color_h": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "color_s": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "color_v": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "colorize": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "custom_input": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "custom_input_slowness": {
+      "base_value": 0.69,
+      "inputs": {}
+    },
+    "dabs_per_actual_radius": {
+      "base_value": 3.93,
+      "inputs": {}
+    },
+    "dabs_per_basic_radius": {
+      "base_value": 5.07,
+      "inputs": {}
+    },
+    "dabs_per_second": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "direction_filter": {
+      "base_value": 2.0,
+      "inputs": {}
+    },
+    "elliptical_dab_angle": {
+      "base_value": 0.0,
+      "inputs": {
+        "random": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            180.0
+          ]
+        ]
+      }
+    },
+    "elliptical_dab_ratio": {
+      "base_value": 1.0,
+      "inputs": {}
+    },
+    "eraser": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "hardness": {
+      "base_value": 1.0,
+      "inputs": {}
+    },
+    "lock_alpha": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "offset_by_random": {
+      "base_value": 2.0,
+      "inputs": {
+        "pressure": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            -2.0
+          ]
+        ],
+        "speed1": [
+          [
+            0.0,
+            -0.25
+          ],
+          [
+            4.0,
+            1.75
+          ]
+        ],
+        "speed2": [
+          [
+            0.0,
+            -0.25
+          ],
+          [
+            4.0,
+            1.75
+          ]
+        ]
+      }
+    },
+    "offset_by_speed": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "offset_by_speed_slowness": {
+      "base_value": 1.0,
+      "inputs": {}
+    },
+    "opaque": {
+      "base_value": 0.2,
+      "inputs": {
+        "pressure": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            0.4
+          ]
+        ]
+      }
+    },
+    "opaque_linearize": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "opaque_multiply": {
+      "base_value": 0.0,
+      "inputs": {
+        "pressure": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            1.0
+          ]
+        ]
+      }
+    },
+    "radius_by_random": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "radius_logarithmic": {
+      "base_value": 0.58,
+      "inputs": {}
+    },
+    "restore_color": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "slow_tracking": {
+      "base_value": 2.0,
+      "inputs": {}
+    },
+    "slow_tracking_per_dab": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "smudge": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "smudge_length": {
+      "base_value": 0.5,
+      "inputs": {}
+    },
+    "smudge_radius_log": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "speed1_gamma": {
+      "base_value": 4.0,
+      "inputs": {}
+    },
+    "speed1_slowness": {
+      "base_value": 0.04,
+      "inputs": {}
+    },
+    "speed2_gamma": {
+      "base_value": 4.0,
+      "inputs": {}
+    },
+    "speed2_slowness": {
+      "base_value": 0.8,
+      "inputs": {}
+    },
+    "stroke_duration_logarithmic": {
+      "base_value": 4.0,
+      "inputs": {}
+    },
+    "stroke_holdtime": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "stroke_threshold": {
+      "base_value": 0.0,
+      "inputs": {}
+    },
+    "tracking_noise": {
+      "base_value": 0.0,
+      "inputs": {}
+    }
+  },
+  "version": 3
+}
