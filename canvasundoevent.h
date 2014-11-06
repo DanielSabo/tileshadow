@@ -3,12 +3,14 @@
 
 #include "canvasstack.h"
 #include "canvaslayer.h"
+#include "canvastile.h"
 
 class CanvasUndoEvent
 {
 public:
     CanvasUndoEvent();
     virtual ~CanvasUndoEvent();
+    virtual bool modifiesBackground();
     virtual TileSet apply(CanvasStack *stack, int *activeLayer) = 0;
 };
 
@@ -34,6 +36,16 @@ public:
 
     int currentLayer;
     QList<CanvasLayer *> layers;
+};
+
+class CanvasUndoBackground : public CanvasUndoEvent
+{
+public:
+    CanvasUndoBackground(CanvasStack *stack);
+    TileSet apply(CanvasStack *stack, int *activeLayer);
+    bool modifiesBackground();
+
+    std::unique_ptr<CanvasTile> tile;
 };
 
 #endif // CANVASUNDOEVENT_H

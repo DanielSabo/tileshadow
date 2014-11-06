@@ -1008,6 +1008,9 @@ void CanvasWidget::setBackgroundColor(const QColor &color)
     if (color.isValid())
     {
         CanvasContext *ctx = getContext();
+
+        ctx->addUndoEvent(new CanvasUndoBackground(&ctx->layers));
+
         ctx->layers.backgroundTile->fill(color.redF(), color.greenF(), color.blueF(), 1.0f);
         ctx->layers.backgroundTileCL->fill(color.redF(), color.greenF(), color.blueF(), 1.0f);
 
@@ -1021,6 +1024,8 @@ void CanvasWidget::setBackgroundColor(const QColor &color)
 
 void CanvasWidget::undo()
 {
+    Q_D(CanvasWidget);
+
     CanvasContext *ctx = getContext();
 
     if (ctx->undoHistory.empty())
@@ -1034,10 +1039,19 @@ void CanvasWidget::undo()
     ctx->inTransientOpacity = false; //FIXME: This should be implicit
     CanvasUndoEvent *undoEvent = ctx->undoHistory.first();
     ctx->undoHistory.removeFirst();
+    bool changedBackground = undoEvent->modifiesBackground();
     TileSet changedTiles = undoEvent->apply(&ctx->layers, &newActiveLayer);
+
     ctx->redoHistory.push_front(undoEvent);
 
-    if(!changedTiles.empty())
+    if (changedBackground)
+    {
+        render->updateBackgroundTile(ctx);
+        render->clearTiles();
+        ctx->dirtyTiles = ctx->layers.getTileSet();
+        d->fullRedraw = true;
+    }
+    else if(!changedTiles.empty())
     {
         ctx->dirtyTiles.insert(changedTiles.begin(), changedTiles.end());
     }
@@ -1051,6 +1065,8 @@ void CanvasWidget::undo()
 
 void CanvasWidget::redo()
 {
+    Q_D(CanvasWidget);
+
     CanvasContext *ctx = getContext();
 
     if (ctx->redoHistory.empty())
@@ -1064,10 +1080,18 @@ void CanvasWidget::redo()
     ctx->inTransientOpacity = false; //FIXME: This should be implicit
     CanvasUndoEvent *undoEvent = ctx->redoHistory.first();
     ctx->redoHistory.removeFirst();
+    bool changedBackground = undoEvent->modifiesBackground();
     TileSet changedTiles = undoEvent->apply(&ctx->layers, &newActiveLayer);
     ctx->undoHistory.push_front(undoEvent);
 
-    if(!changedTiles.empty())
+    if (changedBackground)
+    {
+        render->updateBackgroundTile(ctx);
+        render->clearTiles();
+        ctx->dirtyTiles = ctx->layers.getTileSet();
+        d->fullRedraw = true;
+    }
+    else if(!changedTiles.empty())
     {
         ctx->dirtyTiles.insert(changedTiles.begin(), changedTiles.end());
     }

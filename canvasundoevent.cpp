@@ -11,6 +11,11 @@ CanvasUndoEvent::~CanvasUndoEvent()
 
 }
 
+bool CanvasUndoEvent::modifiesBackground()
+{
+    return false;
+}
+
 CanvasUndoTiles::CanvasUndoTiles()
 {
 
@@ -78,4 +83,23 @@ TileSet CanvasUndoLayers::apply(CanvasStack *stack, int *activeLayer)
 
     std::swap(*activeLayer, currentLayer);
     return modifiedTiles;
+}
+
+CanvasUndoBackground::CanvasUndoBackground(CanvasStack *stack)
+{
+    tile = stack->backgroundTileCL->copy();
+}
+
+TileSet CanvasUndoBackground::apply(CanvasStack *stack, int *activeLayer)
+{
+    std::unique_ptr<CanvasTile> oldBackground = stack->backgroundTileCL->copy();
+    stack->setBackground(std::move(tile));
+    tile = std::move(oldBackground);
+
+    return TileSet();
+}
+
+bool CanvasUndoBackground::modifiesBackground()
+{
+    return true;
 }
