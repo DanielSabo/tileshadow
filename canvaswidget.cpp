@@ -1185,6 +1185,11 @@ bool CanvasWidget::eventFilter(QObject *obj, QEvent *event)
     {
         d->deviceIsEraser = false;
     }
+    else if (event->type() == QEvent::KeyPress ||
+             event->type() == QEvent::KeyRelease)
+    {
+        updateModifiers(static_cast<QInputEvent *>(event));
+    }
 
     if (deviceWasEraser != d->deviceIsEraser)
     {
@@ -1199,14 +1204,11 @@ bool CanvasWidget::eventFilter(QObject *obj, QEvent *event)
 
 void CanvasWidget::keyPressEvent(QKeyEvent *event)
 {
-    updateModifiers(event);
 }
 
 void CanvasWidget::keyReleaseEvent(QKeyEvent *event)
 {
     Q_D(CanvasWidget);
-
-    updateModifiers(event);
 
     if ((event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier | Qt::ShiftModifier)) == 0)
     {
