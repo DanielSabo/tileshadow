@@ -38,6 +38,8 @@ static QStringList findBrushFiles(QDir const &path)
             directories << info;
         else if (info.fileName().endsWith(".myb"))
             result << info.filePath();
+        else if (info.fileName().endsWith(".mbi"))
+            result << info.filePath();
     }
 
     for (QFileInfo const &info: directories)
@@ -79,7 +81,8 @@ BaseTool *ToolFactory::loadTool(QString toolName)
 {
     BaseTool *result = NULL;
 
-    if (toolName.endsWith(".myb"))
+    if (toolName.endsWith(".myb") ||
+        toolName.endsWith(".mbi"))
     {
         result = new MyPaintTool(toolName);
     }

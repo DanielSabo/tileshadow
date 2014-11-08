@@ -1,5 +1,6 @@
 #include "mypainttool.h"
 #include "mypaintstrokecontext.h"
+#include "paintutils.h"
 #include <cmath>
 #include <QFile>
 #include <QDebug>
@@ -8,6 +9,7 @@
 #include <QJsonValue>
 #include <QJsonArray>
 #include <QColor>
+#include <QImage>
 
 extern "C" {
 #include "mypaint-brush.h"
@@ -20,6 +22,7 @@ class MyPaintToolPrivate
 public:
     MyPaintToolSettings originalSettings;
     MyPaintToolSettings currentSettings;
+    QList<MaskBuffer> maskImages;
 
     float cursorRadius;
 
@@ -133,6 +136,31 @@ MyPaintTool::MyPaintTool(const QString &path) : priv(new MyPaintToolPrivate())
             }
         }
 
+        val = brushObj.value("image_settings");
+        if (val.isObject())
+        {
+            QList<MaskBuffer> masks;
+            const QJsonObject settingsObj = val.toObject();
+            const QJsonArray maskArrayObj = settingsObj["masks"].toArray();
+            for (auto const &maskObj: maskArrayObj)
+            {
+                QString maskStr = maskObj.toString();
+                if (!maskStr.isEmpty())
+                {
+                    QByteArray decoded = QByteArray::fromBase64(maskStr.toUtf8());
+                    QImage mask;
+                    mask.loadFromData(decoded);
+                    if (mask.isNull())
+                        throw QString("MBI brush error, failed to decode mask");
+                    mask.invertPixels();
+                    masks.push_back(MaskBuffer(mask));
+                }
+                else
+                    throw QString("MBI brush error, empty mask");
+            }
+            priv->maskImages = masks;
+        }
+
         priv->originalSettings = settings;
     }
     catch (QString err)
@@ -223,7 +251,8 @@ QList<ToolSettingInfo> MyPaintTool::listToolSettings()
 
     result.append(ToolSettingInfo::exponentSlider("size", "SizeExp", -2.0f, 6.0f));
     result.append(ToolSettingInfo::linearSlider("opacity", "Opacity", 0.0f, 1.0f));
-    result.append(ToolSettingInfo::linearSlider("hardness", "Hardness", 0.0f, 1.0f));
+    if (priv->maskImages.isEmpty())
+        result.append(ToolSettingInfo::linearSlider("hardness", "Hardness", 0.0f, 1.0f));
     result.append(ToolSettingInfo::checkbox("lock_alpha", "Lock Alpha"));
 
     return result;
@@ -247,6 +276,7 @@ StrokeContext *MyPaintTool::newStroke(CanvasLayer *layer)
     MyPaintStrokeContext *stroke = new MyPaintStrokeContext(layer);
 
     stroke->fromSettings(priv->currentSettings);
+    stroke->setMasks(priv->maskImages);
 
     return stroke;
 }

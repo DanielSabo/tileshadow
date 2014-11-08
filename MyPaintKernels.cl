@@ -11,6 +11,9 @@ float calculate_rr (float xx, float yy, float radius, float aspect_ratio, float 
 float calculate_alpha (float rr, float hardness, float segment1_offset, float segment1_slope, float segment2_offset, float segment2_slope);
 float color_query_weight (float xx, float yy, float radius);
 
+inline float4 apply_normal_mode (float4 pixel, float4 color, float alpha, float color_alpha);
+inline float4 apply_locked_normal_mode (float4 pixel, float4 color, float alpha);
+
 float calculate_rr (float xx, float yy, float radius, float aspect_ratio, float sn, float cs)
 {
   float yyr = (yy * cs - xx * sn) * aspect_ratio;
@@ -33,7 +36,6 @@ float calculate_alpha (float rr, float hardness, float segment1_offset, float se
 
   return 0.0f;
 }
-
 
 float color_query_weight (float xx, float yy, float radius)
 {
@@ -110,7 +112,34 @@ __kernel void mypaint_color_query_part2(__global float4 *accum,
   accum[1] = (float4)(total_weight);
 }
 
-/* FIXME: OpenCL may not support more than 8 args, need to combine some things */
+inline float4 apply_normal_mode(float4 pixel, float4 color, float alpha, float color_alpha)
+{
+  alpha = alpha * color.s3;
+  float dst_alpha = pixel.s3;
+
+  float a = alpha * color_alpha + dst_alpha * (1.0f - alpha);
+  float a_term = dst_alpha * (1.0f - alpha);
+
+  if (a > 0.0f) /* Needed because color_alpha can make a = zero */
+    pixel.s012 = (color.s012 * alpha * color_alpha + pixel.s012 * a_term) / a;
+  pixel.s3 = a;
+
+  return pixel;
+}
+
+inline float4 apply_locked_normal_mode(float4 pixel, float4 color, float alpha)
+{
+  if (pixel.s3)
+    {
+      alpha = alpha * color.s3;
+      float a_term = 1.0f - alpha;
+
+      pixel.s012 = color.s012 * alpha + pixel.s012 * a_term;
+    }
+
+  return pixel;
+}
+
 __kernel void mypaint_dab(__global float4 *buf,
                                    int     offset,
                                    float   x,
@@ -142,19 +171,7 @@ __kernel void mypaint_dab(__global float4 *buf,
   if (alpha > 0.0f)
     {
       const int idx = gidx + gidy * TILE_PIXEL_WIDTH + offset;
-      float4 pixel = buf[idx];
-      
-      alpha = alpha * color.s3;
-      float dst_alpha = pixel.s3;
-
-      float a = alpha * color_alpha + dst_alpha * (1.0f - alpha);
-      float a_term = dst_alpha * (1.0f - alpha);
-
-      if (a > 0.0f) /* Needed because color_alpha can make a = zero */
-        pixel.s012 = (color.s012 * alpha * color_alpha + pixel.s012 * a_term) / a;
-      pixel.s3   = a;
-
-      buf[idx] = pixel;
+      buf[idx] = apply_normal_mode(buf[idx], color, alpha, color_alpha);
     }
 }
 
@@ -189,16 +206,66 @@ __kernel void mypaint_dab_locked(__global float4 *buf,
   if (alpha > 0.0f)
     {
       const int idx = gidx + gidy * TILE_PIXEL_WIDTH + offset;
-      float4 pixel = buf[idx];
+      buf[idx] = apply_locked_normal_mode(buf[idx], color, alpha);
+    }
+}
 
-      if (pixel.s3)
-        {
-          alpha = alpha * color.s3;
-          float a_term = 1.0f - alpha;
+__kernel void mypaint_mask_dab(__global  float4   *buf,
+                                         int       offset,
+                                         float     x,
+                                         float     y,
+                               read_only image2d_t stamp,
+                                         float4    matrix,
+                                         float     color_alpha, /* Max alpha value */
+                                         float4    color)
+{
+  const sampler_t sampler = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_CLAMP | CLK_FILTER_LINEAR;
 
-          pixel.s012 = color.s012 * alpha + pixel.s012 * a_term;
-        }
+  int gidx = get_global_id(0);
+  int gidy = get_global_id(1);
 
-      buf[idx] = pixel;
+  // Position is calculated centered on the range (-radius, radius)
+  float2 coord = (float2)((gidx - x), (gidy - y));
+
+  // Apply rotation and shift to (0.0, 1.0)
+  coord = (float2)(dot(coord, matrix.s01) + 0.5f,
+                   dot(coord, matrix.s23) + 0.5f);
+
+  float alpha = read_imagef(stamp, sampler, coord).s0;
+
+  if (alpha > 0.0f)
+    {
+      const int idx = gidx + gidy * TILE_PIXEL_WIDTH + offset;
+      buf[idx] = apply_normal_mode(buf[idx], color, alpha, color_alpha);
+    }
+}
+
+__kernel void mypaint_mask_dab_locked(__global  float4   *buf,
+                                                int       offset,
+                                                float     x,
+                                                float     y,
+                                      read_only image2d_t stamp,
+                                                float4    matrix,
+                                                float     color_alpha, /* Max alpha value (ignored) */
+                                                float4    color)
+{
+  const sampler_t sampler = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_CLAMP | CLK_FILTER_LINEAR;
+
+  int gidx = get_global_id(0);
+  int gidy = get_global_id(1);
+
+  // Position is calculated centered on the range (-radius, radius)
+  float2 coord = (float2)((gidx - x), (gidy - y));
+
+  // Apply rotation and shift to (0.0, 1.0)
+  coord = (float2)(dot(coord, matrix.s01) + 0.5f,
+                   dot(coord, matrix.s23) + 0.5f);
+
+  float alpha = read_imagef(stamp, sampler, coord).s0;
+
+  if (alpha > 0.0f)
+    {
+      const int idx = gidx + gidy * TILE_PIXEL_WIDTH + offset;
+      buf[idx] = apply_locked_normal_mode(buf[idx], color, alpha);
     }
 }

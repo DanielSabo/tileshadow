@@ -5,6 +5,7 @@
 #include <QString>
 #include <QPair>
 #include "strokecontext.h"
+#include "maskbuffer.h"
 
 typedef QMap<QString, QPair<float, QMap<QString, QList<QPointF> > > > MyPaintToolSettings;
 
@@ -20,6 +21,7 @@ public:
 
     bool fromSettings(MyPaintToolSettings const &settings);
     void fromDefaults();
+    void setMasks(QList<MaskBuffer> const &masks = QList<MaskBuffer>());
 
     MyPaintStrokeContextPrivate *priv;
 };
