@@ -95,8 +95,11 @@ void writeBackground(QZipWriter &writer, QString const &path, CanvasTile *tile, 
         free(pngData);
 }
 
-void saveStackAs(CanvasStack *stack, QString path)
+void saveStackAs(CanvasStack *stack, QString path, std::function<void(QString const &, float)> progressCallback)
 {
+    int progressStep = 1;
+    float progressStepTotal = (stack->layers.size() + 2) / 100.0f;
+
     QSaveFile saveFile(path);
     saveFile.open(QIODevice::WriteOnly);
     QZipWriter oraZipWriter(&saveFile);
@@ -130,6 +133,8 @@ void saveStackAs(CanvasStack *stack, QString path)
     {
         CanvasLayer const *currentLayer = stack->layers.at(layerIdx);
         QRect tileBounds = tileSetBounds(currentLayer->getTileSet());
+
+        progressCallback(QStringLiteral("Saving layer \"%1\"").arg(currentLayer->name), progressStep++ / progressStepTotal);
 
         QRect bounds;
         uint16_t *layerData = NULL;
@@ -253,6 +258,8 @@ void saveStackAs(CanvasStack *stack, QString path)
 
     stackBuffer.close();
 
+    progressCallback(QStringLiteral("Saving thumbnail"), progressStep++ / progressStepTotal);
+
     oraZipWriter.addFile("stack.xml", stackBuffer.buffer());
     QByteArray mimetypeData("image/openraster");
     oraZipWriter.addFile("mimetype", mimetypeData);
@@ -266,6 +273,8 @@ void saveStackAs(CanvasStack *stack, QString path)
     QImage thumbImage = mergedImage.scaled(128, 128, Qt::KeepAspectRatio);
     thumbImage.save(&thumbImageBuffer, "PNG");
     oraZipWriter.addFile("Thumbnails/thumbnail.png", thumbImageBuffer.buffer());
+
+    progressCallback(QStringLiteral("Writing ORA data"), progressStep++ / progressStepTotal);
 
     oraZipWriter.close();
     saveFile.commit();

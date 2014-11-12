@@ -10,6 +10,7 @@
 #include "toolfactory.h"
 #include <qmath.h>
 #include <QApplication>
+#include <QProgressDialog>
 #include <QRegExp>
 #include <QMouseEvent>
 #include <QTimer>
@@ -1681,7 +1682,23 @@ void CanvasWidget::saveAsORA(QString path)
 {
     CanvasContext *ctx = getContext();
 
-    saveStackAs(&ctx->layers, path);
+    QProgressDialog dialog("Saving...", QString(), 0, 100, topLevelWidget());
+    dialog.setWindowModality(Qt::ApplicationModal);
+    dialog.setMinimumDuration(0);
+    dialog.setAutoClose(false);
+    // Value must be set to 0 first or the dialog does not display on Win32
+    dialog.setValue(0);
+    dialog.setValue(1);
+
+    auto callback = [&dialog](QString const &msg, float percent){
+        dialog.setLabelText(msg);
+        dialog.setValue(qBound<int>(1, percent, 99));
+    };
+
+    saveStackAs(&ctx->layers, path, callback);
+
+    dialog.close();
+
     modified = false;
     emit canvasModified();
 }
