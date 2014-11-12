@@ -1,9 +1,11 @@
 #include "mainwindow.h"
 #include <QApplication>
+#include <QCommandLineParser>
 #include <QSettings>
 #include <QMessageBox>
 #include <QDebug>
 #include "deviceselectdialog.h"
+#include "batchprocessor.h"
 
 int main(int argc, char *argv[])
 {
@@ -22,14 +24,29 @@ int main(int argc, char *argv[])
     //FIXME: Remove this old setting
     appSettings.remove("EnableGLSharing");
 
-    if ((!appSettings.contains("OpenCL/Device")) ||
-        (a.queryKeyboardModifiers() & Qt::ShiftModifier))
-    {
-        DeviceSelectDialog().exec();
-    }
+    QCommandLineParser parser;
+    QCommandLineOption batchFile("batch", "Command file to execute", "batchfile");
+    parser.addOption(batchFile);
 
-    MainWindow w;
-    w.show();
+    parser.process(a);
+    QString batchFilePath = parser.value(batchFile);
+
+    if (!batchFilePath.isEmpty())
+    {
+        BatchProcessor *batch = new BatchProcessor();
+        QMetaObject::invokeMethod(batch, "execute", Qt::QueuedConnection, Q_ARG(QString, batchFilePath));
+    }
+    else
+    {
+        if ((!appSettings.contains("OpenCL/Device")) ||
+            (a.queryKeyboardModifiers() & Qt::ShiftModifier))
+        {
+            DeviceSelectDialog().exec();
+        }
+
+        MainWindow *w = new MainWindow();
+        w->show();
+    }
 
     return a.exec();
 }
