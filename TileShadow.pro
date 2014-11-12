@@ -24,6 +24,8 @@ QMAKE_CFLAGS += -O2
 CONFIG -= warn_on
 CONFIG += c++11
 
+DEFINES += CL_USE_DEPRECATED_OPENCL_1_1_APIS
+
 SOURCES += main.cpp\
         mainwindow.cpp \
     systeminfodialog.cpp \
