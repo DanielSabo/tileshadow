@@ -493,9 +493,8 @@ static int drawMaskFunction (MyPaintSurface *base_surface,
         transform.scale(0.5f / radius, 0.5f / radius);
         transform.rotate(-angle);
 
-        QRectF boundRect(-0.5f, -0.5f,
-                         1.0f, 1.0f);
-        boundRect = transform.inverted().mapRect(boundRect) + QMarginsF(1.0f, 1.0f, 1.0f, 1.0f);
+        QRectF boundRect(-0.5f, -0.5f, 1.0f, 1.0f);
+        boundRect = transform.inverted().mapRect(boundRect).adjusted(-1.0, -1.0, 1.0, 1.0);
 
         int firstPixelX = boundRect.x() + x;
         int firstPixelY = boundRect.y() + y;
