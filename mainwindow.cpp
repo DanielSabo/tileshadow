@@ -398,6 +398,10 @@ void MainWindow::actionExport()
     else
     {
         QImageWriter writer(filename);
+        if (filename.endsWith(".jpg", Qt::CaseInsensitive) || filename.endsWith(".jpeg", Qt::CaseInsensitive))
+            writer.setQuality(90);
+        else if (filename.endsWith(".png", Qt::CaseInsensitive))
+            writer.setQuality(9);
 
         if (!writer.write(image))
         {
