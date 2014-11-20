@@ -144,11 +144,8 @@ __kernel void mypaint_dab(__global float4 *buf,
                                    int     offset,
                                    float   x,
                                    float   y,
-                                   float   radius,
                                    float   hardness,
-                                   float   aspect_ratio,
-                                   float   sn,
-                                   float   cs,
+                                   float4  matrix,
                                    float   slope1,
                                    float   slope2,
                                    float   color_alpha, /* Max alpha value */
@@ -165,7 +162,9 @@ __kernel void mypaint_dab(__global float4 *buf,
   float segment2_offset = -slope2;
   float segment2_slope  = slope2;
 
-  float rr = calculate_rr (xx, yy, radius, aspect_ratio, sn, cs);
+  float xxr = xx * matrix.s0 + yy * matrix.s1;
+  float yyr = xx * matrix.s2 + yy * matrix.s3;
+  float rr  = (yyr * yyr + xxr * xxr);
   float alpha = calculate_alpha(rr, hardness, segment1_offset, segment1_slope, segment2_offset, segment2_slope);
 
   if (alpha > 0.0f)
@@ -179,11 +178,8 @@ __kernel void mypaint_dab_locked(__global float4 *buf,
                                           int     offset,
                                           float   x,
                                           float   y,
-                                          float   radius,
                                           float   hardness,
-                                          float   aspect_ratio,
-                                          float   sn,
-                                          float   cs,
+                                          float4  matrix,
                                           float   slope1,
                                           float   slope2,
                                           float   color_alpha, /* Max alpha value (ignored) */
@@ -200,7 +196,9 @@ __kernel void mypaint_dab_locked(__global float4 *buf,
   float segment2_offset = -slope2;
   float segment2_slope  = slope2;
 
-  float rr = calculate_rr (xx, yy, radius, aspect_ratio, sn, cs);
+  float xxr = xx * matrix.s0 + yy * matrix.s1;
+  float yyr = xx * matrix.s2 + yy * matrix.s3;
+  float rr  = (yyr * yyr + xxr * xxr);
   float alpha = calculate_alpha(rr, hardness, segment1_offset, segment1_slope, segment2_offset, segment2_slope);
 
   if (alpha > 0.0f)

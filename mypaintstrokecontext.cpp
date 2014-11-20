@@ -354,12 +354,19 @@ static int drawDabFunction (MyPaintSurface *base_surface,
     {
         CanvasLayer *layer = surface->strokeContext->layer;
 
-        int fringe_radius = radius + 1.5f;
+        QMatrix transform;
 
-        int firstPixelX = floorf(x - fringe_radius);
-        int firstPixelY = floorf(y - fringe_radius);
-        int lastPixelX = ceilf(x + fringe_radius);
-        int lastPixelY = ceilf(y + fringe_radius);
+        transform.scale(1.0f, aspect_ratio);
+        transform.scale(1.0f / radius, 1.0f / radius);
+        transform.rotate(-angle);
+
+        QRectF boundRect(-1.0f, -1.0f, 2.0f, 2.0f);
+        boundRect = transform.inverted().mapRect(boundRect).adjusted(-2.0, -2.0, 4.0, 4.0);
+
+        int firstPixelX = boundRect.x() + x;
+        int firstPixelY = boundRect.y() + y;
+        int lastPixelX = firstPixelX + boundRect.width();
+        int lastPixelY = firstPixelY + boundRect.height();
 
         int ix_start = tile_indice(firstPixelX, TILE_PIXEL_WIDTH);
         int iy_start = tile_indice(firstPixelY, TILE_PIXEL_HEIGHT);
@@ -384,21 +391,21 @@ static int drawDabFunction (MyPaintSurface *base_surface,
         // float color[4] = {color_r, color_g, color_b, color_a};
         cl_float4 color = {color_r, color_g, color_b, opaque};
 
-        float angle_rad = angle / 360 * 2 * M_PI;
-        float sn = sinf(angle_rad);
-        float cs = cosf(angle_rad);
+        cl_float4 transformMatrix;
+        transformMatrix.s[0] = transform.m11();
+        transformMatrix.s[1] = transform.m21();
+        transformMatrix.s[2] = transform.m12();
+        transformMatrix.s[3] = transform.m22();
+
         float slope1 = -(1.0f / hardness - 1.0f);
         float slope2 = -(hardness / (1.0f - hardness));
 
-        err = clSetKernelArg<cl_float>(kernel, 4, radius);
-        err = clSetKernelArg<cl_float>(kernel, 5, hardness);
-        err = clSetKernelArg<cl_float>(kernel, 6, aspect_ratio);
-        err = clSetKernelArg<cl_float>(kernel, 7, sn);
-        err = clSetKernelArg<cl_float>(kernel, 8, cs);
-        err = clSetKernelArg<cl_float>(kernel, 9, slope1);
-        err = clSetKernelArg<cl_float>(kernel, 10, slope2);
-        err = clSetKernelArg<cl_float>(kernel, 11, color_a);
-        err = clSetKernelArg<cl_float4>(kernel, 12, color);
+        err = clSetKernelArg<cl_float>(kernel, 4, hardness);
+        err = clSetKernelArg<cl_float4>(kernel, 5, transformMatrix);
+        err = clSetKernelArg<cl_float>(kernel, 6, slope1);
+        err = clSetKernelArg<cl_float>(kernel, 7, slope2);
+        err = clSetKernelArg<cl_float>(kernel, 8, color_a);
+        err = clSetKernelArg<cl_float4>(kernel, 9, color);
 
         for (int iy = iy_start; iy <= iy_end; ++iy)
         {
