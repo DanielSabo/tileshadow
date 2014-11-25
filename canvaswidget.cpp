@@ -104,11 +104,11 @@ CanvasWidgetPrivate::~CanvasWidgetPrivate()
 
 CanvasWidget::CanvasWidget(QWidget *parent) :
     QGLWidget(getFormatSingleton(), parent),
-    d_ptr(new CanvasWidgetPrivate),
     mouseEventRate(10),
     frameRate(10),
-    render(NULL),
-    context(NULL),
+    d_ptr(new CanvasWidgetPrivate),
+    render(nullptr),
+    context(nullptr),
     action(CanvasAction::None),
     toolColor(QColor::fromRgbF(0.0, 0.0, 0.0)),
     viewScale(1.0f),

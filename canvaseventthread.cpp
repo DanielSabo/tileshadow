@@ -6,11 +6,11 @@ using namespace std;
 
 CanvasEventThread::CanvasEventThread(QObject *parent)
     : QThread(parent),
-      ctx(0),
       workPending(0),
       threadIsSynced(true),
+      synchronous(false),
       needResultTiles(false),
-      synchronous(false)
+      ctx(nullptr)
 {
 }
 

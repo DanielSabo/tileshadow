@@ -18,16 +18,12 @@ public:
     {
     }
 
-    ~HSVColorDialPrivate()
-    {
-    }
-
-    bool inDialDrag;
-    bool inBoxDrag;
-
     float h;
     float s;
     float v;
+
+    bool inDialDrag;
+    bool inBoxDrag;
 
     QRect boxRect;
 

@@ -12,6 +12,8 @@ class QListWidgetItem;
 class LayerListWidget : public QWidget
 {
     Q_OBJECT
+private:
+    Ui::LayerListWidget *ui;
 
 public:
     explicit LayerListWidget(QWidget *parent = 0);
@@ -22,9 +24,6 @@ public:
 protected:
     CanvasWidget *canvas;
     bool freezeLayerList;
-
-private:
-    Ui::LayerListWidget *ui;
 
 public slots:
     void layerListAdd();

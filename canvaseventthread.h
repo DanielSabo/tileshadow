@@ -19,8 +19,8 @@ public:
     QWaitCondition queueNotEmpty;
     QWaitCondition queueFinished;
     QList< std::function<void(CanvasContext *)> > inQueue;
-    bool threadIsSynced;
     int workPending;
+    bool threadIsSynced;
     bool synchronous;
 
     QMutex resultTilesMutex;
