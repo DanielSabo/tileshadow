@@ -14,7 +14,7 @@ TEMPLATE = app
 
 !win32-msvc* {
     QMAKE_CFLAGS += -std=gnu99
-    QMAKE_CXXFLAGS_WARN_ON += -Wno-missing-braces -Wno-reorder -Wno-missing-field-initializers -Wno-unused-parameter
+    QMAKE_CXXFLAGS_WARN_ON += -Wno-missing-braces -Wno-missing-field-initializers -Wno-unused-parameter
     QMAKE_CFLAGS_WARN_ON += -Wno-missing-field-initializers -Wno-unused-parameter
     CONFIG += warn_on
 }
