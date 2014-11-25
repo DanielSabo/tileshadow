@@ -14,15 +14,28 @@ TEMPLATE = app
 
 !win32-msvc* {
     QMAKE_CFLAGS += -std=gnu99
+    QMAKE_CXXFLAGS_WARN_ON += -Wno-missing-braces -Wno-reorder -Wno-missing-field-initializers -Wno-unused-parameter
+    QMAKE_CFLAGS_WARN_ON += -Wno-missing-field-initializers -Wno-unused-parameter
+    CONFIG += warn_on
+}
+else {
+    # 4100 = Unused parameter
+    # 4267 = Truncation of size_t
+    # 4244, 4305 = Truncation of double to float
+    # 4701, 4703 = Use of uninitialized variable
+    QMAKE_CXXFLAGS_WARN_ON = -W3 -wd4100 -wd4267 -wd4305 -w14701 -w14703
+    QMAKE_CFLAGS_WARN_ON = -W3 -wd4244 -wd4305 -w14701 -w14703
+    CONFIG += warn_on
 }
 
 QMAKE_CXXFLAGS += -O2
 QMAKE_CFLAGS += -O2
 
-CONFIG -= warn_on
 CONFIG += c++11
 
 DEFINES += CL_USE_DEPRECATED_OPENCL_1_1_APIS
+# Disable lodepng's file operations, which have deprecation warnings on Win32
+DEFINES += LODEPNG_NO_COMPILE_DISK
 
 SOURCES += main.cpp\
         mainwindow.cpp \
