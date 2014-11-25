@@ -1127,7 +1127,7 @@ bool CanvasWidget::getModified()
 
 void CanvasWidget::setModified(bool state)
 {
-    modified = true;
+    modified = state;
 }
 
 bool CanvasWidget::getSynchronous()
