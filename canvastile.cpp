@@ -59,7 +59,7 @@ cl_mem CanvasTile::unmapHost()
 {
     if (tileData && tileMem)
     {
-        cl_int err = clEnqueueUnmapMemObject(SharedOpenCL::getSharedOpenCL()->cmdQueue, tileMem, tileData, 0, nullptr, nullptr);
+        clEnqueueUnmapMemObject(SharedOpenCL::getSharedOpenCL()->cmdQueue, tileMem, tileData, 0, nullptr, nullptr);
         tileData = nullptr;
     }
     else if (tileData)
@@ -81,18 +81,18 @@ void CanvasTile::swapHost()
 
     if (tileMem && tileData)
     {
-        cl_int err = clEnqueueUnmapMemObject(SharedOpenCL::getSharedOpenCL()->cmdQueue, tileMem, tileData, 0, nullptr, nullptr);
+        clEnqueueUnmapMemObject(SharedOpenCL::getSharedOpenCL()->cmdQueue, tileMem, tileData, 0, nullptr, nullptr);
         tileData = nullptr;
     }
 
     if (!tileData)
     {
         tileData = new float[TILE_COMP_TOTAL];
-        cl_int err = clEnqueueReadBuffer(SharedOpenCL::getSharedOpenCL()->cmdQueue,
-                                         tileMem, CL_TRUE,
-                                         0, TILE_COMP_TOTAL * sizeof(float), tileData,
-                                         0, nullptr, nullptr);
-        err = clReleaseMemObject(tileMem);
+        clEnqueueReadBuffer(SharedOpenCL::getSharedOpenCL()->cmdQueue,
+                            tileMem, CL_TRUE,
+                            0, TILE_COMP_TOTAL * sizeof(float), tileData,
+                            0, nullptr, nullptr);
+        clReleaseMemObject(tileMem);
         tileMem = 0;
         privDeviceTileCount.deref();
     }
