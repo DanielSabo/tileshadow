@@ -1316,8 +1316,6 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
 
 void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
 {
-    Q_D(CanvasWidget);
-
     if (event->button() == actionButton)
     {
         if (action == CanvasAction::MouseStroke)
