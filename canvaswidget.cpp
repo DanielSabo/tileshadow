@@ -1019,6 +1019,8 @@ void CanvasWidget::setBackgroundColor(const QColor &color)
         render->clearTiles();
         ctx->dirtyTiles = ctx->layers.getTileSet();
         d->fullRedraw = true;
+        modified = true;
+        emit canvasModified();
         update();
     }
 }
