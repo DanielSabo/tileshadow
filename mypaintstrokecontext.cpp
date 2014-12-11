@@ -11,7 +11,7 @@
 
 extern "C" {
 #include "mypaint-brush.h"
-};
+}
 
 static void getColorFunction (MyPaintSurface *surface,
                               float x, float y,
@@ -336,12 +336,13 @@ static int drawDabFunction (MyPaintSurface *base_surface,
 
     CanvasMyPaintSurface *surface = (CanvasMyPaintSurface *)base_surface;
     CanvasLayer *layer = surface->strokeContext->layer;
+    MyPaintStrokeContextPrivate *priv = surface->strokeContext->priv;
     QRectF boundRect;
     cl_kernel kernel;
     cl_int err = CL_SUCCESS;
     (void)err; /* Ignore the fact that err is unused, it's helpful for debugging */
 
-    if (surface->strokeContext->priv->masks.empty())
+    if (priv->masks.empty())
     {
         QMatrix transform;
         transform.scale(1.0f, aspect_ratio);
@@ -375,11 +376,9 @@ static int drawDabFunction (MyPaintSurface *base_surface,
     }
     else
     {
-        MyPaintStrokeContextPrivate *strokePrivate = surface->strokeContext->priv;
-
         QMatrix transform;
-        CLMaskImage const &maskImage = strokePrivate->masks[strokePrivate->activeMask];
-        strokePrivate->activeMask = (strokePrivate->activeMask + 1) % strokePrivate->masks.size();
+        CLMaskImage const &maskImage = priv->masks[priv->activeMask];
+        priv->activeMask = (priv->activeMask + 1) % priv->masks.size();
         float maskWidth = maskImage.size.width();
         float maskHeight = maskImage.size.height();
 
@@ -425,6 +424,8 @@ static int drawDabFunction (MyPaintSurface *base_surface,
     int ix_end   = tile_indice(lastPixelX, TILE_PIXEL_WIDTH);
     int iy_end   = tile_indice(lastPixelY, TILE_PIXEL_HEIGHT);
 
+    cl_command_queue cmdQueue = SharedOpenCL::getSharedOpenCL()->cmdQueue;
+
     for (int iy = iy_start; iy <= iy_end; ++iy)
     {
         const int tileOriginY = iy * TILE_PIXEL_HEIGHT;
@@ -447,15 +448,14 @@ static int drawDabFunction (MyPaintSurface *base_surface,
             size_t global_work_size[2] = CL_DIM2(width, height);
             size_t local_work_size[2] = CL_DIM2(width, 1);
 
-            surface->strokeContext->priv->modTiles.insert(QPoint(ix, iy));
+            priv->modTiles.insert(QPoint(ix, iy));
             cl_mem data = layer->clOpenTileAt(ix, iy);
 
             err = clSetKernelArg<cl_mem>(kernel, 0, data);
             err = clSetKernelArg<cl_int>(kernel, 1, offset);
             err = clSetKernelArg<cl_float>(kernel, 2, tileX);
             err = clSetKernelArg<cl_float>(kernel, 3, tileY);
-            err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
-                                         kernel, 2,
+            err = clEnqueueNDRangeKernel(cmdQueue, kernel, 2,
                                          nullptr, global_work_size, local_work_size,
                                          0, nullptr, nullptr);
         }
