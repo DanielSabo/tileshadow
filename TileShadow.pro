@@ -119,9 +119,11 @@ win32 {
     win32-msvc* {
         INCLUDEPATH += "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v5.5\include"
         LIBS += "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v5.5\lib\x64\OpenCL.lib"
+        LIBS += "OpenGL32.lib"
     } else {
         INCLUDEPATH += "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v5.5\include"
         LIBS += -L"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v5.5\lib\Win32" -lOpenCL
+        LIBS += -lopengl32
     }
     RC_FILE = tileshadow.rc
 } mac {

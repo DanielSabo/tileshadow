@@ -10,10 +10,14 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 3, 0))
+    a.setAttribute(Qt::AA_UseDesktopOpenGL, true);
+#endif
     a.setApplicationName("TileShadow");
     a.setApplicationDisplayName("TileShadow");
     a.setOrganizationName("TileShadow");
     a.setOrganizationDomain("danielsabo.bitbucket.org");
+
 #ifdef Q_OS_MAC
     QSettings::setDefaultFormat(QSettings::NativeFormat);
 #else
