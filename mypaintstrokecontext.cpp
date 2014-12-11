@@ -28,16 +28,6 @@ static int drawDabFunction (MyPaintSurface *surface,
                             float lock_alpha,
                             float colorize);
 
-static int drawMaskFunction (MyPaintSurface *surface,
-                             float x, float y,
-                             float radius,
-                             float color_r, float color_g, float color_b,
-                             float opaque, float hardness,
-                             float color_a,
-                             float aspect_ratio, float angle,
-                             float lock_alpha,
-                             float colorize);
-
 typedef struct
 {
   MyPaintSurface parent;
@@ -142,11 +132,6 @@ void MyPaintStrokeContext::setMasks(const QList<MaskBuffer> &masks)
         if (err == CL_SUCCESS)
             priv->masks.emplace_back(maskImage, QSize(mask.width(), mask.height()));
     }
-
-    if (priv->masks.empty())
-        priv->surface->parent.draw_dab = drawDabFunction;
-    else
-        priv->surface->parent.draw_dab = drawMaskFunction;
 }
 
 MyPaintStrokeContext::MyPaintStrokeContext(CanvasLayer *layer) : StrokeContext(layer)
@@ -159,7 +144,7 @@ MyPaintStrokeContext::MyPaintStrokeContext(CanvasLayer *layer) : StrokeContext(l
     memset(priv->surface, 0, sizeof(MyPaintSurface));
 
     priv->surface->strokeContext = this;
-    priv->surface->parent.draw_dab = drawMaskFunction;
+    priv->surface->parent.draw_dab = drawDabFunction;
     priv->surface->parent.get_color = getColorFunction;
 }
 
@@ -356,35 +341,78 @@ static int drawDabFunction (MyPaintSurface *base_surface,
     cl_int err = CL_SUCCESS;
     (void)err; /* Ignore the fact that err is unused, it's helpful for debugging */
 
-    QMatrix transform;
-    transform.scale(1.0f, aspect_ratio);
-    transform.scale(1.0f / radius, 1.0f / radius);
-    transform.rotate(-angle);
+    if (surface->strokeContext->priv->masks.empty())
+    {
+        QMatrix transform;
+        transform.scale(1.0f, aspect_ratio);
+        transform.scale(1.0f / radius, 1.0f / radius);
+        transform.rotate(-angle);
 
-    boundRect.setRect(-1.0f, -1.0f, 2.0f, 2.0f);
-    boundRect = transform.inverted().mapRect(boundRect).adjusted(-2.0, -2.0, 4.0, 4.0);
+        boundRect.setRect(-1.0f, -1.0f, 2.0f, 2.0f);
+        boundRect = transform.inverted().mapRect(boundRect).adjusted(-2.0, -2.0, 4.0, 4.0);
 
-    if (lock_alpha > 0.0f)
-        kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabLockedKernel;
+        if (lock_alpha > 0.0f)
+            kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabLockedKernel;
+        else
+            kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabKernel;
+
+        cl_float4 color = {color_r, color_g, color_b, opaque};
+        cl_float4 transformMatrix;
+        transformMatrix.s[0] = transform.m11();
+        transformMatrix.s[1] = transform.m21();
+        transformMatrix.s[2] = transform.m12();
+        transformMatrix.s[3] = transform.m22();
+
+        float slope1 = -(1.0f / hardness - 1.0f);
+        float slope2 = -(hardness / (1.0f - hardness));
+
+        err = clSetKernelArg<cl_float>(kernel, 4, hardness);
+        err = clSetKernelArg<cl_float4>(kernel, 5, transformMatrix);
+        err = clSetKernelArg<cl_float>(kernel, 6, slope1);
+        err = clSetKernelArg<cl_float>(kernel, 7, slope2);
+        err = clSetKernelArg<cl_float>(kernel, 8, color_a);
+        err = clSetKernelArg<cl_float4>(kernel, 9, color);
+    }
     else
-        kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabKernel;
+    {
+        MyPaintStrokeContextPrivate *strokePrivate = surface->strokeContext->priv;
 
-    cl_float4 color = {color_r, color_g, color_b, opaque};
-    cl_float4 transformMatrix;
-    transformMatrix.s[0] = transform.m11();
-    transformMatrix.s[1] = transform.m21();
-    transformMatrix.s[2] = transform.m12();
-    transformMatrix.s[3] = transform.m22();
+        QMatrix transform;
+        CLMaskImage const &maskImage = strokePrivate->masks[strokePrivate->activeMask];
+        strokePrivate->activeMask = (strokePrivate->activeMask + 1) % strokePrivate->masks.size();
+        float maskWidth = maskImage.size.width();
+        float maskHeight = maskImage.size.height();
 
-    float slope1 = -(1.0f / hardness - 1.0f);
-    float slope2 = -(hardness / (1.0f - hardness));
+        // Preserve a non-rectangular mask's aspect ratio
+        if (maskWidth > maskHeight)
+            transform.scale(1.0f, maskWidth / maskHeight);
+        else if (maskHeight > maskWidth)
+            transform.scale(maskHeight / maskWidth, 1.0f);
 
-    err = clSetKernelArg<cl_float>(kernel, 4, hardness);
-    err = clSetKernelArg<cl_float4>(kernel, 5, transformMatrix);
-    err = clSetKernelArg<cl_float>(kernel, 6, slope1);
-    err = clSetKernelArg<cl_float>(kernel, 7, slope2);
-    err = clSetKernelArg<cl_float>(kernel, 8, color_a);
-    err = clSetKernelArg<cl_float4>(kernel, 9, color);
+        transform.scale(1.0f, aspect_ratio);
+        transform.scale(0.5f / radius, 0.5f / radius);
+        transform.rotate(-angle);
+
+        boundRect.setRect(-0.5f, -0.5f, 1.0f, 1.0f);
+        boundRect = transform.inverted().mapRect(boundRect).adjusted(-1.0, -1.0, 1.0, 1.0);
+
+        if (lock_alpha > 0.0f)
+            kernel = SharedOpenCL::getSharedOpenCL()->mypaintMaskDabLockedKernel;
+        else
+            kernel = SharedOpenCL::getSharedOpenCL()->mypaintMaskDabKernel;
+
+        cl_float4 color = {color_r, color_g, color_b, opaque};
+        cl_float4 transformMatrix;
+        transformMatrix.s[0] = transform.m11();
+        transformMatrix.s[1] = transform.m21();
+        transformMatrix.s[2] = transform.m12();
+        transformMatrix.s[3] = transform.m22();
+
+        err = clSetKernelArg<cl_mem>(kernel, 4, maskImage.image);
+        err = clSetKernelArg<cl_float4>(kernel, 5, transformMatrix);
+        err = clSetKernelArg<cl_float>(kernel, 6, color_a);
+        err = clSetKernelArg<cl_float4>(kernel, 7, color);
+    }
 
     int firstPixelX = boundRect.x() + x;
     int firstPixelY = boundRect.y() + y;
@@ -434,131 +462,4 @@ static int drawDabFunction (MyPaintSurface *base_surface,
     }
 
     return 1;
-}
-
-static int drawMaskFunction (MyPaintSurface *base_surface,
-                             float x, float y,
-                             float radius,
-                             float color_r, float color_g, float color_b,
-                             float opaque, float hardness,
-                             float color_a,
-                             float aspect_ratio, float angle,
-                             float lock_alpha,
-                             float colorize)
-{
-    CanvasMyPaintSurface *surface = (CanvasMyPaintSurface *)base_surface;
-
-    if (hardness < 0.0f)
-        hardness = 0.0f;
-    else if (hardness > 1.0f)
-        hardness = 1.0f;
-
-    if (aspect_ratio < 1.0f)
-        aspect_ratio = 1.0f;
-
-    if (lock_alpha > 0.0f && lock_alpha < 1.0f)
-        qWarning() << "drawDab called with unsupported values lock_alpha =" << lock_alpha;
-
-    if (colorize != 0.0f)
-        qWarning() << "drawDab called with unsupported values colorize = " << colorize << endl;
-
-    // cout << "Invoked drawMaskFunction at " << x << ", " << y << endl;
-
-    if (radius >= 1.0f)
-    {
-        CanvasLayer *layer = surface->strokeContext->layer;
-        MyPaintStrokeContextPrivate *strokePrivate = surface->strokeContext->priv;
-
-        QMatrix transform;
-        CLMaskImage const &maskImage = strokePrivate->masks[strokePrivate->activeMask];
-        strokePrivate->activeMask = (strokePrivate->activeMask + 1) % strokePrivate->masks.size();
-        float maskWidth = maskImage.size.width();
-        float maskHeight = maskImage.size.height();
-
-        // Preserve a non-rectangular mask's aspect ratio
-        if (maskWidth > maskHeight)
-            transform.scale(1.0f, maskWidth / maskHeight);
-        else if (maskHeight > maskWidth)
-            transform.scale(maskHeight / maskWidth, 1.0f);
-
-        transform.scale(1.0f, aspect_ratio);
-        transform.scale(0.5f / radius, 0.5f / radius);
-        transform.rotate(-angle);
-
-        QRectF boundRect(-0.5f, -0.5f, 1.0f, 1.0f);
-        boundRect = transform.inverted().mapRect(boundRect).adjusted(-1.0, -1.0, 1.0, 1.0);
-
-        int firstPixelX = boundRect.x() + x;
-        int firstPixelY = boundRect.y() + y;
-        int lastPixelX = firstPixelX + boundRect.width();
-        int lastPixelY = firstPixelY + boundRect.height();
-
-        int ix_start = tile_indice(firstPixelX, TILE_PIXEL_WIDTH);
-        int iy_start = tile_indice(firstPixelY, TILE_PIXEL_HEIGHT);
-
-        int ix_end   = tile_indice(lastPixelX, TILE_PIXEL_WIDTH);
-        int iy_end   = tile_indice(lastPixelY, TILE_PIXEL_HEIGHT);
-
-        cl_kernel kernel;
-
-        if (lock_alpha > 0.0f)
-            kernel = SharedOpenCL::getSharedOpenCL()->mypaintMaskDabLockedKernel;
-        else
-            kernel = SharedOpenCL::getSharedOpenCL()->mypaintMaskDabKernel;
-
-        cl_int err = CL_SUCCESS;
-        cl_float4 color = {color_r, color_g, color_b, opaque};
-
-        cl_float4 transformMatrix;
-        transformMatrix.s[0] = transform.m11();
-        transformMatrix.s[1] = transform.m21();
-        transformMatrix.s[2] = transform.m12();
-        transformMatrix.s[3] = transform.m22();
-
-        err = clSetKernelArg<cl_mem>(kernel, 4, maskImage.image);
-        check_cl_error(err);
-        err = clSetKernelArg<cl_float4>(kernel, 5, transformMatrix);
-        err = clSetKernelArg<cl_float>(kernel, 6, color_a);
-        err = clSetKernelArg<cl_float4>(kernel, 7, color);
-
-        for (int iy = iy_start; iy <= iy_end; ++iy)
-        {
-            const int tileOriginY = iy * TILE_PIXEL_HEIGHT;
-            const int offsetY = std::max(firstPixelY - tileOriginY, 0);
-            const int extraY = std::max(tileOriginY + TILE_PIXEL_HEIGHT - lastPixelY - 1, 0);
-
-            for (int ix = ix_start; ix <= ix_end; ++ix)
-            {
-                const int tileOriginX = ix * TILE_PIXEL_WIDTH;
-                const int offsetX = std::max(firstPixelX - tileOriginX, 0);
-                const int extraX = std::max(tileOriginX + TILE_PIXEL_WIDTH - lastPixelX - 1, 0);
-
-                float tileY = (y + 0.5f) - tileOriginY - offsetY;
-                float tileX = (x + 0.5f) - tileOriginX - offsetX;
-
-                int width = TILE_PIXEL_WIDTH - offsetX - extraX;
-                int height = TILE_PIXEL_HEIGHT - offsetY - extraY;
-                cl_int offset = offsetX + offsetY * TILE_PIXEL_WIDTH;
-
-                size_t global_work_size[2] = CL_DIM2(width, height);
-                size_t local_work_size[2] = CL_DIM2(width, 1);
-
-                surface->strokeContext->priv->modTiles.insert(QPoint(ix, iy));
-                cl_mem data = layer->clOpenTileAt(ix, iy);
-
-                err = clSetKernelArg<cl_mem>(kernel, 0, data);
-                err = clSetKernelArg<cl_int>(kernel, 1, offset);
-                err = clSetKernelArg<cl_float>(kernel, 2, tileX);
-                err = clSetKernelArg<cl_float>(kernel, 3, tileY);
-                err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
-                                             kernel, 2,
-                                             nullptr, global_work_size, local_work_size,
-                                             0, nullptr, nullptr);
-            }
-        }
-
-        return 1;
-    }
-
-    return 0; /* Returns non-zero if the surface was modified */
 }
