@@ -15,6 +15,7 @@
 #include <QMouseEvent>
 #include <QTimer>
 #include <QElapsedTimer>
+#include <QAction>
 #include <QDebug>
 
 static const QGLFormat &getFormatSingleton()
@@ -142,6 +143,23 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
     d->penToolPath = ToolFactory::defaultToolName();
     d->eraserToolPath = ToolFactory::defaultEraserName();
     setActiveTool(d->penToolPath);
+
+    auto addShiftAction = [this, d](Qt::Key key, QPoint shift)
+    {
+        QAction *shiftAction = new QAction(this);
+        shiftAction->setShortcut(key);
+        connect(shiftAction, &QAction::triggered, [this, d, shift](){
+            canvasOrigin += shift;
+            d->fullRedraw = true;
+            update();
+        });
+        addAction(shiftAction);
+    };
+
+    addShiftAction(Qt::Key_Up, QPoint(0, -128));
+    addShiftAction(Qt::Key_Down, QPoint(0, 128));
+    addShiftAction(Qt::Key_Left, QPoint(-128, 0));
+    addShiftAction(Qt::Key_Right, QPoint(128, 0));
 }
 
 CanvasWidget::~CanvasWidget()
@@ -1203,47 +1221,6 @@ bool CanvasWidget::eventFilter(QObject *obj, QEvent *event)
     }
 
     return QGLWidget::eventFilter(obj, event);
-}
-
-void CanvasWidget::keyPressEvent(QKeyEvent *event)
-{
-}
-
-void CanvasWidget::keyReleaseEvent(QKeyEvent *event)
-{
-    Q_D(CanvasWidget);
-
-    if ((event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier | Qt::ShiftModifier)) == 0)
-    {
-        if (event->key() == Qt::Key_Up)
-        {
-            canvasOrigin.ry() -= 128;
-            event->accept();
-            d->fullRedraw = true;
-            update();
-        }
-        else if (event->key() == Qt::Key_Down)
-        {
-            canvasOrigin.ry() += 128;
-            event->accept();
-            d->fullRedraw = true;
-            update();
-        }
-        else if (event->key() == Qt::Key_Left)
-        {
-            canvasOrigin.rx() -= 128;
-            event->accept();
-            d->fullRedraw = true;
-            update();
-        }
-        else if (event->key() == Qt::Key_Right)
-        {
-            canvasOrigin.rx() += 128;
-            event->accept();
-            d->fullRedraw = true;
-            update();
-        }
-    }
 }
 
 void CanvasWidget::mousePressEvent(QMouseEvent *event)

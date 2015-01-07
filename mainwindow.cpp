@@ -150,10 +150,6 @@ void MainWindow::canvasStats()
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
-    if(!hasFocus())
-        return;
-
-    canvas->keyPressEvent(event);
 }
 
 void MainWindow::keyReleaseEvent(QKeyEvent *event)
@@ -197,10 +193,6 @@ void MainWindow::keyReleaseEvent(QKeyEvent *event)
     }
 #endif
 
-    if(!hasFocus())
-        return;
-
-    canvas->keyReleaseEvent(event);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
