@@ -176,7 +176,15 @@ void MainWindow::keyReleaseEvent(QKeyEvent *event)
             return;
     }
 
+    /* As of 5.4 lowercase shortcuts work (and therefor the hack would cause double events), but
+     * shift still requires a hack.
+     */
+#if (QT_VERSION < QT_VERSION_CHECK(5, 4, 0))
     if ((event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)) == 0)
+#else
+    if (((event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)) == 0)
+        && ((event->modifiers() & (Qt::ShiftModifier)) == Qt::ShiftModifier))
+#endif
     {
         QKeySequence shortcutKey = QKeySequence(event->key() + event->modifiers());
 
