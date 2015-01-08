@@ -159,33 +159,31 @@ void MainWindow::keyReleaseEvent(QKeyEvent *event)
     /* As of QT 5.2 single key shortcuts are not handled correctly (QTBUG-33015), the following
      * hacks around that by searching the main windows action list for shortcuts coresponding
      * to any unhandled key events.
-     */
-    if(!hasFocus())
-    {
-        QKeyEvent overrideEvent(QEvent::ShortcutOverride,
-                                event->key(),
-                                event->modifiers(),
-                                event->text(),
-                                event->isAutoRepeat(),
-                                event->count());
-        overrideEvent.ignore();
-
-        QApplication::instance()->sendEvent(focusWidget(), &overrideEvent);
-
-        if (overrideEvent.isAccepted())
-            return;
-    }
-
-    /* As of 5.4 lowercase shortcuts work (and therefor the hack would cause double events), but
-     * shift still requires a hack.
+     * As of 5.4 lowercase shortcuts work (and therefor the hack would cause double events), but
+     * shift still requires the hack.
      */
 #if (QT_VERSION < QT_VERSION_CHECK(5, 4, 0))
     if ((event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)) == 0)
 #else
-    if (((event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)) == 0)
-        && ((event->modifiers() & (Qt::ShiftModifier)) == Qt::ShiftModifier))
+    if ((event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier | Qt::ShiftModifier)) == Qt::ShiftModifier)
 #endif
     {
+        if(!hasFocus())
+        {
+            QKeyEvent overrideEvent(QEvent::ShortcutOverride,
+                                    event->key(),
+                                    event->modifiers(),
+                                    event->text(),
+                                    event->isAutoRepeat(),
+                                    event->count());
+            overrideEvent.ignore();
+
+            QApplication::instance()->sendEvent(focusWidget(), &overrideEvent);
+
+            if (overrideEvent.isAccepted())
+                return;
+        }
+
         QKeySequence shortcutKey = QKeySequence(event->key() + event->modifiers());
 
         QList<QAction *>windowActions = findChildren<QAction *>();
