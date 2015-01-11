@@ -187,9 +187,8 @@ void MainWindow::keyReleaseEvent(QKeyEvent *event)
         QKeySequence shortcutKey = QKeySequence(event->key() + event->modifiers());
 
         QList<QAction *>windowActions = findChildren<QAction *>();
-        for (QList<QAction *>::Iterator iter = windowActions.begin(); iter != windowActions.end(); ++iter)
+        for (QAction *action: windowActions)
         {
-            QAction *action = *iter;
             if (action->shortcut() == shortcutKey && action->isEnabled())
             {
                 action->trigger();
