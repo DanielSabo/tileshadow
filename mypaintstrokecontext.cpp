@@ -178,6 +178,7 @@ TileSet MyPaintStrokeContext::startStroke(QPointF point, float pressure)
     mypaint_brush_reset (priv->brush);
     mypaint_brush_new_stroke(priv->brush);
 
+    priv->modTiles.clear();
     mypaint_brush_stroke_to(priv->brush, (MyPaintSurface *)priv->surface,
                             point.x(), point.y(),
                             0.0f /* pressure */, 0.0f /* xtilt */, 0.0f /* ytilt */,
@@ -187,21 +188,18 @@ TileSet MyPaintStrokeContext::startStroke(QPointF point, float pressure)
                             point.x(), point.y(),
                             pressure /* pressure */, 0.0f /* xtilt */, 0.0f /* ytilt */,
                             1.0f / 60.0f /* deltaTime in seconds */);
-    priv->modTiles.clear();
-    return TileSet();
+    return priv->modTiles;
 }
 
 
 TileSet MyPaintStrokeContext::strokeTo(QPointF point, float pressure, float dt)
 {
+    priv->modTiles.clear();
     mypaint_brush_stroke_to(priv->brush, (MyPaintSurface *)priv->surface,
                             point.x(), point.y(),
                             pressure /* pressure */, 0.0f /* xtilt */, 0.0f /* ytilt */,
                             dt / 1000.0f /* deltaTime in seconds */);
-
-    TileSet result = priv->modTiles;
-    priv->modTiles.clear();
-    return result;
+    return priv->modTiles;
 }
 
 static void getColorFunction (MyPaintSurface *base_surface,
