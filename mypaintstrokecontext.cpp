@@ -28,11 +28,10 @@ static int drawDabFunction (MyPaintSurface *surface,
                             float lock_alpha,
                             float colorize);
 
-typedef struct
+struct CanvasMyPaintSurface : public MyPaintSurface
 {
-  MyPaintSurface parent;
-  MyPaintStrokeContext *strokeContext;
-} CanvasMyPaintSurface;
+    MyPaintStrokeContext *strokeContext;
+};
 
 class CLMaskImage
 {
@@ -49,7 +48,7 @@ public:
     MyPaintBrush            *brush;
     int                      activeMask;
     std::vector<CLMaskImage> masks;
-    CanvasMyPaintSurface    *surface;
+    CanvasMyPaintSurface     surface;
     TileSet                  modTiles;
 };
 
@@ -140,12 +139,10 @@ MyPaintStrokeContext::MyPaintStrokeContext(CanvasLayer *layer) : StrokeContext(l
 
     priv->brush = mypaint_brush_new();
 
-    priv->surface = new CanvasMyPaintSurface;
-    memset(priv->surface, 0, sizeof(MyPaintSurface));
-
-    priv->surface->strokeContext = this;
-    priv->surface->parent.draw_dab = drawDabFunction;
-    priv->surface->parent.get_color = getColorFunction;
+    memset(&priv->surface, 0, sizeof(MyPaintSurface));
+    priv->surface.strokeContext = this;
+    priv->surface.draw_dab = drawDabFunction;
+    priv->surface.get_color = getColorFunction;
 }
 
 MyPaintStrokeContext::~MyPaintStrokeContext()
@@ -154,7 +151,6 @@ MyPaintStrokeContext::~MyPaintStrokeContext()
     priv->brush = nullptr;
     for (auto &mask: priv->masks)
         clReleaseMemObject(mask.image);
-    delete priv->surface;
     delete priv;
 }
 
@@ -164,12 +160,12 @@ TileSet MyPaintStrokeContext::startStroke(QPointF point, float pressure)
     mypaint_brush_new_stroke(priv->brush);
 
     priv->modTiles.clear();
-    mypaint_brush_stroke_to(priv->brush, (MyPaintSurface *)priv->surface,
+    mypaint_brush_stroke_to(priv->brush, &priv->surface,
                             point.x(), point.y(),
                             0.0f /* pressure */, 0.0f /* xtilt */, 0.0f /* ytilt */,
                             1.0f /* deltaTime in seconds */);
 
-    mypaint_brush_stroke_to(priv->brush, (MyPaintSurface *)priv->surface,
+    mypaint_brush_stroke_to(priv->brush, &priv->surface,
                             point.x(), point.y(),
                             pressure /* pressure */, 0.0f /* xtilt */, 0.0f /* ytilt */,
                             1.0f / 60.0f /* deltaTime in seconds */);
@@ -180,7 +176,7 @@ TileSet MyPaintStrokeContext::startStroke(QPointF point, float pressure)
 TileSet MyPaintStrokeContext::strokeTo(QPointF point, float pressure, float dt)
 {
     priv->modTiles.clear();
-    mypaint_brush_stroke_to(priv->brush, (MyPaintSurface *)priv->surface,
+    mypaint_brush_stroke_to(priv->brush, &priv->surface,
                             point.x(), point.y(),
                             pressure /* pressure */, 0.0f /* xtilt */, 0.0f /* ytilt */,
                             dt / 1000.0f /* deltaTime in seconds */);
@@ -192,7 +188,7 @@ static void getColorFunction (MyPaintSurface *base_surface,
                               float radius,
                               float * color_r, float * color_g, float * color_b, float * color_a)
 {
-    CanvasMyPaintSurface *surface = (CanvasMyPaintSurface *)base_surface;
+    CanvasMyPaintSurface *surface = static_cast<CanvasMyPaintSurface *>(base_surface);
     CanvasLayer *layer = surface->strokeContext->layer;
 
     if (radius < 1.0f)
@@ -334,7 +330,7 @@ static int drawDabFunction (MyPaintSurface *base_surface,
     if (colorize != 0.0f)
         qWarning() << "drawDab called with unsupported values colorize = " << colorize << endl;
 
-    CanvasMyPaintSurface *surface = (CanvasMyPaintSurface *)base_surface;
+    CanvasMyPaintSurface *surface = static_cast<CanvasMyPaintSurface *>(base_surface);
     CanvasLayer *layer = surface->strokeContext->layer;
     MyPaintStrokeContextPrivate *priv = surface->strokeContext->priv;
     QRectF boundRect;
