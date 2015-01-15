@@ -82,7 +82,6 @@ bool MyPaintStrokeContext::fromSettings(const MyPaintToolSettings &settings)
                 QList<QPointF> const &mappingPoints = inputIter.value();
 
                 MyPaintBrushInput inputID = mypaint_brush_input_from_cname(inputName.toUtf8().constData());
-                // int number_of_mapping_points = inputIter->second.size();
                 int number_of_mapping_points = mappingPoints.size();
 
                 mypaint_brush_set_mapping_n (priv->brush, settingID, inputID, number_of_mapping_points);
