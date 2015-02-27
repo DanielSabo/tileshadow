@@ -21,6 +21,8 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+    bool eventFilter(QObject *obj, QEvent *event);
+
     void closeEvent(QCloseEvent *event);
     void keyPressEvent(QKeyEvent *event);
     void keyReleaseEvent(QKeyEvent *event);
@@ -62,6 +64,8 @@ public slots:
     void canvasStats();
     void showStatusBar(bool visible);
     void updateTool();
+
+    void openFileRequest(QString const &filename);
 };
 
 #endif // MAINWINDOW_H

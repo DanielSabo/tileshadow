@@ -130,6 +130,7 @@ win32 {
     QMAKE_CXXFLAGS += -framework OpenCL -Qunused-arguments
     LIBS += -framework OpenCL
     ICON = TileShadow.icns
+    QMAKE_INFO_PLIST = Info.plist
 } unix:!mac {
     LIBS += -lOpenCL
 }

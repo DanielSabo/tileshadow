@@ -78,12 +78,27 @@ MainWindow::MainWindow(QWidget *parent) :
     setWindowIcon(windowIcon);
 #endif
 
+#ifdef Q_OS_MAC
+    QApplication::instance()->installEventFilter(this);
+#endif
+
     setFocus();
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+bool MainWindow::eventFilter(QObject *, QEvent *event)
+{
+    if (event->type() == QEvent::FileOpen)
+    {
+        openFileRequest(static_cast<QFileOpenEvent *>(event)->file());
+        return true;
+    }
+
+    return false;
 }
 
 void MainWindow::updateTitle()
@@ -247,6 +262,32 @@ void MainWindow::actionNewFile()
     canvas->newDrawing();
     setWindowFilePath("");
     updateTitle();
+}
+
+void MainWindow::openFileRequest(QString const &filename)
+{
+    if (!promptSave())
+        return;
+
+    if (filename.isEmpty())
+        return;
+
+    if (filename.endsWith(".ora"))
+    {
+        canvas->openORA(filename);
+        setWindowFilePath(filename);
+        updateTitle();
+    }
+    else
+    {
+        QImage image(filename);
+        if (!image.isNull())
+        {
+            canvas->openImage(image);
+            setWindowFilePath("");
+            updateTitle();
+        }
+    }
 }
 
 void MainWindow::actionOpenFile()
