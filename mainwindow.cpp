@@ -269,25 +269,7 @@ void MainWindow::openFileRequest(QString const &filename)
     if (!promptSave())
         return;
 
-    if (filename.isEmpty())
-        return;
-
-    if (filename.endsWith(".ora"))
-    {
-        canvas->openORA(filename);
-        setWindowFilePath(filename);
-        updateTitle();
-    }
-    else
-    {
-        QImage image(filename);
-        if (!image.isNull())
-        {
-            canvas->openImage(image);
-            setWindowFilePath("");
-            updateTitle();
-        }
-    }
+    openFile(filename);
 }
 
 void MainWindow::actionOpenFile()
@@ -313,6 +295,11 @@ void MainWindow::actionOpenFile()
 
     QString filename = QFileDialog::getOpenFileName(this, "Open", QDir::homePath(), formats);
 
+    openFile(filename);
+}
+
+void MainWindow::openFile(QString const &filename)
+{
     if (filename.isEmpty())
         return;
 

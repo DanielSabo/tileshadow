@@ -38,6 +38,7 @@ private:
     void updateStatus();
     bool doSave(QString filename);
     bool promptSave();
+    void openFile(QString const &filename);
 
 private slots:
     void canvasModified();
