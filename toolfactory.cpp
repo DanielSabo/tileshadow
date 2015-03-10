@@ -5,6 +5,7 @@
 #include "tiledebugtool.h"
 #include "roundbrushtool.h"
 #include "mypainttool.h"
+#include "gradienttool.h"
 
 static void asciiTitleCase(QString &instr)
 {
@@ -56,6 +57,7 @@ ToolList ToolFactory::listTools()
 
     toolList.append(QPair<QString, QString>("debug", "Debug"));
     toolList.append(QPair<QString, QString>("round", "Round"));
+    toolList.append(QPair<QString, QString>("gradient", "Apply Gradient"));
 
     QStringList brushFiles = findBrushFiles(QDir(":/mypaint-tools/"));
 
@@ -93,6 +95,10 @@ BaseTool *ToolFactory::loadTool(QString toolName)
     else if (toolName == QStringLiteral("round"))
     {
         result = new RoundBrushTool();
+    }
+    else if (toolName == QStringLiteral("gradient"))
+    {
+        result = new GradientTool();
     }
 
     return result;

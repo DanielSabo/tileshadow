@@ -71,7 +71,8 @@ SOURCES += main.cpp\
     paintutils.cpp \
     deviceselectdialog.cpp \
     maskbuffer.cpp \
-    batchprocessor.cpp
+    batchprocessor.cpp \
+    gradienttool.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -108,7 +109,8 @@ HEADERS  += mainwindow.h \
     paintutils.h \
     deviceselectdialog.h \
     maskbuffer.h \
-    batchprocessor.h
+    batchprocessor.h \
+    gradienttool.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \
