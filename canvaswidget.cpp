@@ -20,7 +20,7 @@
 
 static const QGLFormat &getFormatSingleton()
 {
-    static QGLFormat *single = NULL;
+    static QGLFormat *single = nullptr;
 
     if (!single)
     {
@@ -84,7 +84,7 @@ CanvasWidgetPrivate::CanvasWidgetPrivate()
 {
     lastFrameTimer.invalidate();
     nextFrameDelay = 15;
-    activeTool = NULL;
+    activeTool = nullptr;
     deviceIsEraser = false;
     lastTabletEvent = {0, };
     strokeEventTimestamp = 0;
@@ -97,7 +97,7 @@ CanvasWidgetPrivate::CanvasWidgetPrivate()
 
 CanvasWidgetPrivate::~CanvasWidgetPrivate()
 {
-    activeTool = NULL;
+    activeTool = nullptr;
     for (auto iter = tools.begin(); iter != tools.end(); ++iter)
         delete iter.value();
     tools.clear();
@@ -419,7 +419,7 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
 
     auto msg = [strokeTool, pos, pressure](CanvasContext *ctx) {
         ctx->strokeTool.reset(strokeTool);
-        ctx->stroke.reset(NULL);
+        ctx->stroke.reset(nullptr);
 
         if (ctx->layers.layers.empty())
             return;
@@ -797,7 +797,7 @@ CanvasContext *CanvasWidget::getContextMaybe()
 
     if (d->eventThread.checkSync())
         return context;
-    return NULL;
+    return nullptr;
 }
 
 void CanvasWidget::setLayerVisible(int layerIndex, bool visible)
@@ -1182,7 +1182,7 @@ void CanvasWidget::pickColorAt(QPoint pos)
         float data[4];
         clEnqueueReadBuffer(SharedOpenCL::getSharedOpenCL()->cmdQueue, tile->unmapHost(), CL_TRUE,
                             offset, sizeof(float) * 4, data,
-                            0, NULL, NULL);
+                            0, nullptr, nullptr);
         if (data[3] > 0.0f)
         {
             setToolColor(QColor::fromRgbF(data[0], data[1], data[2]));
@@ -1489,7 +1489,7 @@ void CanvasWidget::setActiveTool(const QString &toolName)
         d->activeToolPath = QStringLiteral("debug");
         d->activeTool = d->tools["debug"];
 
-        if (d->activeTool == NULL)
+        if (d->activeTool == nullptr)
         {
             d->activeTool = ToolFactory::loadTool(d->activeToolPath);
             d->tools[d->activeToolPath] = d->activeTool;
