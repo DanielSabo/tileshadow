@@ -78,6 +78,7 @@ public:
     RenderMode::Mode renderMode;
     QTimer layerFlashTimeout;
     QColor dotPreviewColor;
+    std::shared_ptr<QAtomicInt> motionCoalesceToken;
 };
 
 CanvasWidgetPrivate::CanvasWidgetPrivate()
@@ -417,6 +418,11 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
 
     BaseTool *strokeTool = d->activeTool->clone();
 
+    if (strokeTool->coalesceMovement())
+        d->motionCoalesceToken.reset(new QAtomicInt(0));
+    else
+        d->motionCoalesceToken.reset();
+
     auto msg = [strokeTool, pos, pressure](CanvasContext *ctx) {
         ctx->strokeTool.reset(strokeTool);
         ctx->stroke.reset(nullptr);
@@ -452,9 +458,17 @@ void CanvasWidget::strokeTo(QPointF pos, float pressure, float dt)
 
     mouseEventRate.addEvents(1);
 
-    auto msg = [pos, pressure, dt](CanvasContext *ctx) {
+    if (d->motionCoalesceToken)
+        d->motionCoalesceToken->ref();
+
+    auto coalesceToken = d->motionCoalesceToken;
+
+    auto msg = [pos, pressure, dt, coalesceToken](CanvasContext *ctx) {
         if (!ctx->stroke.isNull())
         {
+            if (coalesceToken && coalesceToken->deref() == true)
+                return;
+
             TileSet changedTiles = ctx->stroke->strokeTo(pos, pressure, dt);
 
             if(!changedTiles.empty())

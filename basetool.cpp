@@ -13,6 +13,11 @@ void BaseTool::setColor(const QColor &color)
 {
 }
 
+bool BaseTool::coalesceMovement()
+{
+    return false;
+}
+
 void BaseTool::setToolSetting(QString const &name, QVariant const &value)
 {
     qDebug() << "unknown tool setting" << name << ":" << value;

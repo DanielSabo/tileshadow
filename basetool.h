@@ -17,6 +17,7 @@ public:
     virtual void reset() = 0;
     virtual float getPixelRadius() = 0;
     virtual void setColor(QColor const &color);
+    virtual bool coalesceMovement();
 
     virtual void setToolSetting(QString const &name, QVariant const &value);
     virtual QVariant getToolSetting(QString const &name);
