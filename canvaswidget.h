@@ -71,6 +71,7 @@ public:
     int getActiveLayer();
     void setActiveLayer(int layerIndex);
     void addLayerAbove(int layerIndex);
+    void addLayerAbove(int layerIndex, QImage image, QString name);
     void removeLayer(int layerIndex);
     void duplicateLayer(int layerIndex);
     void moveLayer(int currentIndex, int targetIndex);

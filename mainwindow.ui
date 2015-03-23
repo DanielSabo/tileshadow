@@ -100,6 +100,7 @@
     </property>
     <addaction name="actionNew"/>
     <addaction name="actionOpen"/>
+    <addaction name="actionOpen_As_Layer"/>
     <addaction name="actionSave"/>
     <addaction name="actionSave_As"/>
     <addaction name="actionExport"/>
@@ -317,6 +318,11 @@
   <action name="actionShow_Tools_Folder">
    <property name="text">
     <string>Show Tools Folder</string>
+   </property>
+  </action>
+  <action name="actionOpen_As_Layer">
+   <property name="text">
+    <string>Open As Layer...</string>
    </property>
   </action>
  </widget>
@@ -674,7 +680,23 @@
    <slot>showToolsFolder()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>470</x>
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>280</x>
+     <y>200</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionOpen_As_Layer</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>actionOpenAsLayer()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>280</x>
      <y>200</y>
     </hint>
     <hint type="destinationlabel">
@@ -714,5 +736,6 @@
   <slot>actionDrawLine()</slot>
   <slot>actionCopyStrokeData()</slot>
   <slot>showToolsFolder()</slot>
+  <slot>actionOpenAsLayer()</slot>
  </slots>
 </ui>

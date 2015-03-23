@@ -331,6 +331,35 @@ void MainWindow::openFile(QString const &filename)
     }
 }
 
+void MainWindow::actionOpenAsLayer()
+{
+    QList<QByteArray> readerKnownFormats = QImageReader::supportedImageFormats();
+    QList<QByteArray> importFormats;
+    importFormats.append("png");
+    importFormats.append("bmp");
+    importFormats.append("jpg");
+    importFormats.append("jpeg");
+
+    QStringList importWildcards;
+
+    for(int i = 0; i < importFormats.size(); ++i)
+        if (readerKnownFormats.contains(importFormats[i]))
+            importWildcards.append(QStringLiteral("*.") + importFormats[i]);
+
+    QString formats = QStringLiteral("(") + importWildcards.join(" ") + ")";
+
+    QString filename = QFileDialog::getOpenFileName(this, "Open", QDir::homePath(), formats);
+
+    if (!filename.isEmpty())
+    {
+        QImage image(filename);
+        if (!image.isNull())
+        {
+            canvas->addLayerAbove(canvas->getActiveLayer(), image, QFileInfo(filename).fileName());
+        }
+    }
+}
+
 void MainWindow::actionSave()
 {
     doSave(windowFilePath());

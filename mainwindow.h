@@ -51,6 +51,7 @@ public slots:
     void actionQuit();
     void actionNewFile();
     void actionOpenFile();
+    void actionOpenAsLayer();
     void actionSave();
     void actionSaveAs();
     void actionExport();

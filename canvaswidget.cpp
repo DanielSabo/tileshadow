@@ -742,6 +742,33 @@ void CanvasWidget::addLayerAbove(int layerIndex)
     emit updateLayers();
 }
 
+
+void CanvasWidget::addLayerAbove(int layerIndex, QImage image, QString name)
+{
+    CanvasContext *ctx = getContext();
+
+    if (image.isNull())
+        return;
+
+    std::unique_ptr<CanvasLayer> imported = layerFromImage(image);
+
+    ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
+
+    if (name.isEmpty())
+        name = QString().sprintf("Layer %02d", ++lastNewLayerNumber);
+
+    ctx->layers.newLayerAt(layerIndex + 1, name);
+    CanvasLayer *insertedLayer = ctx->layers.layers.at(layerIndex + 1);
+    insertedLayer->takeTiles(imported.get());
+    resetCurrentLayer(ctx, layerIndex + 1);
+    TileSet layerTiles = insertedLayer->getTileSet();
+    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+
+    update();
+    modified = true;
+    emit updateLayers();
+}
+
 void CanvasWidget::removeLayer(int layerIndex)
 {
     if (action != CanvasAction::None)
