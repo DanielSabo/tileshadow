@@ -68,6 +68,7 @@ public:
     bool currentLayerEditable;
 
     bool deviceIsEraser;
+    Qt::KeyboardModifiers keyModifiers;
     SavedTabletEvent lastTabletEvent;
     ulong strokeEventTimestamp; // last stroke event time, in milliseconds
 
@@ -87,6 +88,7 @@ CanvasWidgetPrivate::CanvasWidgetPrivate()
     nextFrameDelay = 15;
     activeTool = nullptr;
     deviceIsEraser = false;
+    keyModifiers = 0;
     lastTabletEvent = {0, };
     strokeEventTimestamp = 0;
     fullRedraw = true;
@@ -339,9 +341,6 @@ void CanvasWidget::paintGL()
 
     if (d->activeTool && d->currentLayerEditable && showToolCursor)
     {
-        if (cursor().shape() == Qt::ArrowCursor)
-            setCursor(Qt::BlankCursor);
-
         float toolSize = d->activeTool->getPixelRadius() * 2.0f * viewScale;
         if (toolSize < 6.0f)
             toolSize = 6.0f;
@@ -357,10 +356,6 @@ void CanvasWidget::paintGL()
         glFuncs->glBindVertexArray(render->cursorShader.vertexArray);
         glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
         glDisable(GL_BLEND);
-    }
-    else if (cursor().shape() == Qt::BlankCursor)
-    {
-        setCursor(Qt::ArrowCursor);
     }
 
     if (d->dotPreviewColor.isValid())
@@ -1237,6 +1232,35 @@ bool CanvasWidget::eventFilter(QObject *obj, QEvent *event)
     return QGLWidget::eventFilter(obj, event);
 }
 
+CanvasAction::Action actionForMouseEvent(int button, Qt::KeyboardModifiers modifiers)
+{
+#ifdef Q_OS_MAC
+    // If Meta is active button 1 will becomes button 2 when clicked
+    if (button == 1 && modifiers.testFlag(Qt::MetaModifier))
+        button = 2;
+    modifiers &= Qt::ShiftModifier | Qt::ControlModifier;
+#else
+    modifiers &= Qt::ShiftModifier | Qt::ControlModifier | Qt::MetaModifier;
+#endif
+
+    if (button == 1)
+    {
+        if (modifiers == 0)
+            return CanvasAction::MouseStroke;
+        else if (modifiers == Qt::ControlModifier)
+            return CanvasAction::ColorPick;
+    }
+    else if (button == 2)
+    {
+        if (modifiers == 0)
+            return CanvasAction::MoveView;
+        else if (modifiers == Qt::ControlModifier)
+            return CanvasAction::MoveLayer;
+    }
+
+    return CanvasAction::None;
+}
+
 void CanvasWidget::mousePressEvent(QMouseEvent *event)
 {
     Q_D(CanvasWidget);
@@ -1246,15 +1270,6 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
     ulong timestamp = event->timestamp();
     bool wasTablet = false;
     Qt::MouseButton button = event->button();
-    Qt::KeyboardModifiers modifiers = event->modifiers();
-
-    modifiers &= Qt::ShiftModifier | Qt::ControlModifier | Qt::MetaModifier;
-
-#ifdef Q_OS_MAC
-    // As of Qt 5.3 there is an overlap between ctrl for right click and the meta key on OSX
-    if (button == 2 && modifiers.testFlag(Qt::MetaModifier))
-        modifiers ^= Qt::MetaModifier;
-#endif
 
     if (d->lastTabletEvent.valid)
     {
@@ -1265,44 +1280,37 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
         wasTablet = true;
     }
 
-    if (button == 1)
+    if (action == CanvasAction::None)
     {
+        action = actionForMouseEvent(button, event->modifiers());
+
         if (action == CanvasAction::ColorPick)
         {
             pickColorAt(pos.toPoint());
+            action = CanvasAction::None;
         }
-        else if (action == CanvasAction::None)
+        else if (action == CanvasAction::MouseStroke)
         {
+            actionButton = event->button();
+            if (wasTablet)
+                action = CanvasAction::TabletStroke;
+
             d->strokeEventTimestamp = timestamp;
 
             startStroke(pos, pressure);
-            if (wasTablet)
-                action = CanvasAction::TabletStroke;
-            else
-                action = CanvasAction::MouseStroke;
-            actionButton = event->button();
         }
-    }
-    else if (button == 2)
-    {
-        if (action == CanvasAction::None &&
-            modifiers == 0)
+        else if (action == CanvasAction::MoveView)
         {
-            action = CanvasAction::MoveView;
             actionButton = event->button();
             actionOrigin = event->pos();
-            setCursor(moveViewCursor);
         }
-        //FIXME: This shouldn't depend on the binding for color pick
-        else if ((action == CanvasAction::None || action == CanvasAction::ColorPick) &&
-                 modifiers == Qt::ControlModifier &&
-                 d->currentLayerEditable)
+        else if (action == CanvasAction::MoveLayer)
         {
-            action = CanvasAction::MoveLayer;
             actionButton = event->button();
             actionOrigin = event->pos();
-            setCursor(moveLayerCursor);
         }
+
+        updateCursor();
     }
 
     event->accept();
@@ -1322,7 +1330,6 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
         {
             action = CanvasAction::None;
             actionButton = Qt::NoButton;
-            defaultCursor();
         }
         else if (action == CanvasAction::MoveLayer)
         {
@@ -1330,10 +1337,11 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
             offset /= viewScale;
             action = CanvasAction::None;
             actionButton = Qt::NoButton;
-            defaultCursor();
 
             translateCurrentLayer(offset.x(), offset.y());
         }
+
+        updateCursor();
     }
 
     event->accept();
@@ -1425,19 +1433,21 @@ void CanvasWidget::wheelEvent(QWheelEvent *event)
 void CanvasWidget::leaveEvent(QEvent * event)
 {
     showToolCursor = false;
-    update();
     unsetCursor();
+    update();
 }
 
 void CanvasWidget::enterEvent(QEvent * event)
 {
     showToolCursor = true;
+    updateCursor();
     update();
-    defaultCursor();
 }
 
 void CanvasWidget::updateModifiers(QInputEvent *event)
 {
+    Q_D(CanvasWidget);
+
     Qt::KeyboardModifiers modState;
 
     if (event->type() == QEvent::KeyPress ||
@@ -1454,28 +1464,44 @@ void CanvasWidget::updateModifiers(QInputEvent *event)
         modState = event->modifiers();
     }
 
-    if ((action == CanvasAction::None) &&
-        (modState == Qt::ControlModifier))
+    if (d->keyModifiers != modState)
     {
-        action = CanvasAction::ColorPick;
-        setCursor(colorPickCursor);
-    }
-    else if ((action == CanvasAction::ColorPick) &&
-             (modState != Qt::ControlModifier))
-    {
-        action = CanvasAction::None;
-        defaultCursor();
+        d->keyModifiers = modState;
+        updateCursor();
     }
 }
 
-void CanvasWidget::defaultCursor()
+void CanvasWidget::updateCursor()
 {
     Q_D(CanvasWidget);
 
-    if (d->activeTool && d->currentLayerEditable && showToolCursor)
+    CanvasAction::Action cursorAction = action;
+    if (cursorAction == CanvasAction::None)
+        cursorAction = actionForMouseEvent(1, d->keyModifiers);
+
+    if ((cursorAction == CanvasAction::MouseStroke ||
+         cursorAction == CanvasAction::TabletStroke) &&
+         d->activeTool && d->currentLayerEditable)
+    {
         setCursor(Qt::BlankCursor);
+    }
+    else if (cursorAction == CanvasAction::ColorPick)
+    {
+        setCursor(colorPickCursor);
+    }
+    else if ((cursorAction == CanvasAction::MoveLayer) &&
+             d->currentLayerEditable)
+    {
+        setCursor(moveLayerCursor);
+    }
+    else if (cursorAction == CanvasAction::MoveView)
+    {
+        setCursor(moveViewCursor);
+    }
     else
+    {
         setCursor(Qt::ArrowCursor);
+    }
 }
 
 void CanvasWidget::setActiveTool(const QString &toolName)

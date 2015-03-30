@@ -133,7 +133,7 @@ private:
     Qt::MouseButton actionButton;
 
     void updateModifiers(QInputEvent *event);
-    void defaultCursor();
+    void updateCursor();
 
     void pickColorAt(QPoint pos);
     void updateLayerTranslate(int x, int y);
