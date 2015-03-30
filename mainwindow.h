@@ -62,6 +62,7 @@ public slots:
     void actionResetTool();
     void actionSetBackgroundColor();
     void actionMergeLayerDown();
+    void actionDrawLine();
     void canvasStats();
     void showStatusBar(bool visible);
     void updateTool();

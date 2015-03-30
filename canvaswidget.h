@@ -18,7 +18,8 @@ namespace CanvasAction
         TabletStroke,
         ColorPick,
         MoveView,
-        MoveLayer
+        MoveLayer,
+        DrawLine
     } Action;
 }
 
@@ -89,6 +90,7 @@ public:
     void hideColorPreview();
 
     void setBackgroundColor(QColor const &color);
+    void lineDrawMode();
 
     void newDrawing();
     void openORA(QString path);
@@ -134,6 +136,10 @@ private:
 
     void updateModifiers(QInputEvent *event);
     void updateCursor();
+
+    void startLine();
+    void lineTo(QPointF start, QPointF end);
+    void endLine();
 
     void pickColorAt(QPoint pos);
     void updateLayerTranslate(int x, int y);

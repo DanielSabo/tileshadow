@@ -548,6 +548,121 @@ void CanvasWidget::endStroke()
     d->eventThread.enqueueCommand(msg);
 }
 
+void CanvasWidget::startLine()
+{
+    Q_D(CanvasWidget);
+
+    BaseTool *strokeTool = nullptr;
+
+    if (d->activeTool && d->currentLayerEditable)
+        strokeTool = d->activeTool->clone();
+
+    d->motionCoalesceToken.reset(new QAtomicInt(0));
+
+    auto msg = [strokeTool](CanvasContext *ctx) {
+        ctx->strokeTool.reset(strokeTool);
+        ctx->stroke.reset();
+        ctx->strokeModifiedTiles.clear();
+
+        if (ctx->layers.layers.empty())
+            ctx->strokeTool.reset();
+    };
+
+    d->eventThread.enqueueCommand(msg);
+
+    modified = true;
+    emit canvasModified();
+}
+
+void CanvasWidget::lineTo(QPointF start, QPointF end)
+{
+    Q_D(CanvasWidget);
+
+    mouseEventRate.addEvents(1);
+
+    d->motionCoalesceToken->ref();
+
+    auto coalesceToken = d->motionCoalesceToken;
+
+    auto msg = [start, end, coalesceToken](CanvasContext *ctx) {
+        if (!ctx->strokeTool)
+            return;
+
+        if (coalesceToken && coalesceToken->deref() == true)
+            return;
+
+        CanvasLayer *targetLayer = ctx->layers.layers.at(ctx->currentLayer);
+
+        for (QPoint const &iter : ctx->strokeModifiedTiles)
+        {
+            CanvasTile *oldTile = ctx->currentLayerCopy->getTileMaybe(iter.x(), iter.y());
+
+            if (oldTile)
+                (*targetLayer->tiles)[iter] = oldTile->copy();
+            else
+                targetLayer->tiles->erase(iter);
+
+            ctx->dirtyTiles.insert(iter);
+        }
+
+        ctx->strokeModifiedTiles.clear();
+
+        std::unique_ptr<StrokeContext> stroke(ctx->strokeTool->newStroke(targetLayer));
+
+
+        float dt = QLineF(start, end).length() * 0.5f;
+        TileSet startTiles  = stroke->startStroke(start, 0.5f);
+        TileSet strokeTiles = stroke->strokeTo(end, 0.5f, dt);
+        strokeTiles.insert(startTiles.begin(), startTiles.end());
+
+        if(!strokeTiles.empty())
+        {
+            ctx->dirtyTiles.insert(strokeTiles.begin(), strokeTiles.end());
+            ctx->strokeModifiedTiles.insert(strokeTiles.begin(), strokeTiles.end());
+        }
+    };
+
+    d->eventThread.enqueueCommand(msg);
+}
+
+void CanvasWidget::endLine()
+{
+    Q_D(CanvasWidget);
+
+    auto msg = [](CanvasContext *ctx) {
+        ctx->strokeTool.reset();
+        ctx->stroke.reset();
+
+        if (ctx->strokeModifiedTiles.empty())
+            return;
+
+        CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
+        undoEvent->targetTileMap = ctx->layers.layers[ctx->currentLayer]->tiles;
+        undoEvent->currentLayer = ctx->currentLayer;
+
+        CanvasLayer *currentLayerObj = ctx->layers.layers[ctx->currentLayer];
+
+        for (QPoint const &iter : ctx->strokeModifiedTiles)
+        {
+            /* Move oldTile to the layer because we will are just going to overwrite the one in currentLayerCopy */
+            std::unique_ptr<CanvasTile> oldTile = ctx->currentLayerCopy->takeTileMaybe(iter.x(), iter.y());
+
+            if (oldTile)
+                oldTile->swapHost();
+
+            undoEvent->tiles[iter] = std::move(oldTile);
+
+            /* FIXME: It's hypothetically possible that the stroke removed tiles */
+            (*ctx->currentLayerCopy->tiles)[iter] = (*currentLayerObj->tiles)[iter]->copy();
+        }
+
+        ctx->addUndoEvent(undoEvent);
+        ctx->strokeModifiedTiles.clear();
+    };
+
+    d->eventThread.enqueueCommand(msg);
+}
+
 float CanvasWidget::getScale()
 {
     return viewScale;
@@ -1086,6 +1201,18 @@ void CanvasWidget::setBackgroundColor(const QColor &color)
     }
 }
 
+void CanvasWidget::lineDrawMode()
+{
+    Q_D(CanvasWidget);
+
+    if (d->primaryAction != CanvasAction::DrawLine)
+        d->primaryAction = CanvasAction::DrawLine;
+    else
+        d->primaryAction = CanvasAction::MouseStroke;
+
+    updateCursor();
+}
+
 void CanvasWidget::undo()
 {
     Q_D(CanvasWidget);
@@ -1304,6 +1431,13 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
 
             startStroke(pos, pressure);
         }
+        else if (action == CanvasAction::DrawLine)
+        {
+            actionButton = event->button();
+            actionOrigin = event->pos();
+
+            startLine();
+        }
         else if (action == CanvasAction::MoveView)
         {
             actionButton = event->button();
@@ -1330,6 +1464,12 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
             endStroke();
             action = CanvasAction::None;
             actionButton = Qt::NoButton;
+        }
+        else if (action == CanvasAction::DrawLine)
+        {
+            action = CanvasAction::None;
+            actionButton = Qt::NoButton;
+            endLine();
         }
         else if (action == CanvasAction::MoveView)
         {
@@ -1366,6 +1506,12 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
         strokeTo(pos, 0.5f, float(newTimestamp) - d->strokeEventTimestamp);
 
         d->strokeEventTimestamp = newTimestamp;
+    }
+    else if (action == CanvasAction::DrawLine)
+    {
+        QPointF start = (actionOrigin + canvasOrigin) / viewScale;
+        QPointF end = (event->localPos() + canvasOrigin) / viewScale;
+        lineTo(start, end);
     }
     else if (action == CanvasAction::MoveView)
     {
@@ -1502,6 +1648,10 @@ void CanvasWidget::updateCursor()
     else if (cursorAction == CanvasAction::MoveView)
     {
         setCursor(moveViewCursor);
+    }
+    else if (cursorAction == CanvasAction::DrawLine)
+    {
+        setCursor(Qt::CrossCursor);
     }
     else
     {

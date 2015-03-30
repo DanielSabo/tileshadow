@@ -140,6 +140,8 @@
     <addaction name="actionIncrease_Tool_Size"/>
     <addaction name="actionDecrease_Tool_Size"/>
     <addaction name="actionResetTool"/>
+    <addaction name="separator"/>
+    <addaction name="actionDraw_Line"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -295,6 +297,14 @@
   <action name="actionSet_Background_Color">
    <property name="text">
     <string>Set Background Color</string>
+   </property>
+  </action>
+  <action name="actionDraw_Line">
+   <property name="text">
+    <string>Draw Line</string>
+   </property>
+   <property name="shortcut">
+    <string>L</string>
    </property>
   </action>
  </widget>
@@ -613,6 +623,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionDraw_Line</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>actionDrawLine()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>280</x>
+     <y>200</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>showOpenCLInfo()</slot>
@@ -641,5 +667,6 @@
   <slot>actionResetTool()</slot>
   <slot>actionMergeLayerDown()</slot>
   <slot>actionSetBackgroundColor()</slot>
+  <slot>actionDrawLine()</slot>
  </slots>
 </ui>

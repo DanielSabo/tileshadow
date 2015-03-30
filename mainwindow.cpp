@@ -485,6 +485,11 @@ void MainWindow::actionMergeLayerDown()
     canvas->mergeLayerDown(canvas->getActiveLayer());
 }
 
+void MainWindow::actionDrawLine()
+{
+    canvas->lineDrawMode();
+}
+
 void MainWindow::actionZoomIn()
 {
     canvas->setScale(canvas->getScale() * 2);
