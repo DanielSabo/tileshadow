@@ -68,6 +68,7 @@ public:
     bool currentLayerEditable;
 
     bool deviceIsEraser;
+    CanvasAction::Action primaryAction;
     Qt::KeyboardModifiers keyModifiers;
     SavedTabletEvent lastTabletEvent;
     ulong strokeEventTimestamp; // last stroke event time, in milliseconds
@@ -80,6 +81,8 @@ public:
     QTimer layerFlashTimeout;
     QColor dotPreviewColor;
     std::shared_ptr<QAtomicInt> motionCoalesceToken;
+
+    CanvasAction::Action actionForMouseEvent(int button, Qt::KeyboardModifiers modifiers);
 };
 
 CanvasWidgetPrivate::CanvasWidgetPrivate()
@@ -88,6 +91,7 @@ CanvasWidgetPrivate::CanvasWidgetPrivate()
     nextFrameDelay = 15;
     activeTool = nullptr;
     deviceIsEraser = false;
+    primaryAction = CanvasAction::MouseStroke;
     keyModifiers = 0;
     lastTabletEvent = {0, };
     strokeEventTimestamp = 0;
@@ -104,6 +108,36 @@ CanvasWidgetPrivate::~CanvasWidgetPrivate()
     for (auto iter = tools.begin(); iter != tools.end(); ++iter)
         delete iter.value();
     tools.clear();
+}
+
+
+CanvasAction::Action CanvasWidgetPrivate::actionForMouseEvent(int button, Qt::KeyboardModifiers modifiers)
+{
+#ifdef Q_OS_MAC
+    // If Meta is active button 1 will becomes button 2 when clicked
+    if (button == 1 && modifiers.testFlag(Qt::MetaModifier))
+        button = 2;
+    modifiers &= Qt::ShiftModifier | Qt::ControlModifier;
+#else
+    modifiers &= Qt::ShiftModifier | Qt::ControlModifier | Qt::MetaModifier;
+#endif
+
+    if (button == 1)
+    {
+        if (modifiers == 0)
+            return primaryAction;
+        else if (modifiers == Qt::ControlModifier)
+            return CanvasAction::ColorPick;
+    }
+    else if (button == 2)
+    {
+        if (modifiers == 0)
+            return CanvasAction::MoveView;
+        else if (modifiers == Qt::ControlModifier)
+            return CanvasAction::MoveLayer;
+    }
+
+    return CanvasAction::None;
 }
 
 CanvasWidget::CanvasWidget(QWidget *parent) :
@@ -1232,35 +1266,6 @@ bool CanvasWidget::eventFilter(QObject *obj, QEvent *event)
     return QGLWidget::eventFilter(obj, event);
 }
 
-CanvasAction::Action actionForMouseEvent(int button, Qt::KeyboardModifiers modifiers)
-{
-#ifdef Q_OS_MAC
-    // If Meta is active button 1 will becomes button 2 when clicked
-    if (button == 1 && modifiers.testFlag(Qt::MetaModifier))
-        button = 2;
-    modifiers &= Qt::ShiftModifier | Qt::ControlModifier;
-#else
-    modifiers &= Qt::ShiftModifier | Qt::ControlModifier | Qt::MetaModifier;
-#endif
-
-    if (button == 1)
-    {
-        if (modifiers == 0)
-            return CanvasAction::MouseStroke;
-        else if (modifiers == Qt::ControlModifier)
-            return CanvasAction::ColorPick;
-    }
-    else if (button == 2)
-    {
-        if (modifiers == 0)
-            return CanvasAction::MoveView;
-        else if (modifiers == Qt::ControlModifier)
-            return CanvasAction::MoveLayer;
-    }
-
-    return CanvasAction::None;
-}
-
 void CanvasWidget::mousePressEvent(QMouseEvent *event)
 {
     Q_D(CanvasWidget);
@@ -1282,7 +1287,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
 
     if (action == CanvasAction::None)
     {
-        action = actionForMouseEvent(button, event->modifiers());
+        action = d->actionForMouseEvent(button, event->modifiers());
 
         if (action == CanvasAction::ColorPick)
         {
@@ -1477,7 +1482,7 @@ void CanvasWidget::updateCursor()
 
     CanvasAction::Action cursorAction = action;
     if (cursorAction == CanvasAction::None)
-        cursorAction = actionForMouseEvent(1, d->keyModifiers);
+        cursorAction = d->actionForMouseEvent(1, d->keyModifiers);
 
     if ((cursorAction == CanvasAction::MouseStroke ||
          cursorAction == CanvasAction::TabletStroke) &&
