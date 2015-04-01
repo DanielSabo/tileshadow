@@ -695,6 +695,9 @@ int CanvasWidget::getActiveLayer()
 
 void CanvasWidget::setActiveLayer(int layerIndex)
 {
+    if (action != CanvasAction::None)
+        return;
+
     CanvasContext *ctx = getContext();
 
     if (layerIndex >= 0 && layerIndex < ctx->layers.layers.size())
@@ -709,6 +712,9 @@ void CanvasWidget::setActiveLayer(int layerIndex)
 
 void CanvasWidget::addLayerAbove(int layerIndex)
 {
+    if (action != CanvasAction::None)
+        return;
+
     CanvasContext *ctx = getContext();
 
     ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
@@ -721,6 +727,9 @@ void CanvasWidget::addLayerAbove(int layerIndex)
 
 void CanvasWidget::removeLayer(int layerIndex)
 {
+    if (action != CanvasAction::None)
+        return;
+
     CanvasContext *ctx = getContext();
 
     if (layerIndex < 0 || layerIndex > ctx->layers.layers.size())
@@ -749,6 +758,9 @@ void CanvasWidget::removeLayer(int layerIndex)
 
 void CanvasWidget::moveLayer(int currentIndex, int targetIndex)
 {
+    if (action != CanvasAction::None)
+        return;
+
     /* Move the layer at currentIndex to targetIndex, the layers at targetIndex and
      * above will be shifted up to accommodate it.
      */
@@ -790,6 +802,9 @@ void CanvasWidget::moveLayer(int currentIndex, int targetIndex)
 
 void CanvasWidget::renameLayer(int layerIndex, QString name)
 {
+    if (action != CanvasAction::None)
+        return;
+
     CanvasContext *ctx = getContext();
 
     if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
@@ -807,6 +822,9 @@ void CanvasWidget::renameLayer(int layerIndex, QString name)
 
 void CanvasWidget::mergeLayerDown(int layerIndex)
 {
+    if (action != CanvasAction::None)
+        return;
+
     CanvasContext *ctx = getContext();
 
     auto &layerList = ctx->layers.layers;
@@ -839,6 +857,9 @@ void CanvasWidget::mergeLayerDown(int layerIndex)
 
 void CanvasWidget::duplicateLayer(int layerIndex)
 {
+    if (action != CanvasAction::None)
+        return;
+
     CanvasContext *ctx = getContext();
 
     if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
@@ -947,6 +968,9 @@ void CanvasWidget::setLayerVisible(int layerIndex, bool visible)
 {
     Q_D(CanvasWidget);
 
+    if (action != CanvasAction::None)
+        return;
+
     CanvasContext *ctx = getContext();
 
     if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
@@ -990,6 +1014,9 @@ void CanvasWidget::setLayerEditable(int layerIndex, bool editable)
 {
     Q_D(CanvasWidget);
 
+    if (action != CanvasAction::None)
+        return;
+
     CanvasContext *ctx = getContext();
 
     if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
@@ -1024,6 +1051,9 @@ bool CanvasWidget::getLayerEditable(int layerIndex)
 void CanvasWidget::setLayerTransientOpacity(int layerIndex, float opacity)
 {
     Q_D(CanvasWidget);
+
+    if (action != CanvasAction::None)
+        return;
 
     //FIXME: This should probably be clampled in the layer object
     opacity = qBound(0.0f, opacity, 1.0f);
@@ -1061,6 +1091,9 @@ void CanvasWidget::setLayerTransientOpacity(int layerIndex, float opacity)
 
 void CanvasWidget::setLayerOpacity(int layerIndex, float opacity)
 {
+    if (action != CanvasAction::None)
+        return;
+
     setLayerTransientOpacity(layerIndex, opacity);
 
     CanvasContext *ctx = getContext();
@@ -1080,6 +1113,9 @@ float CanvasWidget::getLayerOpacity(int layerIndex)
 
 void CanvasWidget::setLayerMode(int layerIndex, BlendMode::Mode mode)
 {
+    if (action != CanvasAction::None)
+        return;
+
     CanvasContext *ctx = getContext();
 
     if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
@@ -1166,6 +1202,9 @@ void CanvasWidget::hideColorPreview()
 void CanvasWidget::setBackgroundColor(const QColor &color)
 {
     Q_D(CanvasWidget);
+
+    if (action != CanvasAction::None)
+        return;
 
     if (color.isValid())
     {
