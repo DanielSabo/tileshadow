@@ -511,6 +511,26 @@ void CanvasWidget::strokeTo(QPointF pos, float pressure, float dt)
     d->eventThread.enqueueCommand(msg);
 }
 
+static void transferUndoEventTiles(CanvasUndoTiles *undoEvent,
+                                   TileSet const &modifiedTiles,
+                                   CanvasLayer *originalLayer,
+                                   CanvasLayer const *modifiedLayer)
+{
+    /* Move modified tiles from the backup layer to the event, and from the new layer to the backup */
+    for (QPoint const &iter : modifiedTiles)
+    {
+        std::unique_ptr<CanvasTile> oldTile = originalLayer->takeTileMaybe(iter.x(), iter.y());
+
+        if (oldTile)
+            oldTile->swapHost();
+
+        undoEvent->tiles[iter] = std::move(oldTile);
+
+        if (CanvasTile *newTile = modifiedLayer->getTileMaybe(iter.x(), iter.y()))
+            (*originalLayer->tiles)[iter] = newTile->copy();
+    }
+}
+
 void CanvasWidget::endStroke()
 {
     Q_D(CanvasWidget);
@@ -519,26 +539,13 @@ void CanvasWidget::endStroke()
         if (ctx->stroke)
         {
             ctx->stroke.reset();
-
-            CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
-            undoEvent->targetTileMap = ctx->layers.layers[ctx->currentLayer]->tiles;
-            undoEvent->currentLayer = ctx->currentLayer;
+            ctx->strokeTool.reset();
 
             CanvasLayer *currentLayerObj = ctx->layers.layers[ctx->currentLayer];
-
-            for (QPoint const &iter : ctx->strokeModifiedTiles)
-            {
-                /* Move oldTile to the layer because we will are just going to overwrite the one it currentLayerCopy */
-                std::unique_ptr<CanvasTile> oldTile = ctx->currentLayerCopy->takeTileMaybe(iter.x(), iter.y());
-
-                if (oldTile)
-                    oldTile->swapHost();
-
-                undoEvent->tiles[iter] = std::move(oldTile);
-
-                /* FIXME: It's hypothetically possible that the stroke removed tiles */
-                (*ctx->currentLayerCopy->tiles)[iter] = (*currentLayerObj->tiles)[iter]->copy();
-            }
+            CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
+            undoEvent->targetTileMap = currentLayerObj->tiles;
+            undoEvent->currentLayer = ctx->currentLayer;
+            transferUndoEventTiles(undoEvent, ctx->strokeModifiedTiles, ctx->currentLayerCopy.get(), currentLayerObj);
 
             ctx->addUndoEvent(undoEvent);
             ctx->strokeModifiedTiles.clear();
@@ -636,25 +643,11 @@ void CanvasWidget::endLine()
         if (ctx->strokeModifiedTiles.empty())
             return;
 
-        CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
-        undoEvent->targetTileMap = ctx->layers.layers[ctx->currentLayer]->tiles;
-        undoEvent->currentLayer = ctx->currentLayer;
-
         CanvasLayer *currentLayerObj = ctx->layers.layers[ctx->currentLayer];
-
-        for (QPoint const &iter : ctx->strokeModifiedTiles)
-        {
-            /* Move oldTile to the layer because we will are just going to overwrite the one in currentLayerCopy */
-            std::unique_ptr<CanvasTile> oldTile = ctx->currentLayerCopy->takeTileMaybe(iter.x(), iter.y());
-
-            if (oldTile)
-                oldTile->swapHost();
-
-            undoEvent->tiles[iter] = std::move(oldTile);
-
-            /* FIXME: It's hypothetically possible that the stroke removed tiles */
-            (*ctx->currentLayerCopy->tiles)[iter] = (*currentLayerObj->tiles)[iter]->copy();
-        }
+        CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
+        undoEvent->targetTileMap = currentLayerObj->tiles;
+        undoEvent->currentLayer = ctx->currentLayer;
+        transferUndoEventTiles(undoEvent, ctx->strokeModifiedTiles, ctx->currentLayerCopy.get(), currentLayerObj);
 
         ctx->addUndoEvent(undoEvent);
         ctx->strokeModifiedTiles.clear();
@@ -898,28 +891,22 @@ void CanvasWidget::translateCurrentLayer(int x,  int y)
     undoEvent->targetTileMap = currentLayer->tiles;
     undoEvent->currentLayer = ctx->currentLayer;
 
+    /* Add the layers currently visible tiles (which may differ from the undo tiles) to the dirty list */
+    TileSet layerTiles = currentLayer->getTileSet();
+    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+    /* Add the newly translated tiles*/
+    layerTiles = newLayer->getTileSet();
+    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+
     // The undo tiles are the original layer + new layer
-    TileSet layerTiles = ctx->currentLayerCopy->getTileSet();
-    TileSet newLayerTiles = newLayer->getTileSet();
-    layerTiles.insert(newLayerTiles.begin(), newLayerTiles.end());
-
-    for (TileSet::iterator iter = layerTiles.begin(); iter != layerTiles.end(); iter++)
-    {
-        std::unique_ptr<CanvasTile> undoTile = ctx->currentLayerCopy->takeTileMaybe(iter->x(), iter->y());
-        if (undoTile)
-            undoTile->swapHost();
-        undoEvent->tiles[*iter] = std::move(undoTile);
-    }
-    ctx->addUndoEvent(undoEvent);
-
-    // The dirty tiles are the (possibly moved) current layer + new layer
-    layerTiles = currentLayer->getTileSet();
-    layerTiles.insert(newLayerTiles.begin(), newLayerTiles.end());
+    TileSet originalTiles = ctx->currentLayerCopy->getTileSet();
+    layerTiles.insert(originalTiles.begin(), originalTiles.end());
 
     currentLayer->takeTiles(newLayer);
     delete newLayer;
-    ctx->currentLayerCopy.reset(currentLayer->deepCopy());
-    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+
+    transferUndoEventTiles(undoEvent, layerTiles, ctx->currentLayerCopy.get(), currentLayer);
+    ctx->addUndoEvent(undoEvent);
 
     update();
     modified = true;
