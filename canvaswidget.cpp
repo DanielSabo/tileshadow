@@ -1209,7 +1209,7 @@ void CanvasWidget::undo()
     if (ctx->undoHistory.empty())
         return;
 
-    if (ctx->stroke) // Don't undo during a stroke
+    if (action != CanvasAction::None)
         return;
 
     int newActiveLayer = ctx->currentLayer;
@@ -1250,7 +1250,7 @@ void CanvasWidget::redo()
     if (ctx->redoHistory.empty())
         return;
 
-    if (ctx->stroke)  // Don't redo during a stroke
+    if (action != CanvasAction::None)
         return;
 
     int newActiveLayer = ctx->currentLayer;
