@@ -493,7 +493,7 @@ void CanvasWidget::strokeTo(QPointF pos, float pressure, float dt)
     auto coalesceToken = d->motionCoalesceToken;
 
     auto msg = [pos, pressure, dt, coalesceToken](CanvasContext *ctx) {
-        if (!ctx->stroke.isNull())
+        if (ctx->stroke)
         {
             if (coalesceToken && coalesceToken->deref() == true)
                 return;
@@ -516,7 +516,7 @@ void CanvasWidget::endStroke()
     Q_D(CanvasWidget);
 
     auto msg = [](CanvasContext *ctx) {
-        if (!ctx->stroke.isNull())
+        if (ctx->stroke)
         {
             ctx->stroke.reset();
 
@@ -1222,7 +1222,7 @@ void CanvasWidget::undo()
     if (ctx->undoHistory.empty())
         return;
 
-    if (!ctx->stroke.isNull())
+    if (ctx->stroke) // Don't undo during a stroke
         return;
 
     int newActiveLayer = ctx->currentLayer;
@@ -1263,7 +1263,7 @@ void CanvasWidget::redo()
     if (ctx->redoHistory.empty())
         return;
 
-    if (!ctx->stroke.isNull())
+    if (ctx->stroke)  // Don't redo during a stroke
         return;
 
     int newActiveLayer = ctx->currentLayer;

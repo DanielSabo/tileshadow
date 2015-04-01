@@ -2,7 +2,6 @@
 #define CANVASCONTEXT_H
 
 #include <QList>
-#include <QScopedPointer>
 #include "tileset.h"
 #include "canvaslayer.h"
 #include "canvasstack.h"
@@ -16,11 +15,11 @@ public:
     CanvasContext();
     ~CanvasContext();
 
-    QScopedPointer<BaseTool> strokeTool;
-    QScopedPointer<StrokeContext> stroke;
+    std::unique_ptr<BaseTool> strokeTool;
+    std::unique_ptr<StrokeContext> stroke;
 
     int currentLayer;
-    QScopedPointer<CanvasLayer> currentLayerCopy;
+    std::unique_ptr<CanvasLayer> currentLayerCopy;
     CanvasStack layers;
     std::unique_ptr<CanvasStack> flashStack;
 
