@@ -18,9 +18,9 @@ CanvasLayer::~CanvasLayer()
 {
 }
 
-CanvasLayer *CanvasLayer::deepCopy() const
+std::unique_ptr<CanvasLayer> CanvasLayer::deepCopy() const
 {
-    CanvasLayer *result = new CanvasLayer();
+    std::unique_ptr<CanvasLayer> result(new CanvasLayer());
     result->name = name;
     result->visible = visible;
     result->editable = editable;
@@ -82,9 +82,9 @@ static void subrectCopy(cl_mem src, int srcX, int srcY, cl_mem dst, int dstX, in
                             0, nullptr, nullptr);
 }
 
-CanvasLayer *CanvasLayer::translated(int x, int y) const
+std::unique_ptr<CanvasLayer> CanvasLayer::translated(int x, int y) const
 {
-    CanvasLayer *result = new CanvasLayer();
+    std::unique_ptr<CanvasLayer> result(new CanvasLayer());
     result->name = name;
     result->visible = visible;
     result->editable = editable;
@@ -134,9 +134,9 @@ CanvasLayer *CanvasLayer::translated(int x, int y) const
     return result;
 }
 
-CanvasLayer *CanvasLayer::mergeDown(const CanvasLayer *target) const
+std::unique_ptr<CanvasLayer> CanvasLayer::mergeDown(const CanvasLayer *target) const
 {
-    CanvasLayer *result = target->deepCopy();
+    std::unique_ptr<CanvasLayer> result = target->deepCopy();
 
     for (auto &iter: *tiles)
     {

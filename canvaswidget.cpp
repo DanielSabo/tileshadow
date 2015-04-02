@@ -822,7 +822,7 @@ void CanvasWidget::mergeLayerDown(int layerIndex)
 
     ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
-    CanvasLayer *merged = above->mergeDown(below);
+    CanvasLayer *merged = above->mergeDown(below).release();
 
     delete layerList.takeAt(layerIndex - 1);
     delete layerList.takeAt(layerIndex - 1);
@@ -847,7 +847,7 @@ void CanvasWidget::duplicateLayer(int layerIndex)
     ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
     CanvasLayer *oldLayer = ctx->layers.layers[layerIndex];
-    CanvasLayer *newLayer = oldLayer->deepCopy();
+    CanvasLayer *newLayer = oldLayer->deepCopy().release();
     newLayer->name = oldLayer->name + " Copy";
 
     ctx->layers.layers.insert(layerIndex + 1, newLayer);
@@ -866,14 +866,13 @@ void CanvasWidget::updateLayerTranslate(int x,  int y)
     CanvasContext *ctx = getContext();
 
     CanvasLayer *currentLayer = ctx->layers.layers[ctx->currentLayer];
-    CanvasLayer *newLayer = ctx->currentLayerCopy->translated(x, y);
+    std::unique_ptr<CanvasLayer> newLayer = ctx->currentLayerCopy->translated(x, y);
 
     TileSet layerTiles = currentLayer->getTileSet();
     TileSet newLayerTiles = newLayer->getTileSet();
     layerTiles.insert(newLayerTiles.begin(), newLayerTiles.end());
 
-    currentLayer->takeTiles(newLayer);
-    delete newLayer;
+    currentLayer->takeTiles(newLayer.get());
     ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
 
     update();
@@ -884,7 +883,7 @@ void CanvasWidget::translateCurrentLayer(int x,  int y)
     CanvasContext *ctx = getContext();
 
     CanvasLayer *currentLayer = ctx->layers.layers[ctx->currentLayer];
-    CanvasLayer *newLayer = ctx->currentLayerCopy->translated(x, y);
+    std::unique_ptr<CanvasLayer> newLayer = ctx->currentLayerCopy->translated(x, y);
     newLayer->prune();
 
     CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
@@ -902,8 +901,7 @@ void CanvasWidget::translateCurrentLayer(int x,  int y)
     TileSet originalTiles = ctx->currentLayerCopy->getTileSet();
     layerTiles.insert(originalTiles.begin(), originalTiles.end());
 
-    currentLayer->takeTiles(newLayer);
-    delete newLayer;
+    currentLayer->takeTiles(newLayer.get());
 
     transferUndoEventTiles(undoEvent, layerTiles, ctx->currentLayerCopy.get(), currentLayer);
     ctx->addUndoEvent(undoEvent);
@@ -922,7 +920,7 @@ void CanvasWidget::resetCurrentLayer(CanvasContext *ctx, int index)
         qWarning() << "Invalid layer index" << index;
 
     CanvasLayer *currentLayerObj = ctx->layers.layers[ctx->currentLayer];
-    ctx->currentLayerCopy.reset(currentLayerObj->deepCopy());
+    ctx->currentLayerCopy = currentLayerObj->deepCopy();
 
     d->currentLayerEditable = currentLayerObj->visible && currentLayerObj->editable;
 }

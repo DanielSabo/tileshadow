@@ -31,9 +31,9 @@ public:
     CanvasTile *getTileMaybe(int x, int y) const;
     std::unique_ptr<CanvasTile> takeTileMaybe(int x, int y);
 
-    CanvasLayer *deepCopy() const;
-    CanvasLayer *translated(int x, int y) const;
-    CanvasLayer *mergeDown(CanvasLayer const *target) const;
+    std::unique_ptr<CanvasLayer> deepCopy() const;
+    std::unique_ptr<CanvasLayer> translated(int x, int y) const;
+    std::unique_ptr<CanvasLayer> mergeDown(CanvasLayer const *target) const;
     TileSet takeTiles(CanvasLayer *source);
     void prune();
     void swapOut();
