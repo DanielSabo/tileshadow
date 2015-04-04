@@ -51,37 +51,28 @@ TileSet CanvasUndoTiles::apply(CanvasStack *stack, int *activeLayer)
 
 CanvasUndoLayers::CanvasUndoLayers(CanvasStack *stack, int activeLayer)
 {
-    for (QList<CanvasLayer *>::iterator iter = stack->layers.begin(); iter != stack->layers.end(); ++iter)
-        layers.push_back(new CanvasLayer(**iter));
+    for (auto const &layer: stack->layers)
+        layers.push_back(new CanvasLayer(*layer));
     currentLayer = activeLayer;
 }
 
 CanvasUndoLayers::~CanvasUndoLayers()
 {
-    for (QList<CanvasLayer *>::iterator iter = layers.begin(); iter != layers.end(); ++iter)
-        delete *iter;
+    for (auto const &layer: layers)
+        delete layer;
     layers.clear();
 }
 
 TileSet CanvasUndoLayers::apply(CanvasStack *stack, int *activeLayer)
 {
-    QList<CanvasLayer *> redoLayers;
     TileSet oldStackTiles = stack->getTileSet();
 
-    for (QList<CanvasLayer *>::iterator iter = stack->layers.begin(); iter != stack->layers.end(); ++iter)
-        redoLayers.push_back(new CanvasLayer(**iter));
-
-    stack->clearLayers();
-
-    for (QList<CanvasLayer *>::iterator iter = layers.begin(); iter != layers.end(); ++iter)
-        stack->layers.push_back(*iter);
+    std::swap(layers, stack->layers);
+    std::swap(*activeLayer, currentLayer);
 
     TileSet modifiedTiles = stack->getTileSet();
     modifiedTiles.insert(oldStackTiles.begin(), oldStackTiles.end());
 
-    layers = redoLayers;
-
-    std::swap(*activeLayer, currentLayer);
     return modifiedTiles;
 }
 
