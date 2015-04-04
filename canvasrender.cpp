@@ -278,6 +278,7 @@ void CanvasRender::renderTile(int x, int y, CanvasTile *tile)
                                      0, nullptr, nullptr);
 
         err = clEnqueueReleaseGLObjects(cmdQueue, 1, &ref.clBuf, 0, nullptr, nullptr);
+        (void)err; /* Ignore the fact that err is unused */
     }
     else
     {
