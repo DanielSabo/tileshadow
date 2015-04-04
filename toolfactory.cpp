@@ -1,11 +1,13 @@
 #include "toolfactory.h"
 
 #include <QDir>
-
+#include <QStandardPaths>
+#include <map>
 #include "tiledebugtool.h"
 #include "roundbrushtool.h"
 #include "mypainttool.h"
 #include "gradienttool.h"
+#include <QDebug>
 
 static void asciiTitleCase(QString &instr)
 {
@@ -35,7 +37,7 @@ static QStringList findBrushFiles(QDir const &path)
 
     for (QFileInfo const &info: infoList)
     {
-        if (info.isDir())
+        if (info.isDir() && info.fileName() != "." && info.fileName() != "..")
             directories << info;
         else if (info.fileName().endsWith(".myb"))
             result << info.filePath();
@@ -51,6 +53,54 @@ static QStringList findBrushFiles(QDir const &path)
     return result;
 }
 
+namespace {
+    struct SortKey
+    {
+        QString filename;
+        QString dirname;
+        QString displayName;
+
+        SortKey(QString path)
+        {
+            path.chop(4);
+            path.replace(QChar('_'), " ");
+            QStringList splitName = path.split("/");
+            filename = splitName.takeLast();
+            dirname = splitName.join(" - ");
+            if (!dirname.isEmpty())
+                displayName = dirname + " - " + filename;
+            else
+                displayName = filename;
+            asciiTitleCase(displayName);
+        }
+
+        bool operator<(const SortKey &b) const
+        {
+            int cmp = QString::compare(dirname, b.dirname, Qt::CaseInsensitive);
+            if (cmp < 0)
+                return true;
+            else if (cmp > 0)
+                return false;
+
+            if (QString::compare(filename, b.filename, Qt::CaseInsensitive) < 0)
+                return true;
+            return false;
+        }
+    };
+}
+
+static void addFilesInPath(std::map<SortKey, QString> &index, QString const &path)
+{
+    const int prefixLength = path.length();
+
+    for (QString const &brushFile: findBrushFiles(QDir(path)))
+    {
+        QString name = brushFile;
+        name.remove(0, prefixLength);
+        index[name] = brushFile;
+    }
+}
+
 ToolList ToolFactory::listTools()
 {
     ToolList toolList;
@@ -59,21 +109,16 @@ ToolList ToolFactory::listTools()
     toolList.append(QPair<QString, QString>("round", "Round"));
     toolList.append(QPair<QString, QString>("gradient", "Apply Gradient"));
 
-    QStringList brushFiles = findBrushFiles(QDir(":/mypaint-tools/"));
+    std::map<SortKey, QString> items;
 
-    for (int i = 0; i < brushFiles.size(); ++i)
+    addFilesInPath(items, QStringLiteral(":/mypaint-tools/"));
+    addFilesInPath(items, QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/mypaint-tools/");
+
+    for (auto const &iter: items)
     {
-        QString brushFile = brushFiles.at(i);
-
-        QStringList splitName = brushFile.split("/");
-        splitName.removeFirst();
-        splitName.removeFirst();
-
-        QString buttonName = splitName.join(" - ");
-        buttonName.truncate(buttonName.length() - 4);
-        buttonName.replace(QChar('_'), " ");
-        asciiTitleCase(buttonName);
-        toolList.append(QPair<QString, QString>(brushFile, buttonName));
+        QString const &brushFile = iter.second;
+        QString const &brushName = iter.first.displayName;
+        toolList.append(QPair<QString, QString>(brushFile, brushName));
     }
 
     return toolList;
