@@ -8,6 +8,7 @@
 #include "ora.h"
 #include "imagefiles.h"
 #include "toolfactory.h"
+#include <list>
 #include <qmath.h>
 #include <QApplication>
 #include <QProgressDialog>
@@ -50,6 +51,14 @@ struct SavedTabletEvent
     ulong timestamp;
 };
 
+struct CanvasStrokePoint
+{
+    float x;
+    float y;
+    float p;
+    float dt;
+};
+
 class CanvasWidgetPrivate
 {
 public:
@@ -72,6 +81,7 @@ public:
     Qt::KeyboardModifiers keyModifiers;
     SavedTabletEvent lastTabletEvent;
     ulong strokeEventTimestamp; // last stroke event time, in milliseconds
+    std::list<CanvasStrokePoint> savedStrokePoints;
 
     int nextFrameDelay;
     QTimer frameTickTrigger;
@@ -477,6 +487,9 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
 
     d->eventThread.enqueueCommand(msg);
 
+    d->savedStrokePoints.clear();
+    d->savedStrokePoints.push_back({float(pos.x()), float(pos.y()), pressure, 0.0f});
+
     modified = true;
     emit canvasModified();
 }
@@ -509,6 +522,8 @@ void CanvasWidget::strokeTo(QPointF pos, float pressure, float dt)
     };
 
     d->eventThread.enqueueCommand(msg);
+
+    d->savedStrokePoints.push_back({float(pos.x()), float(pos.y()), pressure, dt});
 }
 
 static void transferUndoEventTiles(CanvasUndoTiles *undoEvent,
@@ -1357,6 +1372,17 @@ void CanvasWidget::setSynchronous(bool synced)
     Q_D(CanvasWidget);
 
     return d->eventThread.setSynchronous(synced);
+}
+
+QVariant CanvasWidget::getLastStrokeData()
+{
+    Q_D(CanvasWidget);
+
+    QVariantList result;
+    for (auto const &point : d->savedStrokePoints)
+        result.push_back(QVariantList{point.x, point.y, point.p, point.dt});
+
+    return result;
 }
 
 void CanvasWidget::pickColorAt(QPoint pos)

@@ -13,6 +13,8 @@
 #include <QSettings>
 #include <QImageWriter>
 #include <QImageReader>
+#include <QJsonDocument>
+#include <QClipboard>
 #include "canvastile.h"
 #include "hsvcolordial.h"
 #include "toolsettingswidget.h"
@@ -609,4 +611,11 @@ void MainWindow::runCircleBenchmark()
     benchmarkWindow->setOutputText(outputText);
     canvas->setUpdatesEnabled(true);
     setEnabled(true);
+}
+
+void MainWindow::actionCopyStrokeData()
+{
+    QJsonDocument result = QJsonDocument::fromVariant(canvas->getLastStrokeData());
+    QString formattedResult = QString::fromUtf8(result.toJson());
+    QApplication::clipboard()->setText(formattedResult);
 }

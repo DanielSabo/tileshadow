@@ -111,6 +111,7 @@
      <string>System</string>
     </property>
     <addaction name="actionCircle_Benchmark"/>
+    <addaction name="actionCopy_Stroke_Data"/>
     <addaction name="separator"/>
     <addaction name="actionSelect_OpenCL_Device"/>
     <addaction name="actionShow_OpenCL_Information"/>
@@ -305,6 +306,11 @@
    </property>
    <property name="shortcut">
     <string>L</string>
+   </property>
+  </action>
+  <action name="actionCopy_Stroke_Data">
+   <property name="text">
+    <string>Copy Stroke Data</string>
    </property>
   </action>
  </widget>
@@ -639,6 +645,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionCopy_Stroke_Data</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>actionCopyStrokeData()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>280</x>
+     <y>200</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>showOpenCLInfo()</slot>
@@ -668,5 +690,6 @@
   <slot>actionMergeLayerDown()</slot>
   <slot>actionSetBackgroundColor()</slot>
   <slot>actionDrawLine()</slot>
+  <slot>actionCopyStrokeData()</slot>
  </slots>
 </ui>

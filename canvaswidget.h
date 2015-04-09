@@ -66,6 +66,8 @@ public:
     bool getSynchronous();
     void setSynchronous(bool synced);
 
+    QVariant getLastStrokeData();
+
     int getActiveLayer();
     void setActiveLayer(int layerIndex);
     void addLayerAbove(int layerIndex);
