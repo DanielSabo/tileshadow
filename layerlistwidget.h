@@ -8,7 +8,6 @@ class LayerListWidget;
 }
 
 class CanvasWidget;
-class QListWidgetItem;
 class LayerListWidget : public QWidget
 {
     Q_OBJECT
