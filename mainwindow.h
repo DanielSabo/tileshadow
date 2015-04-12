@@ -46,6 +46,7 @@ private slots:
 public slots:
     void showOpenCLInfo();
     void showDeviceSelect();
+    void showToolsFolder();
     void runCircleBenchmark();
     void actionCopyStrokeData();
     void actionQuit();

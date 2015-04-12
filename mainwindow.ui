@@ -113,6 +113,7 @@
     <addaction name="actionCircle_Benchmark"/>
     <addaction name="actionCopy_Stroke_Data"/>
     <addaction name="separator"/>
+    <addaction name="actionShow_Tools_Folder"/>
     <addaction name="actionSelect_OpenCL_Device"/>
     <addaction name="actionShow_OpenCL_Information"/>
     <addaction name="actionStatus_Bar"/>
@@ -311,6 +312,11 @@
   <action name="actionCopy_Stroke_Data">
    <property name="text">
     <string>Copy Stroke Data</string>
+   </property>
+  </action>
+  <action name="actionShow_Tools_Folder">
+   <property name="text">
+    <string>Show Tools Folder</string>
    </property>
   </action>
  </widget>
@@ -661,6 +667,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionShow_Tools_Folder</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>showToolsFolder()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>470</x>
+     <y>200</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>280</x>
+     <y>200</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>showOpenCLInfo()</slot>
@@ -691,5 +713,6 @@
   <slot>actionSetBackgroundColor()</slot>
   <slot>actionDrawLine()</slot>
   <slot>actionCopyStrokeData()</slot>
+  <slot>showToolsFolder()</slot>
  </slots>
 </ui>

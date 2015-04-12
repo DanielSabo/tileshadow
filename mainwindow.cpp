@@ -15,8 +15,10 @@
 #include <QImageReader>
 #include <QJsonDocument>
 #include <QClipboard>
+#include <QDesktopServices>
 #include "canvastile.h"
 #include "hsvcolordial.h"
+#include "toolfactory.h"
 #include "toolsettingswidget.h"
 #include "toollistwidget.h"
 #include "layerlistwidget.h"
@@ -249,6 +251,19 @@ void MainWindow::showOpenCLInfo()
 void MainWindow::showDeviceSelect()
 {
     DeviceSelectDialog().exec();
+}
+
+void MainWindow::showToolsFolder()
+{
+    QString path = ToolFactory::getUserToolsPath();
+    if (QDir().mkpath(path))
+    {
+        QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+    }
+    else
+    {
+        qWarning() << "Failed to create path:" << path;
+    }
 }
 
 void MainWindow::actionQuit()

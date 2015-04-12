@@ -101,6 +101,11 @@ static void addFilesInPath(std::map<SortKey, QString> &index, QString const &pat
     }
 }
 
+QString ToolFactory::getUserToolsPath()
+{
+    return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/mypaint-tools/");
+}
+
 ToolList ToolFactory::listTools()
 {
     ToolList toolList;
@@ -112,7 +117,7 @@ ToolList ToolFactory::listTools()
     std::map<SortKey, QString> items;
 
     addFilesInPath(items, QStringLiteral(":/mypaint-tools/"));
-    addFilesInPath(items, QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/mypaint-tools/");
+    addFilesInPath(items, ToolFactory::getUserToolsPath());
 
     for (auto const &iter: items)
     {
