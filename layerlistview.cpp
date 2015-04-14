@@ -87,6 +87,13 @@ QSize LayerListView::sizeHint() const
                  d->rowSize.height() * qMax<int>(1, things.size()));
 }
 
+int LayerListView::rowHeight()
+{
+    Q_D(const LayerListView);
+
+    return d->rowSize.height();
+}
+
 void LayerListView::setData(const QList<CanvasWidget::LayerInfo> &data, int selection)
 {
     Q_D(LayerListView);

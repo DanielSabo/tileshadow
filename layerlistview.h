@@ -16,6 +16,7 @@ public:
     explicit LayerListView(QWidget *parent = 0);
 
     QSize sizeHint() const;
+    int rowHeight();
 
     void setData(const QList<CanvasWidget::LayerInfo> &data, int selection);
     int getSelectedRow();

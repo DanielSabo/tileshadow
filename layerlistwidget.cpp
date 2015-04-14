@@ -14,6 +14,8 @@ LayerListWidget::LayerListWidget(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    ui->scrollArea->setMinimumHeight(ui->layerList->rowHeight() * 4);
+
     ui->layerModeComboBox->addItem(tr("Normal"), QVariant(BlendMode::Over));
     ui->layerModeComboBox->addItem(tr("Multiply"), QVariant(BlendMode::Multiply));
     ui->layerModeComboBox->addItem(tr("Dodge"), QVariant(BlendMode::ColorDodge));
