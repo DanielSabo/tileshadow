@@ -2,7 +2,6 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QListWidget>
 #include <QLabel>
 #include <QScopedPointer>
 #include "systeminfodialog.h"
