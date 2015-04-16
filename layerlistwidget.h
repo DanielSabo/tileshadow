@@ -32,7 +32,14 @@ public slots:
     void layerListMoveDown();
     void updateLayers();
 
+private slots:
     void layerModeActivated(int index);
+
+    void opacitySliderMoved(int value);
+    void opacitySliderReleased();
+
+    void layerListItemEdited(int row, int column, QVariant const &data);
+    void layerListSelectionChanged(int row);
 
     void canvasDestroyed(QObject *obj);
 };

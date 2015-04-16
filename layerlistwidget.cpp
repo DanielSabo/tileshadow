@@ -28,67 +28,13 @@ LayerListWidget::LayerListWidget(QWidget *parent) :
     connect(ui->downLayerButton, SIGNAL(clicked()), this, SLOT(layerListMoveDown()));
     connect(ui->upLayerButton,   SIGNAL(clicked()), this, SLOT(layerListMoveUp()));
 
-    connect(ui->layerList, &LayerListView::edited, [this](int row, int column, QVariant data){
-        if (!canvas)
-            return;
-
-        if (freezeLayerList)
-            return;
-
-        freezeLayerList = true;
-        if (column == LayerListView::VisibleColumn)
-            canvas->setLayerVisible(row, data.toBool());
-        else if (column == LayerListView::EditableColumn)
-            canvas->setLayerEditable(row, data.toBool());
-        else if (column == LayerListView::NameColumn)
-            canvas->renameLayer(row, data.toString());
-        freezeLayerList = false;
-    });
-
-    connect(ui->layerList, &LayerListView::selectionChanged, [this](int row){
-       if (!canvas)
-           return;
-
-       if (freezeLayerList)
-           return;
-
-       freezeLayerList = true;
-       canvas->setActiveLayer(row);
-       canvas->flashCurrentLayer();
-       BlendMode::Mode currentMode = canvas->getLayerMode(row);
-       ui->layerModeComboBox->setCurrentIndex(ui->layerModeComboBox->findData(QVariant(currentMode)));
-       float opacity = canvas->getLayerOpacity(row);
-       ui->opacitySlider->setValue(opacity * 100.0f);
-       freezeLayerList = false;
-    });
+    connect(ui->layerList, &LayerListView::edited, this, &LayerListWidget::layerListItemEdited);
+    connect(ui->layerList, &LayerListView::selectionChanged, this, &LayerListWidget::layerListSelectionChanged);
 
     connect(ui->layerModeComboBox, SIGNAL(activated(int)), this, SLOT(layerModeActivated(int)));
 
-    connect(ui->opacitySlider, &QSlider::valueChanged, [this](int value){
-        if (!canvas)
-            return;
-
-        if (freezeLayerList)
-            return;
-
-        freezeLayerList = true;
-        float opacity = qBound(0.0f, value / 100.0f, 1.0f);
-        canvas->setLayerTransientOpacity(canvas->getActiveLayer(), opacity);
-        freezeLayerList = false;
-    });
-
-    connect(ui->opacitySlider, &QSlider::sliderReleased, [this](){
-        if (!canvas)
-            return;
-
-        if (freezeLayerList)
-            return;
-
-        freezeLayerList = true;
-        float opacity = qBound(0.0f, ui->opacitySlider->value() / 100.0f, 1.0f);
-        canvas->setLayerOpacity(canvas->getActiveLayer(), opacity);
-        freezeLayerList = false;
-    });
+    connect(ui->opacitySlider, &QSlider::valueChanged, this, &LayerListWidget::opacitySliderMoved);
+    connect(ui->opacitySlider, &QSlider::sliderReleased, this, &LayerListWidget::opacitySliderReleased);
 }
 
 LayerListWidget::~LayerListWidget()
@@ -160,6 +106,70 @@ void LayerListWidget::layerModeActivated(int index)
     ui->layerModeComboBox->setCurrentIndex(index);
 
     canvas->setLayerMode(ui->layerList->getSelectedRow(), newMode);
+    freezeLayerList = false;
+}
+
+void LayerListWidget::opacitySliderMoved(int value)
+{
+    if (!canvas)
+        return;
+
+    if (freezeLayerList)
+        return;
+
+    freezeLayerList = true;
+    float opacity = qBound(0.0f, value / 100.0f, 1.0f);
+    canvas->setLayerTransientOpacity(canvas->getActiveLayer(), opacity);
+    freezeLayerList = false;
+}
+
+void LayerListWidget::opacitySliderReleased()
+{
+    if (!canvas)
+        return;
+
+    if (freezeLayerList)
+        return;
+
+    freezeLayerList = true;
+    float opacity = qBound(0.0f, ui->opacitySlider->value() / 100.0f, 1.0f);
+    canvas->setLayerOpacity(canvas->getActiveLayer(), opacity);
+    freezeLayerList = false;
+}
+
+void LayerListWidget::layerListItemEdited(int row, int column, QVariant const &data)
+{
+    if (!canvas)
+        return;
+
+    if (freezeLayerList)
+        return;
+
+    freezeLayerList = true;
+    if (column == LayerListView::VisibleColumn)
+        canvas->setLayerVisible(row, data.toBool());
+    else if (column == LayerListView::EditableColumn)
+        canvas->setLayerEditable(row, data.toBool());
+    else if (column == LayerListView::NameColumn)
+        canvas->renameLayer(row, data.toString());
+    freezeLayerList = false;
+}
+
+void LayerListWidget::layerListSelectionChanged(int row)
+{
+    if (!canvas)
+        return;
+
+    if (freezeLayerList)
+        return;
+
+    freezeLayerList = true;
+    canvas->setActiveLayer(row);
+    canvas->flashCurrentLayer();
+    BlendMode::Mode currentMode = canvas->getLayerMode(row);
+    ui->layerModeComboBox->setCurrentIndex(ui->layerModeComboBox->findData(QVariant(currentMode)));
+    float opacity = canvas->getLayerOpacity(row);
+    ui->opacitySlider->setValue(opacity * 100.0f);
     freezeLayerList = false;
 }
 
