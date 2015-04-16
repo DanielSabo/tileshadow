@@ -3,6 +3,7 @@
 #include "canvasstack.h"
 #include "canvasstrokepoint.h"
 #include "imagefiles.h"
+#include "ora.h"
 #include "toolfactory.h"
 #include <QApplication>
 #include <QFile>
@@ -42,6 +43,15 @@ class BatchCommandExport : public BatchCommand
 {
 public:
     BatchCommandExport(QJsonObject const &json);
+    void apply(BatchProcessorContext *ctx) override;
+
+    QString path;
+};
+
+class BatchCommandOpen : public BatchCommand
+{
+public:
+    BatchCommandOpen(QJsonObject const &json);
     void apply(BatchProcessorContext *ctx) override;
 
     QString path;
@@ -154,6 +164,42 @@ void BatchCommandExport::apply(BatchProcessorContext *ctx)
     }
 }
 
+BatchCommandOpen::BatchCommandOpen(const QJsonObject &json)
+{
+    if (!json.contains("path"))
+        throw QString("Open command without path");
+
+    QString pathStr = json["path"].toString();
+
+    if (pathStr.isEmpty() || !QFile::exists(pathStr))
+        throw QString("Open command with invalid path");
+
+    path = pathStr;
+}
+
+void BatchCommandOpen::apply(BatchProcessorContext *ctx)
+{
+    if (path.endsWith(".ora"))
+    {
+        loadStackFromORA(&ctx->layers, path);
+    }
+    else
+    {
+        QImage image(path);
+        if (!image.isNull())
+        {
+            ctx->layers.clearLayers();
+            std::unique_ptr<CanvasLayer> imageLayer = layerFromImage(image);
+            imageLayer->name = path;
+            ctx->layers.layers.append(imageLayer.release());
+        }
+        else
+        {
+            qWarning() << "Failed to load" << path << ": invalid file format";
+        }
+    }
+}
+
 BatchProcessor::BatchProcessor(QObject *parent) :
     QObject(parent)
 {
@@ -194,6 +240,10 @@ void BatchProcessor::execute(QString path)
             else if (commandName == QStringLiteral("export"))
             {
                 commandList.emplace_back(new BatchCommandExport(commandObject));
+            }
+            else if (commandName == QStringLiteral("open"))
+            {
+                commandList.emplace_back(new BatchCommandOpen(commandObject));
             }
             else
             {
