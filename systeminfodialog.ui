@@ -45,8 +45,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>476</width>
-        <height>357</height>
+        <width>474</width>
+        <height>348</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -75,6 +75,9 @@
          </property>
          <property name="alignment">
           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+         </property>
+         <property name="textInteractionFlags">
+          <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
          </property>
         </widget>
        </item>
@@ -116,6 +119,10 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>closeButton</tabstop>
+  <tabstop>scrollArea</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>
