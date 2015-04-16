@@ -4,6 +4,7 @@
 #include <QSettings>
 #include <QMessageBox>
 #include <QDebug>
+#include "nativeeventfilter.h"
 #include "deviceselectdialog.h"
 #include "batchprocessor.h"
 
@@ -54,6 +55,10 @@ int main(int argc, char *argv[])
         if (!parser.positionalArguments().empty())
             w->openFileRequest(parser.positionalArguments().at(0));
     }
+
+#ifdef USE_NATIVE_EVENT_FILTER
+    NativeEventFilter::install(&a);
+#endif
 
     return a.exec();
 }

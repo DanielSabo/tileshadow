@@ -9,6 +9,18 @@ cache()
 
 QT += core gui widgets opengl
 
+unix:!mac {
+    packagesExist(x11 xi):qtHaveModule(x11extras) {
+        QT += x11extras
+        CONFIG += link_pkgconfig
+        # Link to X directly for the event filter hack
+        PKGCONFIG += x11 xi
+        DEFINES += USE_NATIVE_EVENT_FILTER
+    } else {
+        warning("Missing dependancies for tablet event handler, will use Qt TabletEvent instead")
+    }
+}
+
 TARGET = TileShadow
 TEMPLATE = app
 
@@ -73,7 +85,8 @@ SOURCES += main.cpp\
     deviceselectdialog.cpp \
     maskbuffer.cpp \
     batchprocessor.cpp \
-    gradienttool.cpp
+    gradienttool.cpp \
+    nativeeventfilter.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -111,7 +124,8 @@ HEADERS  += mainwindow.h \
     deviceselectdialog.h \
     maskbuffer.h \
     batchprocessor.h \
-    gradienttool.h
+    gradienttool.h \
+    nativeeventfilter.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \
