@@ -19,7 +19,7 @@ public:
     virtual QVariant getToolSetting(QString const &name);
     virtual QList<ToolSettingInfo> listToolSettings();
 
-    StrokeContext *newStroke(CanvasLayer *layer);
+    StrokeContext *newStroke(StrokeContextArgs const &args);
 
 private:
     RoundBrushToolPrivate *priv;

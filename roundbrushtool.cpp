@@ -316,9 +316,9 @@ QList<ToolSettingInfo> RoundBrushTool::listToolSettings()
     return result;
 }
 
-StrokeContext *RoundBrushTool::newStroke(CanvasLayer *layer)
+StrokeContext *RoundBrushTool::newStroke(const StrokeContextArgs &args)
 {
-    RoundBrushStrokeContext *result = new RoundBrushStrokeContext(layer);
+    RoundBrushStrokeContext *result = new RoundBrushStrokeContext(args.layer);
     result->radius = priv->radius;
     result->r = priv->r;
     result->g = priv->g;

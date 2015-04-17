@@ -107,7 +107,8 @@ void BatchCommandStroke::apply(CanvasStack *stack)
     for (auto iter = toolSettings.begin(); iter != toolSettings.end(); ++iter)
         tool->setToolSetting(iter.key(), iter.value());
 
-    std::unique_ptr<StrokeContext> stroke(tool->newStroke(layer));
+    StrokeContextArgs args = {layer};
+    std::unique_ptr<StrokeContext> stroke(tool->newStroke(args));
 
     auto pointsIter = points.begin();
 

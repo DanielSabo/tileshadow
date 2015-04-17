@@ -271,9 +271,9 @@ void MyPaintTool::setColor(const QColor &color)
     priv->setBrushValue("color_v", color.valueF());
 }
 
-StrokeContext *MyPaintTool::newStroke(CanvasLayer *layer)
+StrokeContext *MyPaintTool::newStroke(const StrokeContextArgs &args)
 {
-    MyPaintStrokeContext *stroke = new MyPaintStrokeContext(layer);
+    MyPaintStrokeContext *stroke = new MyPaintStrokeContext(args.layer);
 
     stroke->fromSettings(priv->currentSettings);
     stroke->setMasks(priv->maskImages);

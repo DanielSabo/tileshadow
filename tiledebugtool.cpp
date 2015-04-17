@@ -178,9 +178,9 @@ void TileDebugTool::setColor(const QColor &color)
 
 }
 
-StrokeContext *TileDebugTool::newStroke(CanvasLayer *layer)
+StrokeContext *TileDebugTool::newStroke(const StrokeContextArgs &args)
 {
-    TileDebugStrokeContext *result = new TileDebugStrokeContext(layer, priv->radius);
+    TileDebugStrokeContext *result = new TileDebugStrokeContext(args.layer, priv->radius);
 
     return result;
 }

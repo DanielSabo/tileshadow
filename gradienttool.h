@@ -13,7 +13,7 @@ public:
     ~GradientTool() override;
 
     BaseTool *clone();
-    StrokeContext *newStroke(CanvasLayer *layer);
+    StrokeContext *newStroke(StrokeContextArgs const &args);
 
     void reset();
     float getPixelRadius();

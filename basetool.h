@@ -6,13 +6,18 @@
 #include "strokecontext.h"
 #include "toolsettinginfo.h"
 
+struct StrokeContextArgs
+{
+    CanvasLayer *layer;
+};
+
 class BaseTool
 {
 public:
     BaseTool();
     virtual ~BaseTool();
     virtual BaseTool *clone() = 0;
-    virtual StrokeContext *newStroke(CanvasLayer *layer) = 0;
+    virtual StrokeContext *newStroke(StrokeContextArgs const &args) = 0;
 
     virtual void reset() = 0;
     virtual float getPixelRadius() = 0;

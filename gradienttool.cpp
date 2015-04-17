@@ -41,9 +41,9 @@ BaseTool *GradientTool::clone()
     return clone;
 }
 
-StrokeContext *GradientTool::newStroke(CanvasLayer *layer)
+StrokeContext *GradientTool::newStroke(const StrokeContextArgs &args)
 {
-    return new GradientStrokeContext(layer, priv->color);
+    return new GradientStrokeContext(args.layer, priv->color);
 }
 
 void GradientTool::reset()
