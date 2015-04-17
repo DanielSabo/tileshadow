@@ -34,23 +34,16 @@ MainWindow::MainWindow(QWidget *parent) :
 
     canvas = ui->mainCanvas;
 
-    {
-        QBoxLayout *sidebarLayout = qobject_cast<QBoxLayout *>(ui->sidebar->layout());
-        Q_ASSERT(sidebarLayout);
+    QBoxLayout *sidebarLayout = qobject_cast<QBoxLayout *>(ui->sidebar->layout());
+    Q_ASSERT(sidebarLayout);
 
-        ToolSettingsWidget *toolSettings = new ToolSettingsWidget();
-        toolSettings->setCanvas(canvas);
-        sidebarLayout->insertWidget(sidebarLayout->count() - 1, toolSettings);
+    auto addSidebarWidget = [&](QWidget *widget) {
+        sidebarLayout->insertWidget(sidebarLayout->count() - 1, widget);
+    };
 
-        LayerListWidget *layerList = new LayerListWidget();
-        layerList->setCanvas(canvas);
-        sidebarLayout->insertWidget(sidebarLayout->count() - 1, layerList);
-
-        ToolListWidget *toolList = new ToolListWidget();
-        toolList->setCanvas(canvas);
-        toolList->reloadTools();
-        sidebarLayout->insertWidget(sidebarLayout->count() - 1, toolList);
-    }
+    addSidebarWidget(new ToolSettingsWidget(canvas, this));
+    addSidebarWidget(new LayerListWidget(canvas, this));
+    addSidebarWidget(new ToolListWidget(canvas, this));
 
     updateTitle();
     updateStatus();

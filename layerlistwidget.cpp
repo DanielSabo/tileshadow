@@ -6,10 +6,10 @@
 
 #include "canvaswidget.h"
 
-LayerListWidget::LayerListWidget(QWidget *parent) :
+LayerListWidget::LayerListWidget(CanvasWidget *canvas, QWidget *parent) :
     QWidget(parent),
     ui(new Ui::LayerListWidget),
-    canvas(NULL),
+    canvas(canvas),
     freezeLayerList(false)
 {
     ui->setupUi(this);
@@ -35,6 +35,10 @@ LayerListWidget::LayerListWidget(QWidget *parent) :
 
     connect(ui->opacitySlider, &QSlider::valueChanged, this, &LayerListWidget::opacitySliderMoved);
     connect(ui->opacitySlider, &QSlider::sliderReleased, this, &LayerListWidget::opacitySliderReleased);
+
+    connect(canvas, &CanvasWidget::updateLayers, this, &LayerListWidget::updateLayers);
+
+    updateLayers();
 }
 
 LayerListWidget::~LayerListWidget()
@@ -42,32 +46,8 @@ LayerListWidget::~LayerListWidget()
     delete ui;
 }
 
-void LayerListWidget::setCanvas(CanvasWidget *newCanvas)
-{
-    if (canvas)
-        disconnect(canvas, 0, this, 0);
-
-    canvas = newCanvas;
-
-    if (canvas)
-    {
-        connect(canvas, SIGNAL(updateLayers()), this, SLOT(updateLayers()));
-        connect(canvas, SIGNAL(destroyed(QObject *)), this, SLOT(canvasDestroyed(QObject *)));
-    }
-
-    updateLayers();
-}
-
-void LayerListWidget::canvasDestroyed(QObject *obj)
-{
-    canvas = NULL;
-}
-
 void LayerListWidget::updateLayers()
 {
-    if (!canvas)
-        return;
-
     if (freezeLayerList)
         return;
 
@@ -111,9 +91,6 @@ void LayerListWidget::layerModeActivated(int index)
 
 void LayerListWidget::opacitySliderMoved(int value)
 {
-    if (!canvas)
-        return;
-
     if (freezeLayerList)
         return;
 
@@ -125,9 +102,6 @@ void LayerListWidget::opacitySliderMoved(int value)
 
 void LayerListWidget::opacitySliderReleased()
 {
-    if (!canvas)
-        return;
-
     if (freezeLayerList)
         return;
 
@@ -139,9 +113,6 @@ void LayerListWidget::opacitySliderReleased()
 
 void LayerListWidget::layerListItemEdited(int row, int column, QVariant const &data)
 {
-    if (!canvas)
-        return;
-
     if (freezeLayerList)
         return;
 
@@ -157,9 +128,6 @@ void LayerListWidget::layerListItemEdited(int row, int column, QVariant const &d
 
 void LayerListWidget::layerListSelectionChanged(int row)
 {
-    if (!canvas)
-        return;
-
     if (freezeLayerList)
         return;
 
@@ -175,42 +143,27 @@ void LayerListWidget::layerListSelectionChanged(int row)
 
 void LayerListWidget::layerListAdd()
 {
-    if (!canvas)
-        return;
-
     canvas->addLayerAbove(canvas->getActiveLayer());
 }
 
 void LayerListWidget::layerListRemove()
 {
-    if (!canvas)
-        return;
-
     canvas->removeLayer(canvas->getActiveLayer());
 }
 
 void LayerListWidget::layerListDuplicate()
 {
-    if (!canvas)
-        return;
-
     canvas->duplicateLayer(canvas->getActiveLayer());
 }
 
 void LayerListWidget::layerListMoveUp()
 {
-    if (!canvas)
-        return;
-
     int activeLayerIdx = canvas->getActiveLayer();
     canvas->moveLayer(activeLayerIdx, activeLayerIdx + 1);
 }
 
 void LayerListWidget::layerListMoveDown()
 {
-    if (!canvas)
-        return;
-
     int activeLayerIdx = canvas->getActiveLayer();
     canvas->moveLayer(activeLayerIdx, activeLayerIdx - 1);
 }

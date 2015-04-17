@@ -9,9 +9,7 @@ class ToolSettingsWidget : public QWidget
 {
     Q_OBJECT
 public:
-    explicit ToolSettingsWidget(QWidget *parent = 0);
-
-    void setCanvas(CanvasWidget *canvas);
+    explicit ToolSettingsWidget(CanvasWidget *canvas, QWidget *parent);
 
 private:
     ToolSettingsWidgetPrivate * const d_ptr;
@@ -19,7 +17,6 @@ private:
 
 private slots:
     void updateTool();
-    void canvasDestroyed(QObject *obj);
 };
 
 #endif // TOOLSETTINGSWIDGET_H

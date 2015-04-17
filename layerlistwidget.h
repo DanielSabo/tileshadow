@@ -15,10 +15,8 @@ private:
     Ui::LayerListWidget *ui;
 
 public:
-    explicit LayerListWidget(QWidget *parent = 0);
+    explicit LayerListWidget(CanvasWidget *canvas, QWidget *parent);
     ~LayerListWidget();
-
-    void setCanvas(CanvasWidget *newCanvas);
 
 protected:
     CanvasWidget *canvas;
@@ -40,8 +38,6 @@ private slots:
 
     void layerListItemEdited(int row, int column, QVariant const &data);
     void layerListSelectionChanged(int row);
-
-    void canvasDestroyed(QObject *obj);
 };
 
 #endif // LAYERLISTWIDGET_H

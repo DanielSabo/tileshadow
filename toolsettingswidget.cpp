@@ -14,7 +14,7 @@
 class ToolSettingsWidgetPrivate
 {
 public:
-    ToolSettingsWidgetPrivate(ToolSettingsWidget *q);
+    ToolSettingsWidgetPrivate(ToolSettingsWidget *q, CanvasWidget *canvas);
 
     ToolSettingsWidget * const q_ptr;
     Q_DECLARE_PUBLIC(ToolSettingsWidget)
@@ -48,9 +48,9 @@ public:
     QMap<QString, SettingItem> items;
 };
 
-ToolSettingsWidgetPrivate::ToolSettingsWidgetPrivate(ToolSettingsWidget *q)
+ToolSettingsWidgetPrivate::ToolSettingsWidgetPrivate(ToolSettingsWidget *q, CanvasWidget *canvas)
     : q_ptr(q),
-      canvas(NULL),
+      canvas(canvas),
       freezeUpdates(false)
 {
 }
@@ -171,9 +171,9 @@ void ToolSettingsWidgetPrivate::addSetting(const ToolSettingInfo &info)
         qDebug() << "Attempted to add unknown setting type" << info.type << info.settingID;
 }
 
-ToolSettingsWidget::ToolSettingsWidget(QWidget *parent) :
+ToolSettingsWidget::ToolSettingsWidget(CanvasWidget *canvas, QWidget *parent) :
     QWidget(parent),
-    d_ptr(new ToolSettingsWidgetPrivate(this))
+    d_ptr(new ToolSettingsWidgetPrivate(this, canvas))
 {
     Q_D(ToolSettingsWidget);
 
@@ -190,30 +190,9 @@ ToolSettingsWidget::ToolSettingsWidget(QWidget *parent) :
     connect(d->toolColorDial, &HSVColorDial::dragColor, [=] (const QColor &color) { d->colorDialDrag(color); });
     connect(d->toolColorDial, &HSVColorDial::releaseColor, [=] (const QColor &color) { d->colorDialChanged(color); });
     layout->addWidget(d->toolColorDial);
-}
 
-void ToolSettingsWidget::setCanvas(CanvasWidget *newCanvas)
-{
-    Q_D(ToolSettingsWidget);
-
-    if (d->canvas)
-        disconnect(d->canvas, 0, this, 0);
-
-    d->canvas = newCanvas;
-
-    if (d->canvas)
-    {
-        connect(d->canvas, SIGNAL(updateTool()), this, SLOT(updateTool()));
-        connect(d->canvas, SIGNAL(destroyed(QObject *)), this, SLOT(canvasDestroyed(QObject *)));
-    }
-
+    connect(d->canvas, &CanvasWidget::updateTool, this, &ToolSettingsWidget::updateTool);
     updateTool();
-}
-
-void ToolSettingsWidget::canvasDestroyed(QObject *obj)
-{
-    Q_D(ToolSettingsWidget);
-    d->canvas = NULL;
 }
 
 void ToolSettingsWidget::updateTool()

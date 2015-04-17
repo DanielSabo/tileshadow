@@ -11,11 +11,9 @@ class ToolListWidget : public QWidget
     Q_OBJECT
 
 public:
-    explicit ToolListWidget(QWidget *parent = 0);
-    ~ToolListWidget();
+    explicit ToolListWidget(CanvasWidget *canvas, QWidget *parent);
 
     void reloadTools();
-    void setCanvas(CanvasWidget *canvas);
     void pickTool(QString const &toolPath);
 
 protected:
@@ -29,7 +27,6 @@ private:
 private slots:
     void updateTool();
     void showPopup();
-    void canvasDestroyed(QObject *obj);
 };
 
 #endif // TOOLLISTWIDGET_H
