@@ -10,13 +10,13 @@ public:
 class GradientStrokeContext : public StrokeContext
 {
 public:
-    GradientStrokeContext(CanvasLayer *layer, QColor const &color);
+    GradientStrokeContext(CanvasLayer *layer, CanvasLayer const *srcLayer, QColor const &color);
     ~GradientStrokeContext() override;
 
     TileSet startStroke(QPointF point, float pressure);
     TileSet strokeTo(QPointF point, float pressure, float dt);
 
-    std::unique_ptr<CanvasLayer> srcLayer;
+    CanvasLayer const *srcLayer;
 
     QColor color;
     QPoint start;
@@ -43,7 +43,7 @@ BaseTool *GradientTool::clone()
 
 StrokeContext *GradientTool::newStroke(const StrokeContextArgs &args)
 {
-    return new GradientStrokeContext(args.layer, priv->color);
+    return new GradientStrokeContext(args.layer, args.unmodifiedLayer, priv->color);
 }
 
 void GradientTool::reset()
@@ -66,8 +66,8 @@ bool GradientTool::coalesceMovement()
     return true;
 }
 
-GradientStrokeContext::GradientStrokeContext(CanvasLayer *layer, const QColor &color)
-    : StrokeContext(layer), srcLayer(layer->deepCopy()), color(color)
+GradientStrokeContext::GradientStrokeContext(CanvasLayer *layer, CanvasLayer const *srcLayer, const QColor &color)
+    : StrokeContext(layer), srcLayer(srcLayer), color(color)
 {
 }
 
