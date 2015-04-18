@@ -12,11 +12,16 @@
 #include <QJsonValue>
 #include <QDebug>
 
+struct BatchProcessorContext {
+    CanvasStack layers;
+    std::unique_ptr<CanvasLayer> currentLayerCopy;
+};
+
 class BatchCommand
 {
 public:
     virtual ~BatchCommand() {}
-    virtual void apply(CanvasStack *) {}
+    virtual void apply(BatchProcessorContext *) {}
 };
 
 class BatchCommandStroke : public BatchCommand
@@ -30,7 +35,7 @@ public:
     };
 
     BatchCommandStroke(QJsonObject const &json);
-    void apply(CanvasStack *stack) override;
+    void apply(BatchProcessorContext *ctx) override;
 
     QString toolPath;
     QColor color;
@@ -43,7 +48,7 @@ class BatchCommandExport : public BatchCommand
 {
 public:
     BatchCommandExport(QJsonObject const &json);
-    void apply(CanvasStack *stack) override;
+    void apply(BatchProcessorContext *ctx) override;
 
     QString path;
 };
@@ -92,9 +97,9 @@ BatchCommandStroke::BatchCommandStroke(const QJsonObject &json)
     }
 }
 
-void BatchCommandStroke::apply(CanvasStack *stack)
+void BatchCommandStroke::apply(BatchProcessorContext *ctx)
 {
-    CanvasLayer *layer = stack->layers.at(0);
+    CanvasLayer *layer = ctx->layers.layers.at(0);
     BaseTool *tool = NULL;
     if (!toolPath.isEmpty())
         tool = ToolFactory::loadTool(toolPath);
@@ -127,6 +132,9 @@ void BatchCommandStroke::apply(CanvasStack *stack)
     }
 
     stroke.reset();
+
+    //FIXME: Copy only modified tiles
+    ctx->currentLayerCopy = ctx->layers.layers.at(0)->deepCopy();
 }
 
 BatchCommandExport::BatchCommandExport(const QJsonObject &json)
@@ -142,9 +150,9 @@ BatchCommandExport::BatchCommandExport(const QJsonObject &json)
     path = pathStr;
 }
 
-void BatchCommandExport::apply(CanvasStack *stack)
+void BatchCommandExport::apply(BatchProcessorContext *ctx)
 {
-    QImage output = stackToImage(stack);
+    QImage output = stackToImage(&ctx->layers);
     if (output.isNull())
     {
         qWarning() << "Failed to export, image is empty";
@@ -222,11 +230,12 @@ void BatchProcessor::execute(QString path)
     if (!commandList.empty())
     {
         SharedOpenCL::getSharedOpenCL();
-        CanvasStack layers;
-        layers.newLayerAt(0);
+        BatchProcessorContext ctx;
+        ctx.layers.newLayerAt(0);
+        ctx.currentLayerCopy = ctx.layers.layers.at(0)->deepCopy();
 
         for (auto &commandIter: commandList)
-            commandIter->apply(&layers);
+            commandIter->apply(&ctx);
     }
 
     QApplication::quit();
