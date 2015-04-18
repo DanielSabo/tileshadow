@@ -19,14 +19,15 @@ template<typename T> static inline float dist(T a, T b)
 class RoundBrushStrokeContext : public StrokeContext
 {
 public:
-    RoundBrushStrokeContext(CanvasLayer *layer);
+    RoundBrushStrokeContext(CanvasLayer *layer, CanvasLayer const *srcLayer);
     ~RoundBrushStrokeContext() override;
     TileSet startStroke(QPointF point, float pressure);
     TileSet strokeTo(QPointF point, float pressure, float dt);
     void drawDab(QPointF point, float pressure, TileSet &modTiles);
     void applyLayer(TileSet const &modTiles);
 
-    TileMap srcTiles;
+    std::unique_ptr<CanvasTile> nullTile;
+    CanvasLayer const *srcLayer;
     std::map<QPoint, cl_mem, _tilePointCompare> drawTiles;
 
     float radius;
@@ -46,8 +47,8 @@ public:
     float minAlphaCoef;
 };
 
-RoundBrushStrokeContext::RoundBrushStrokeContext(CanvasLayer *layer)
-    : StrokeContext(layer)
+RoundBrushStrokeContext::RoundBrushStrokeContext(CanvasLayer *layer, const CanvasLayer *srcLayer)
+    : StrokeContext(layer), srcLayer(srcLayer)
 {
     firstDab = true;
     rateCoefficient = 0.1f;
@@ -137,11 +138,18 @@ void RoundBrushStrokeContext::applyLayer(const TileSet &modTiles)
     for (QPoint const &tilePos: modTiles)
     {
         CanvasTile *dstTile = layer->getTile(tilePos.x(), tilePos.y());
-        std::unique_ptr<CanvasTile> &srcTile = srcTiles[tilePos];
+        CanvasTile *srcTile = srcLayer->getTileMaybe(tilePos.x(), tilePos.y());
         cl_mem drawMem = drawTiles[tilePos];
 
         if (!srcTile)
-            srcTile = dstTile->copy();
+        {
+            if (!nullTile)
+            {
+                nullTile.reset(new CanvasTile());
+                nullTile->fill(0.0f, 0.0f, 0.0f, 0.0f);
+            }
+            srcTile = nullTile.get();
+        }
 
         cl_mem srcMem = srcTile->unmapHost();
         cl_mem dstMem = dstTile->unmapHost();
@@ -318,7 +326,7 @@ QList<ToolSettingInfo> RoundBrushTool::listToolSettings()
 
 StrokeContext *RoundBrushTool::newStroke(const StrokeContextArgs &args)
 {
-    RoundBrushStrokeContext *result = new RoundBrushStrokeContext(args.layer);
+    RoundBrushStrokeContext *result = new RoundBrushStrokeContext(args.layer, args.unmodifiedLayer);
     result->radius = priv->radius;
     result->r = priv->r;
     result->g = priv->g;
