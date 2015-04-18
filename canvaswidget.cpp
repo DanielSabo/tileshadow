@@ -474,7 +474,7 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
         if (!targetLayer->visible)
             return;
 
-        StrokeContextArgs args = {targetLayer};
+        StrokeContextArgs args = {targetLayer, ctx->currentLayerCopy.get()};
         ctx->stroke.reset(strokeTool->newStroke(args));
 
         TileSet changedTiles = ctx->stroke->startStroke(pos, pressure);
@@ -630,7 +630,7 @@ void CanvasWidget::lineTo(QPointF start, QPointF end)
 
         ctx->strokeModifiedTiles.clear();
 
-        StrokeContextArgs args = {targetLayer};
+        StrokeContextArgs args = {targetLayer, ctx->currentLayerCopy.get()};
         std::unique_ptr<StrokeContext> stroke(ctx->strokeTool->newStroke(args));
 
 

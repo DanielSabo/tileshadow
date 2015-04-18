@@ -9,6 +9,7 @@
 struct StrokeContextArgs
 {
     CanvasLayer *layer;
+    CanvasLayer const *unmodifiedLayer;
 };
 
 class BaseTool

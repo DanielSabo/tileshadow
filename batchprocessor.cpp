@@ -112,7 +112,7 @@ void BatchCommandStroke::apply(BatchProcessorContext *ctx)
     for (auto iter = toolSettings.begin(); iter != toolSettings.end(); ++iter)
         tool->setToolSetting(iter.key(), iter.value());
 
-    StrokeContextArgs args = {layer};
+    StrokeContextArgs args = {layer, ctx->currentLayerCopy.get()};
     std::unique_ptr<StrokeContext> stroke(tool->newStroke(args));
 
     auto pointsIter = points.begin();
