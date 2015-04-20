@@ -8,6 +8,9 @@
 
 struct StrokeContextArgs
 {
+    StrokeContextArgs(CanvasLayer *layer, CanvasLayer const *unmodifiedLayer)
+        : layer(layer), unmodifiedLayer(unmodifiedLayer) {}
+
     CanvasLayer *layer;
     CanvasLayer const *unmodifiedLayer;
 };
