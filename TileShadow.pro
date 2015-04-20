@@ -19,6 +19,7 @@ TEMPLATE = app
     CONFIG += warn_on
 }
 else {
+    # "-wdXXXX" means Warning Disable, "-w1XXXX" means enable for level >= W1
     # 4100 = Unused parameter
     # 4267 = Truncation of size_t
     # 4244, 4305 = Truncation of double to float
