@@ -16,10 +16,11 @@ int CanvasTile::deviceTileCount()
 
 CanvasTile::CanvasTile()
 {
-    tileMem = 0;
+    cl_int err = CL_SUCCESS;
     tileData = nullptr;
     tileMem = clCreateBuffer(SharedOpenCL::getSharedOpenCL()->ctx, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR,
-                             TILE_COMP_TOTAL * sizeof(float), tileData, nullptr);
+                             TILE_COMP_TOTAL * sizeof(float), tileData, &err);
+    check_cl_error(err);
 
     privAllocatedTileCount.ref();
     privDeviceTileCount.ref();
@@ -50,6 +51,7 @@ float *CanvasTile::mapHost()
                                                CL_TRUE, CL_MAP_READ | CL_MAP_WRITE,
                                                0, TILE_COMP_TOTAL * sizeof(float),
                                                0, nullptr, nullptr, &err);
+        check_cl_error(err);
     }
 
     return tileData;
@@ -64,8 +66,10 @@ cl_mem CanvasTile::unmapHost()
     }
     else if (tileData)
     {
+        cl_int err = CL_SUCCESS;
         tileMem = clCreateBuffer (SharedOpenCL::getSharedOpenCL()->ctx, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR | CL_MEM_COPY_HOST_PTR ,
-                                  TILE_COMP_TOTAL * sizeof(float), tileData, nullptr);
+                                  TILE_COMP_TOTAL * sizeof(float), tileData, &err);
+        check_cl_error(err);
         delete tileData;
         tileData = nullptr;
         privDeviceTileCount.ref();
