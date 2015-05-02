@@ -1590,10 +1590,7 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
     Q_D(CanvasWidget);
 
     QEvent::Type eventType = event->type();
-
-    float xshift = event->hiResGlobalX() - event->globalX() + canvasOrigin.x();
-    float yshift = event->hiResGlobalY() - event->globalY() + canvasOrigin.y();
-    QPointF point = QPointF(event->x() + xshift, event->y() + yshift) / viewScale;
+    QPointF point = (event->posF() + canvasOrigin) / viewScale;
 
     updateModifiers(event);
 
