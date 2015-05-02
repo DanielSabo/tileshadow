@@ -1413,6 +1413,19 @@ void CanvasWidget::pickColorAt(QPoint pos)
     }
 }
 
+static void runCursorHack(QWidget *target)
+{
+    //FIXME: As of Qt 5.4 the cursor does not correctly reset on OSX
+#ifdef Q_OS_MAC
+    // This works most reliably with a 1ms delay
+    QTimer::singleShot(1, target, [target]() {
+        QCursor prevCursor = target->cursor();
+        target->unsetCursor();
+        target->setCursor(prevCursor);
+    });
+#endif
+}
+
 bool CanvasWidget::eventFilter(QObject *obj, QEvent *event)
 {
     Q_D(CanvasWidget);
@@ -1423,10 +1436,12 @@ bool CanvasWidget::eventFilter(QObject *obj, QEvent *event)
     {
         if (static_cast<QTabletEvent *>(event)->pointerType() == QTabletEvent::Eraser)
             d->deviceIsEraser = true;
+        runCursorHack(this);
     }
     else if (event->type() == QEvent::TabletLeaveProximity)
     {
         d->deviceIsEraser = false;
+        runCursorHack(this);
     }
     else if (event->type() == QEvent::KeyPress ||
              event->type() == QEvent::KeyRelease)
