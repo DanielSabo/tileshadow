@@ -224,6 +224,12 @@ void MyPaintTool::setToolSetting(QString const &name, QVariant const &value)
 
         priv->setBrushValue("lock_alpha", lock_alpha);
     }
+    else if (name == QStringLiteral("eraser") && value.canConvert<bool>())
+    {
+        float lock_alpha = value.toBool() ? 1.0f : 0.0f;
+
+        priv->setBrushValue("eraser", lock_alpha);
+    }
     else
     {
         BaseTool::setToolSetting(name, value);
@@ -240,6 +246,8 @@ QVariant MyPaintTool::getToolSetting(const QString &name)
         return QVariant::fromValue<float>(priv->getBrushValue("hardness"));
     else if (name == QStringLiteral("lock_alpha"))
         return QVariant::fromValue<bool>(priv->getBrushValue("lock_alpha") > 0.0f);
+    else if (name == QStringLiteral("eraser"))
+        return QVariant::fromValue<bool>(priv->getBrushValue("eraser") > 0.0f);
     else
         return BaseTool::getToolSetting(name);
 
@@ -254,6 +262,7 @@ QList<ToolSettingInfo> MyPaintTool::listToolSettings()
     if (priv->maskImages.isEmpty())
         result.append(ToolSettingInfo::linearSlider("hardness", "Hardness", 0.0f, 1.0f));
     result.append(ToolSettingInfo::checkbox("lock_alpha", "Lock Alpha"));
+    result.append(ToolSettingInfo::checkbox("eraser", "Erase"));
 
     return result;
 
