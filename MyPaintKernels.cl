@@ -7,14 +7,19 @@
  *                2014 Daniel Sabo
  */
 
-float calculate_alpha (float rr, float hardness, float segment1_offset, float segment1_slope, float segment2_offset, float segment2_slope);
+float calculate_alpha (float rr, float hardness, float slope1, float slope2);
 float color_query_weight (float xx, float yy, float radius);
 
 inline float4 apply_normal_mode (float4 pixel, float4 color, float alpha, float color_alpha);
 inline float4 apply_locked_normal_mode (float4 pixel, float4 color, float alpha);
 
-float calculate_alpha (float rr, float hardness, float segment1_offset, float segment1_slope, float segment2_offset, float segment2_slope)
+float calculate_alpha (float rr, float hardness, float slope1, float slope2)
 {
+  float segment1_offset = 1.0f;
+  float segment1_slope  = slope1;
+  float segment2_offset = -slope2;
+  float segment2_slope  = slope2;
+
   if (rr <= 1.0f)
     {
       if (rr <= hardness)
@@ -141,15 +146,10 @@ __kernel void mypaint_dab(__global float4 *buf,
   float yy = (gidy - y);
   float xx = (gidx - x);
 
-  float segment1_offset = 1.0f;
-  float segment1_slope  = slope1;
-  float segment2_offset = -slope2;
-  float segment2_slope  = slope2;
-
   float xxr = xx * matrix.s0 + yy * matrix.s1;
   float yyr = xx * matrix.s2 + yy * matrix.s3;
   float rr  = (yyr * yyr + xxr * xxr);
-  float alpha = calculate_alpha(rr, hardness, segment1_offset, segment1_slope, segment2_offset, segment2_slope);
+  float alpha = calculate_alpha(rr, hardness, slope1, slope2);
 
   if (alpha > 0.0f)
     {
@@ -175,15 +175,10 @@ __kernel void mypaint_dab_locked(__global float4 *buf,
   float yy = (gidy - y);
   float xx = (gidx - x);
 
-  float segment1_offset = 1.0f;
-  float segment1_slope  = slope1;
-  float segment2_offset = -slope2;
-  float segment2_slope  = slope2;
-
   float xxr = xx * matrix.s0 + yy * matrix.s1;
   float yyr = xx * matrix.s2 + yy * matrix.s3;
   float rr  = (yyr * yyr + xxr * xxr);
-  float alpha = calculate_alpha(rr, hardness, segment1_offset, segment1_slope, segment2_offset, segment2_slope);
+  float alpha = calculate_alpha(rr, hardness, slope1, slope2);
 
   if (alpha > 0.0f)
     {
