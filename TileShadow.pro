@@ -86,7 +86,8 @@ SOURCES += main.cpp\
     maskbuffer.cpp \
     batchprocessor.cpp \
     gradienttool.cpp \
-    nativeeventfilter.cpp
+    nativeeventfilter.cpp \
+    toollistview.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -125,7 +126,8 @@ HEADERS  += mainwindow.h \
     maskbuffer.h \
     batchprocessor.h \
     gradienttool.h \
-    nativeeventfilter.h
+    nativeeventfilter.h \
+    toollistview.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \

@@ -15,17 +15,12 @@ public:
     void setActiveTool(const QString &toolPath);
     void reposition(const QRect &globalBounds, const QPoint &globalOrigin);
 
-protected:
-    ToolList toolList;
-
 private:
     ToolListPopupPrivate * const d_ptr;
     Q_DECLARE_PRIVATE(ToolListPopup)
 
-signals:
-
-public slots:
-    void toolButtonClicked();
+private slots:
+    void toolSelected(QString const &toolPath);
 };
 
 #endif // TOOLLISTPOPUP_H

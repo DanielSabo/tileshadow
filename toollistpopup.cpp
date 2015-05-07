@@ -7,13 +7,14 @@
 #include <QDebug>
 
 #include "toollistpopup.h"
+#include "toollistview.h"
 
 class ToolListPopupPrivate
 {
 public:
     QWidget *parentWidget;
     QScrollArea *scrollArea;
-    QWidget *scrollContents;
+    ToolListView *scrollContents;
 };
 
 ToolListPopup::ToolListPopup(QWidget *parent) :
@@ -31,41 +32,18 @@ ToolListPopup::ToolListPopup(QWidget *parent) :
     d->scrollArea = new QScrollArea(this);
     layout->addWidget(d->scrollArea);
 
-    layout = new QVBoxLayout();
-    layout->setSpacing(3);
-    layout->setContentsMargins(0, 0, 0, 0);
-    d->scrollContents = new QWidget(this);
-    d->scrollContents->setLayout(layout);
+    d->scrollContents = new ToolListView(this);
 
     d->scrollArea->setWidget(d->scrollContents);
     d->scrollArea->setWidgetResizable(true);
+
+    connect(d->scrollContents, &ToolListView::selectionChanged, this, &ToolListPopup::toolSelected);
 }
 
 void ToolListPopup::setToolList(const ToolList &list)
 {
     Q_D(ToolListPopup);
-    toolList = list;
-
-    QBoxLayout *toolboxLayout = qobject_cast<QBoxLayout *>(d->scrollContents->layout());
-    Q_ASSERT(toolboxLayout);
-
-    QList<QWidget *>toolButtons = d->scrollContents->findChildren<QWidget *>();
-    for (int i = 0; i < toolButtons.size(); ++i) {
-        delete toolButtons[i];
-    }
-
-    for (int i = 0; i < toolList.size(); ++i)
-    {
-        QString toolPath = toolList.at(i).first;
-        QString name = toolList.at(i).second;
-
-        QPushButton *button = new QPushButton(name);
-        button->setProperty("toolName", QString(toolPath));
-        button->setCheckable(true);
-        connect(button, &QPushButton::clicked, this, &ToolListPopup::toolButtonClicked);
-        toolboxLayout->addWidget(button);
-    }
-
+    d->scrollContents->setToolList(list);
 
     int sbWidth = d->scrollArea->verticalScrollBar()->style()->pixelMetric(QStyle::PM_ScrollBarExtent, 0, d->scrollArea->verticalScrollBar());
     int frameWidth = d->scrollArea->style()->pixelMetric(QStyle::PM_DefaultFrameWidth, 0, d->scrollArea);
@@ -101,27 +79,13 @@ void ToolListPopup::reposition(QRect const &globalBounds, QPoint const &globalOr
 
 void ToolListPopup::setActiveTool(QString const &toolPath)
 {
-    QList<QPushButton *>toolButtons = findChildren<QPushButton *>();
-    for (int i = 0; i < toolButtons.size(); ++i)
-    {
-        QPushButton *button = toolButtons[i];
-        if (button->property("toolName").toString() == toolPath)
-            button->setChecked(true);
-        else
-            button->setChecked(false);
-    }
+    Q_D(ToolListPopup);
+    d->scrollContents->setActiveTool(toolPath);
 }
 
-void ToolListPopup::toolButtonClicked()
+void ToolListPopup::toolSelected(QString const &toolPath)
 {
-    QVariant toolNameProp = sender()->property("toolName");
-    if (toolNameProp.type() == QVariant::String)
-    {
-        if (ToolListWidget *toolWidget = qobject_cast<ToolListWidget *>(parent()))
-            toolWidget->pickTool(toolNameProp.toString());
-    }
-    else
-        qWarning() << sender()->objectName() << " has no toolName property.";
-
+    if (ToolListWidget *toolWidget = qobject_cast<ToolListWidget *>(this->parent()))
+        toolWidget->pickTool(toolPath);
     hide();
 }
