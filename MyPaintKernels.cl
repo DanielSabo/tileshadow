@@ -7,22 +7,11 @@
  *                2014 Daniel Sabo
  */
 
-float calculate_rr (float xx, float yy, float radius, float aspect_ratio, float sn, float cs);
 float calculate_alpha (float rr, float hardness, float segment1_offset, float segment1_slope, float segment2_offset, float segment2_slope);
 float color_query_weight (float xx, float yy, float radius);
 
 inline float4 apply_normal_mode (float4 pixel, float4 color, float alpha, float color_alpha);
 inline float4 apply_locked_normal_mode (float4 pixel, float4 color, float alpha);
-
-float calculate_rr (float xx, float yy, float radius, float aspect_ratio, float sn, float cs)
-{
-  float yyr = (yy * cs - xx * sn) * aspect_ratio;
-  float xxr =  yy * sn + xx * cs;
-  float rr  = (yyr * yyr + xxr * xxr) / (radius * radius);
-  // rr is in range 0.0..1.0*sqrt(2)
-
-  return rr;
-}
 
 float calculate_alpha (float rr, float hardness, float segment1_offset, float segment1_slope, float segment2_offset, float segment2_slope)
 {
@@ -39,11 +28,18 @@ float calculate_alpha (float rr, float hardness, float segment1_offset, float se
 
 float color_query_weight (float xx, float yy, float radius)
 {
+  /* The real mypaint function renders a dab with these constants
+    const float hardness = 0.5f;
+    const float aspect_ratio = 1.0f;
+    const float angle = 0.0f;
 
-/*
-  float rr = calculate_rr (xx, yy, radius, 1.0f, 0.0f, 1.0f);
-  float pixel_weight = calculate_alpha(rr, 0.5f, 1.0f, -1.0f, 1.0f, -1.0f);
-*/
+    Therefor:
+    float slope1 = -(1.0f / 0.5f - 1.0f);
+    float slope2 = -(0.5f / (1.0f - 0.5f));
+
+    float slope1 = -1.0f;
+    float slope2 = -1.0f);
+  */
 
   float rr  = (yy * yy + xx * xx) / (radius * radius);
 
@@ -62,18 +58,6 @@ __kernel void mypaint_color_query_part1(__global float4 *buf,
                                         __global float4 *accum,
                                                  float   radius)
 {
-  /* The real mypaint function renders a dab with these constants
-    const float hardness = 0.5f;
-    const float aspect_ratio = 1.0f;
-    const float angle = 0.0f;
-
-    Therefor:
-    float slope1 = -(1.0f / 0.5f - 1.0f);
-    float slope2 = -(0.5f / (1.0f - 0.5f));
-
-    float slope1 = -1.0f;
-    float slope2 = -1.0f);
-  */
   int gidy = get_global_id(0);
 
   float4 total_accum  = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
