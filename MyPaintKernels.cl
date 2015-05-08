@@ -10,6 +10,9 @@
 float calculate_alpha (float rr, float hardness, float slope1, float slope2);
 float color_query_weight (float xx, float yy, float radius);
 
+float alpha_from_dab(float x, float y, float4 matrix, float hardness, float slope1, float slope2);
+float alpha_from_mask(float x, float y, float4 matrix, image2d_t stamp);
+
 inline float4 apply_normal_mode (float4 pixel, float4 color, float alpha, float color_alpha);
 inline float4 apply_locked_normal_mode (float4 pixel, float4 color, float alpha);
 
@@ -29,6 +32,28 @@ float calculate_alpha (float rr, float hardness, float slope1, float slope2)
     }
 
   return 0.0f;
+}
+
+float alpha_from_dab(float x, float y, float4 matrix, float hardness, float slope1, float slope2)
+{
+  float xr = x * matrix.s0 + y * matrix.s1;
+  float yr = x * matrix.s2 + y * matrix.s3;
+  float rr  = (yr * yr + xr * xr);
+  return calculate_alpha(rr, hardness, slope1, slope2);
+}
+
+float alpha_from_mask(float x, float y, float4 matrix, image2d_t stamp)
+{
+  const sampler_t sampler = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_CLAMP | CLK_FILTER_LINEAR;
+
+  // (x, y) is centered on the range (-radius, radius)
+  float2 coord = (float2)(x, y);
+
+  // Apply rotation and shift to (0.0, 1.0)
+  coord = (float2)(dot(coord, matrix.s01) + 0.5f,
+                   dot(coord, matrix.s23) + 0.5f);
+
+  return read_imagef(stamp, sampler, coord).s0;
 }
 
 float color_query_weight (float xx, float yy, float radius)
@@ -143,13 +168,7 @@ __kernel void mypaint_dab(__global float4 *buf,
   int gidx = get_global_id(0);
   int gidy = get_global_id(1);
 
-  float yy = (gidy - y);
-  float xx = (gidx - x);
-
-  float xxr = xx * matrix.s0 + yy * matrix.s1;
-  float yyr = xx * matrix.s2 + yy * matrix.s3;
-  float rr  = (yyr * yyr + xxr * xxr);
-  float alpha = calculate_alpha(rr, hardness, slope1, slope2);
+  float alpha = alpha_from_dab(gidx - x, gidy - y, matrix, hardness, slope1, slope2);
 
   if (alpha > 0.0f)
     {
@@ -172,13 +191,7 @@ __kernel void mypaint_dab_locked(__global float4 *buf,
   int gidx = get_global_id(0);
   int gidy = get_global_id(1);
 
-  float yy = (gidy - y);
-  float xx = (gidx - x);
-
-  float xxr = xx * matrix.s0 + yy * matrix.s1;
-  float yyr = xx * matrix.s2 + yy * matrix.s3;
-  float rr  = (yyr * yyr + xxr * xxr);
-  float alpha = calculate_alpha(rr, hardness, slope1, slope2);
+  float alpha = alpha_from_dab(gidx - x, gidy - y, matrix, hardness, slope1, slope2);
 
   if (alpha > 0.0f)
     {
@@ -196,19 +209,10 @@ __kernel void mypaint_mask_dab(__global  float4   *buf,
                                          float     color_alpha, /* Max alpha value */
                                          float4    color)
 {
-  const sampler_t sampler = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_CLAMP | CLK_FILTER_LINEAR;
-
   int gidx = get_global_id(0);
   int gidy = get_global_id(1);
 
-  // Position is calculated centered on the range (-radius, radius)
-  float2 coord = (float2)((gidx - x), (gidy - y));
-
-  // Apply rotation and shift to (0.0, 1.0)
-  coord = (float2)(dot(coord, matrix.s01) + 0.5f,
-                   dot(coord, matrix.s23) + 0.5f);
-
-  float alpha = read_imagef(stamp, sampler, coord).s0;
+  float alpha = alpha_from_mask(gidx - x, gidy - y, matrix, stamp);
 
   if (alpha > 0.0f)
     {
@@ -226,19 +230,10 @@ __kernel void mypaint_mask_dab_locked(__global  float4   *buf,
                                                 float     color_alpha, /* Max alpha value (ignored) */
                                                 float4    color)
 {
-  const sampler_t sampler = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_CLAMP | CLK_FILTER_LINEAR;
-
   int gidx = get_global_id(0);
   int gidy = get_global_id(1);
 
-  // Position is calculated centered on the range (-radius, radius)
-  float2 coord = (float2)((gidx - x), (gidy - y));
-
-  // Apply rotation and shift to (0.0, 1.0)
-  coord = (float2)(dot(coord, matrix.s01) + 0.5f,
-                   dot(coord, matrix.s23) + 0.5f);
-
-  float alpha = read_imagef(stamp, sampler, coord).s0;
+  float alpha = alpha_from_mask(gidx - x, gidy - y, matrix, stamp);
 
   if (alpha > 0.0f)
     {
