@@ -12,7 +12,6 @@
 class ToolListWidgetPrivate
 {
 public:
-    ToolList toolList;
     QPushButton *toolPopupButton;
 };
 
@@ -41,9 +40,7 @@ ToolListWidget::ToolListWidget(CanvasWidget *canvas, QWidget *parent) :
 
 void ToolListWidget::reloadTools()
 {
-    Q_D(ToolListWidget);
-
-    d->toolList = ToolFactory::listTools();
+    popup->setToolList(ToolFactory::listTools());
 }
 
 
@@ -61,9 +58,6 @@ void ToolListWidget::pickTool(QString const &toolPath)
 void ToolListWidget::showPopup()
 {
     Q_D(ToolListWidget);
-
-    popup->setToolList(d->toolList);
-    popup->setActiveTool(canvas->getActiveTool());
 
     QPoint buttonPos = d->toolPopupButton->mapToGlobal(d->toolPopupButton->pos());
     int originY = buttonPos.y() + d->toolPopupButton->height() / 2;
