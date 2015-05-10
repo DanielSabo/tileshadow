@@ -19,7 +19,7 @@ private:
     ToolListPopupPrivate * const d_ptr;
     Q_DECLARE_PRIVATE(ToolListPopup)
 
-private slots:
+signals:
     void toolSelected(QString const &toolPath);
 };
 

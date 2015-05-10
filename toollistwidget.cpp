@@ -19,7 +19,7 @@ public:
 ToolListWidget::ToolListWidget(CanvasWidget *canvas, QWidget *parent) :
     QWidget(parent),
     canvas(canvas),
-    popup(NULL),
+    popup(new ToolListPopup(this)),
     d_ptr(new ToolListWidgetPrivate)
 {
     Q_D(ToolListWidget);
@@ -34,6 +34,7 @@ ToolListWidget::ToolListWidget(CanvasWidget *canvas, QWidget *parent) :
     layout->addWidget(d->toolPopupButton);
 
     connect(canvas, &CanvasWidget::updateTool, this, &ToolListWidget::updateTool);
+    connect(popup, &ToolListPopup::toolSelected, this, &ToolListWidget::pickTool);
     reloadTools();
     updateTool();
 }
@@ -49,9 +50,7 @@ void ToolListWidget::reloadTools()
 void ToolListWidget::updateTool()
 {
     QString activeTool = canvas->getActiveTool();
-
-    if (popup)
-        popup->setActiveTool(activeTool);
+    popup->setActiveTool(activeTool);
 }
 
 void ToolListWidget::pickTool(QString const &toolPath)
@@ -63,8 +62,6 @@ void ToolListWidget::showPopup()
 {
     Q_D(ToolListWidget);
 
-    if (!popup)
-        popup = new ToolListPopup(this);
     popup->setToolList(d->toolList);
     popup->setActiveTool(canvas->getActiveTool());
 

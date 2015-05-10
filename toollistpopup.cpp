@@ -12,7 +12,6 @@
 class ToolListPopupPrivate
 {
 public:
-    QWidget *parentWidget;
     QScrollArea *scrollArea;
     ToolListView *scrollContents;
 };
@@ -28,7 +27,6 @@ ToolListPopup::ToolListPopup(QWidget *parent) :
     layout->setContentsMargins(0, 0, 0, 0);
     setLayout(layout);
 
-    d->parentWidget = parent;
     d->scrollArea = new QScrollArea(this);
     layout->addWidget(d->scrollArea);
 
@@ -37,7 +35,10 @@ ToolListPopup::ToolListPopup(QWidget *parent) :
     d->scrollArea->setWidget(d->scrollContents);
     d->scrollArea->setWidgetResizable(true);
 
-    connect(d->scrollContents, &ToolListView::selectionChanged, this, &ToolListPopup::toolSelected);
+    connect(d->scrollContents, &ToolListView::selectionChanged, this, [this](QString const &toolPath) {
+        hide();
+        toolSelected(toolPath);
+    });
 }
 
 void ToolListPopup::setToolList(const ToolList &list)
@@ -81,11 +82,4 @@ void ToolListPopup::setActiveTool(QString const &toolPath)
 {
     Q_D(ToolListPopup);
     d->scrollContents->setActiveTool(toolPath);
-}
-
-void ToolListPopup::toolSelected(QString const &toolPath)
-{
-    if (ToolListWidget *toolWidget = qobject_cast<ToolListWidget *>(this->parent()))
-        toolWidget->pickTool(toolPath);
-    hide();
 }
