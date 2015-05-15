@@ -37,10 +37,36 @@ class CLMaskImage
 {
 public:
     CLMaskImage(cl_mem image, QSize size) : image(image), size(size) {}
+    CLMaskImage(CLMaskImage &from) = delete;
+    CLMaskImage& operator=(CLMaskImage &from) = delete;
+    CLMaskImage(CLMaskImage &&from);
+    CLMaskImage& operator=(CLMaskImage &&from);
+
+    ~CLMaskImage();
 
     cl_mem image;
     QSize  size;
 };
+
+CLMaskImage::CLMaskImage(CLMaskImage &&from)
+    : image(from.image), size(from.size)
+{
+    from.image = 0;
+}
+
+CLMaskImage& CLMaskImage::operator=(CLMaskImage &&from)
+{
+    std::swap(image, from.image);
+    std::swap(size, from.size);
+
+    return *this;
+}
+
+CLMaskImage::~CLMaskImage()
+{
+    if (image)
+        clReleaseMemObject(image);
+}
 
 class MyPaintStrokeContextPrivate
 {
@@ -110,8 +136,6 @@ void MyPaintStrokeContext::fromDefaults()
 
 void MyPaintStrokeContext::setMasks(const QList<MaskBuffer> &masks)
 {
-    for (auto &mask: priv->masks)
-        clReleaseMemObject(mask.image);
     priv->masks.clear();
     priv->activeMask = 0;
 
@@ -148,8 +172,6 @@ MyPaintStrokeContext::~MyPaintStrokeContext()
 {
     mypaint_brush_unref(priv->brush);
     priv->brush = nullptr;
-    for (auto &mask: priv->masks)
-        clReleaseMemObject(mask.image);
     delete priv;
 }
 
