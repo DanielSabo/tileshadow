@@ -34,11 +34,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     canvas = ui->mainCanvas;
 
-    QBoxLayout *sidebarLayout = qobject_cast<QBoxLayout *>(ui->sidebar->layout());
-    Q_ASSERT(sidebarLayout);
-
     auto addSidebarWidget = [&](QWidget *widget) {
-        sidebarLayout->insertWidget(sidebarLayout->count() - 1, widget);
+        ui->sidebarLayout->insertWidget(ui->sidebarLayout->count() - 1, widget);
     };
 
     addSidebarWidget(new ToolSettingsWidget(canvas, this));
