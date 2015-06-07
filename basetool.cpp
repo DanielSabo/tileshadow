@@ -34,3 +34,8 @@ QList<ToolSettingInfo> BaseTool::listToolSettings()
 {
     return QList<ToolSettingInfo>();
 }
+
+QList<ToolSettingInfo> BaseTool::listAdvancedSettings()
+{
+    return QList<ToolSettingInfo>();
+}

@@ -49,6 +49,7 @@ public:
     void setActiveTool(const QString &toolName);
     QString getActiveTool();
     QList<ToolSettingInfo> getToolSettings();
+    QList<ToolSettingInfo> getAdvancedToolSettings();
     void setToolSetting(const QString &settingName, const QVariant &value);
     QVariant getToolSetting(const QString &settingName);
     void resetToolSettings();

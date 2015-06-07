@@ -1813,6 +1813,16 @@ QList<ToolSettingInfo> CanvasWidget::getToolSettings()
         return QList<ToolSettingInfo>();
 }
 
+QList<ToolSettingInfo> CanvasWidget::getAdvancedToolSettings()
+{
+    Q_D(CanvasWidget);
+
+    if (d->activeTool)
+        return d->activeTool->listAdvancedSettings();
+    else
+        return QList<ToolSettingInfo>();
+}
+
 void CanvasWidget::setToolSetting(const QString &settingName, const QVariant &value)
 {
     Q_D(CanvasWidget);
