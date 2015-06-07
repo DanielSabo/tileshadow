@@ -149,6 +149,10 @@ void MainWindow::updateStatus()
 
 void MainWindow::updateTool()
 {
+    if (canvas->getAdvancedToolSettings().size())
+        ui->actionAdvanced_Settings->setEnabled(true);
+    else
+        ui->actionAdvanced_Settings->setEnabled(false);
 }
 
 void MainWindow::canvasStats()
@@ -224,6 +228,8 @@ void MainWindow::closeEvent(QCloseEvent *event)
         infoWindow->close();
     if (!benchmarkWindow.isNull())
         benchmarkWindow->close();
+    if (!toolSettingsWindow.isNull())
+        toolSettingsWindow->close();
     event->accept();
 }
 
@@ -506,6 +512,18 @@ void MainWindow::actionToolSizeDecrease()
 void MainWindow::actionResetTool()
 {
     canvas->resetToolSettings();
+}
+
+void MainWindow::actionAdvancedToolSettings()
+{
+    if (toolSettingsWindow)
+        toolSettingsWindow->raise();
+    else
+    {
+        toolSettingsWindow = new ToolExtendedSettingsWindow(canvas, this);
+        toolSettingsWindow->setAttribute(Qt::WA_DeleteOnClose, true);
+        toolSettingsWindow->show();
+    }
 }
 
 void MainWindow::actionSetBackgroundColor()

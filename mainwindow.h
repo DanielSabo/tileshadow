@@ -4,8 +4,10 @@
 #include <QMainWindow>
 #include <QLabel>
 #include <QScopedPointer>
+#include <QPointer>
 #include "systeminfodialog.h"
 #include "benchmarkdialog.h"
+#include "toolextendedsettingswindow.h"
 #include "canvaswidget.h"
 
 namespace Ui {
@@ -30,6 +32,7 @@ private:
     Ui::MainWindow *ui;
     QScopedPointer<SystemInfoDialog> infoWindow;
     QScopedPointer<BenchmarkDialog> benchmarkWindow;
+    QPointer<ToolExtendedSettingsWindow> toolSettingsWindow;
     CanvasWidget *canvas;
     QLabel *statusBarLabel;
 
@@ -62,6 +65,7 @@ public slots:
     void actionToolSizeIncrease();
     void actionToolSizeDecrease();
     void actionResetTool();
+    void actionAdvancedToolSettings();
     void actionSetBackgroundColor();
     void actionMergeLayerDown();
     void actionDrawLine();

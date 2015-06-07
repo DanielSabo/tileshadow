@@ -87,7 +87,8 @@ SOURCES += main.cpp\
     batchprocessor.cpp \
     gradienttool.cpp \
     nativeeventfilter.cpp \
-    toollistview.cpp
+    toollistview.cpp \
+    toolextendedsettingswindow.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -127,7 +128,8 @@ HEADERS  += mainwindow.h \
     batchprocessor.h \
     gradienttool.h \
     nativeeventfilter.h \
-    toollistview.h
+    toollistview.h \
+    toolextendedsettingswindow.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \
