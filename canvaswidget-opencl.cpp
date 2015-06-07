@@ -214,6 +214,8 @@ static cl_program compileFile (SharedOpenCL *cl, const QString &path, const QStr
         return 0;
     }
 
+    cout << "Compiling " << qPrintable(path) << endl;
+
     const char *source_str = source.data();
     size_t source_len = source.size();
 
@@ -240,12 +242,16 @@ static cl_program compileFile (SharedOpenCL *cl, const QString &path, const QStr
         clGetProgramBuildInfo (prog, cl->device, CL_PROGRAM_BUILD_LOG, error_len, error_buf.data(), nullptr);
         QString errorStr = QString(error_buf.data()).trimmed();
         if (errorStr.size() > 0)
-            qWarning() << errorStr;
+        {
+            QStringList errorLines = errorStr.split("\n");
+            for (auto &line: errorLines)
+                line.prepend("\t");
+            errorStr = errorLines.join("\n");
+            cout << qPrintable(errorStr) << endl;
+        }
         else if (err != CL_SUCCESS)
             qWarning() << "No log data";
     }
-
-    cout << "Compiled " << path.toUtf8().constData() << endl;
 
     return prog;
 }
