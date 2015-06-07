@@ -196,39 +196,38 @@ void MyPaintTool::reset()
 
 void MyPaintTool::setToolSetting(QString const &name, QVariant const &value)
 {
+    auto setMyPaintSetting = [&] (QString const &name, float value) -> bool {
+        MyPaintBrushSetting settingId = mypaint_brush_setting_from_cname(name.toUtf8().constData());
+        if (settingId != (MyPaintBrushSetting)-1)
+        {
+            auto settingInfo = mypaint_brush_setting_info(settingId);
+            value = qBound<float>(settingInfo->min, value, settingInfo->max);
+            priv->setBrushValue(name, value);
+            return true;
+        }
+        return false;
+    };
+
     if (name == QStringLiteral("size") && value.canConvert<float>())
     {
-        //FIXME: Should query the min and max values instead of hardcoding
-        float radius = qBound<float>(-2.0f, value.toFloat(), 6.0f);
-
-        priv->setBrushValue("radius_logarithmic", radius);
+        setMyPaintSetting("radius_logarithmic", value.toFloat());
         priv->updateRadius();
     }
     else if (name == QStringLiteral("opacity") && value.canConvert<float>())
     {
-        //FIXME: Should query the min and max values instead of hardcoding
-        float opacity = qBound<float>(0.0f, value.toFloat(), 2.0f);
-
-        priv->setBrushValue("opaque", opacity);
-    }
-    else if (name == QStringLiteral("hardness") && value.canConvert<float>())
-    {
-        //FIXME: Should query the min and max values instead of hardcoding
-        float hardness = qBound<float>(0.0f, value.toFloat(), 1.0f);
-
-        priv->setBrushValue("hardness", hardness);
+        setMyPaintSetting("opaque", value.toFloat());
     }
     else if (name == QStringLiteral("lock_alpha") && value.canConvert<bool>())
     {
-        float lock_alpha = value.toBool() ? 1.0f : 0.0f;
-
-        priv->setBrushValue("lock_alpha", lock_alpha);
+        priv->setBrushValue("lock_alpha", value.toBool() ? 1.0f : 0.0f);
     }
     else if (name == QStringLiteral("eraser") && value.canConvert<bool>())
     {
-        float lock_alpha = value.toBool() ? 1.0f : 0.0f;
-
-        priv->setBrushValue("eraser", lock_alpha);
+        priv->setBrushValue("eraser", value.toBool() ? 1.0f : 0.0f);
+    }
+    else if (value.canConvert<float>() && setMyPaintSetting(name, value.toFloat()))
+    {
+        ;
     }
     else
     {
@@ -242,15 +241,20 @@ QVariant MyPaintTool::getToolSetting(const QString &name)
         return QVariant::fromValue<float>(priv->getBrushValue("radius_logarithmic"));
     else if (name == QStringLiteral("opacity"))
         return QVariant::fromValue<float>(priv->getBrushValue("opaque"));
-    else if (name == QStringLiteral("hardness"))
-        return QVariant::fromValue<float>(priv->getBrushValue("hardness"));
     else if (name == QStringLiteral("lock_alpha"))
         return QVariant::fromValue<bool>(priv->getBrushValue("lock_alpha") > 0.0f);
     else if (name == QStringLiteral("eraser"))
         return QVariant::fromValue<bool>(priv->getBrushValue("eraser") > 0.0f);
+    else if (priv->currentSettings.contains(name))
+        return QVariant::fromValue<float>(priv->getBrushValue(name));
     else
-        return BaseTool::getToolSetting(name);
+    {
+        MyPaintBrushSetting settingId = mypaint_brush_setting_from_cname(name.toUtf8().constData());
+        if (settingId != (MyPaintBrushSetting)-1)
+            return QVariant::fromValue<float>(mypaint_brush_setting_info(settingId)->def);
+    }
 
+    return BaseTool::getToolSetting(name);
 }
 
 QList<ToolSettingInfo> MyPaintTool::listToolSettings()
@@ -266,6 +270,67 @@ QList<ToolSettingInfo> MyPaintTool::listToolSettings()
 
     return result;
 
+}
+
+QList<ToolSettingInfo> MyPaintTool::listAdvancedSettings()
+{
+    static const MyPaintBrushSetting settingIdList[] = {
+        MYPAINT_BRUSH_SETTING_OPAQUE,
+        MYPAINT_BRUSH_SETTING_OPAQUE_MULTIPLY,
+        MYPAINT_BRUSH_SETTING_OPAQUE_LINEARIZE,
+        MYPAINT_BRUSH_SETTING_RADIUS_LOGARITHMIC,
+        MYPAINT_BRUSH_SETTING_HARDNESS,
+        //MYPAINT_BRUSH_SETTING_ANTI_ALIASING,
+        MYPAINT_BRUSH_SETTING_DABS_PER_BASIC_RADIUS,
+        MYPAINT_BRUSH_SETTING_DABS_PER_ACTUAL_RADIUS,
+        MYPAINT_BRUSH_SETTING_DABS_PER_SECOND,
+        MYPAINT_BRUSH_SETTING_RADIUS_BY_RANDOM,
+        MYPAINT_BRUSH_SETTING_SPEED1_SLOWNESS,
+        MYPAINT_BRUSH_SETTING_SPEED2_SLOWNESS,
+        MYPAINT_BRUSH_SETTING_SPEED1_GAMMA,
+        MYPAINT_BRUSH_SETTING_SPEED2_GAMMA,
+        MYPAINT_BRUSH_SETTING_OFFSET_BY_RANDOM,
+        MYPAINT_BRUSH_SETTING_OFFSET_BY_SPEED,
+        MYPAINT_BRUSH_SETTING_OFFSET_BY_SPEED_SLOWNESS,
+        MYPAINT_BRUSH_SETTING_SLOW_TRACKING,
+        MYPAINT_BRUSH_SETTING_SLOW_TRACKING_PER_DAB,
+        MYPAINT_BRUSH_SETTING_TRACKING_NOISE,
+        //MYPAINT_BRUSH_SETTING_COLOR_H,
+        //MYPAINT_BRUSH_SETTING_COLOR_S,
+        //MYPAINT_BRUSH_SETTING_COLOR_V,
+        MYPAINT_BRUSH_SETTING_RESTORE_COLOR,
+        MYPAINT_BRUSH_SETTING_CHANGE_COLOR_H,
+        MYPAINT_BRUSH_SETTING_CHANGE_COLOR_L,
+        MYPAINT_BRUSH_SETTING_CHANGE_COLOR_HSL_S,
+        MYPAINT_BRUSH_SETTING_CHANGE_COLOR_V,
+        MYPAINT_BRUSH_SETTING_CHANGE_COLOR_HSV_S,
+        MYPAINT_BRUSH_SETTING_SMUDGE,
+        MYPAINT_BRUSH_SETTING_SMUDGE_LENGTH,
+        MYPAINT_BRUSH_SETTING_SMUDGE_RADIUS_LOG,
+        //MYPAINT_BRUSH_SETTING_ERASER,
+        MYPAINT_BRUSH_SETTING_STROKE_THRESHOLD,
+        MYPAINT_BRUSH_SETTING_STROKE_DURATION_LOGARITHMIC,
+        MYPAINT_BRUSH_SETTING_STROKE_HOLDTIME,
+        MYPAINT_BRUSH_SETTING_CUSTOM_INPUT,
+        MYPAINT_BRUSH_SETTING_CUSTOM_INPUT_SLOWNESS,
+        MYPAINT_BRUSH_SETTING_ELLIPTICAL_DAB_RATIO,
+        MYPAINT_BRUSH_SETTING_ELLIPTICAL_DAB_ANGLE,
+        MYPAINT_BRUSH_SETTING_DIRECTION_FILTER,
+        //MYPAINT_BRUSH_SETTING_LOCK_ALPHA,
+        //MYPAINT_BRUSH_SETTING_COLORIZE,
+        //MYPAINT_BRUSH_SETTING_SNAP_TO_PIXEL,
+        MYPAINT_BRUSH_SETTING_PRESSURE_GAIN_LOG
+    };
+
+    QList<ToolSettingInfo> result;
+
+    for(auto settingId: settingIdList)
+    {
+        auto settingInfo = mypaint_brush_setting_info(settingId);
+        result.append(ToolSettingInfo::linearSlider(settingInfo->cname, settingInfo->name, settingInfo->min, settingInfo->max));
+    }
+
+    return result;
 }
 
 float MyPaintTool::getPixelRadius()

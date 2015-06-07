@@ -19,6 +19,7 @@ public:
     virtual void setToolSetting(QString const &name, QVariant const &value);
     virtual QVariant getToolSetting(QString const &name);
     virtual QList<ToolSettingInfo> listToolSettings();
+    virtual QList<ToolSettingInfo> listAdvancedSettings();
 
     StrokeContext *newStroke(StrokeContextArgs const &args);
 
