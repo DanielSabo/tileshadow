@@ -71,6 +71,7 @@ public:
     QSize viewSize;
 
     void resizeFramebuffer(int w, int h);
+    void shiftFramebuffer(int xOffset, int yOffset);
 
     GLuint getGLBuf(int x, int y);
     void clearTiles();

@@ -183,6 +183,41 @@ void CanvasRender::resizeFramebuffer(int w, int h)
     }
 }
 
+void CanvasRender::shiftFramebuffer(int xOffset, int yOffset)
+{
+    GLuint newFramebuffer = 0;
+    GLuint newRenderbuffer = 0;
+    QSize siftArea = viewSize;
+    // Y offset is flipped because GL's origin is lower right vs top right for Qt
+    yOffset = -yOffset;
+    siftArea.rwidth() -= abs(xOffset);
+    siftArea.rheight() -= abs(yOffset);
+    int readX = xOffset > 0 ? xOffset : 0;
+    int writeX = xOffset > 0 ? 0 : -xOffset;
+    int readY = yOffset > 0 ? yOffset : 0;
+    int writeY = yOffset > 0 ? 0 : -yOffset;
+
+    glFuncs->glGenFramebuffers(1, &newFramebuffer);
+    glFuncs->glGenRenderbuffers(1, &newRenderbuffer);
+
+    glFuncs->glBindRenderbuffer(GL_RENDERBUFFER, newFramebuffer);
+    glFuncs->glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB8, viewSize.width(), viewSize.height());
+    glFuncs->glBindFramebuffer(GL_READ_FRAMEBUFFER, backbufferFramebuffer);
+    glFuncs->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, newFramebuffer);
+    glFuncs->glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, newFramebuffer);
+
+    glFuncs->glBlitFramebuffer(readX, readY, siftArea.width() + readX, siftArea.height() + readY,
+                               writeX, writeY, siftArea.width() + writeX, siftArea.height() + writeY,
+                               GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+    glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
+
+    glFuncs->glDeleteFramebuffers(1, &backbufferFramebuffer);
+    glFuncs->glDeleteRenderbuffers(1, &backbufferRenderbuffer);
+    backbufferFramebuffer = newFramebuffer;
+    backbufferRenderbuffer = newRenderbuffer;
+}
+
 void CanvasRender::clearTiles()
 {
     GLTileMap::iterator iter;

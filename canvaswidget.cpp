@@ -87,6 +87,7 @@ public:
     QTimer frameTickTrigger;
     QElapsedTimer lastFrameTimer;
     bool fullRedraw;
+    QPoint lastRenderedOrigin;
     RenderMode::Mode renderMode;
     QTimer layerFlashTimeout;
     QColor dotPreviewColor;
@@ -106,6 +107,7 @@ CanvasWidgetPrivate::CanvasWidgetPrivate()
     lastTabletEvent = {0, };
     strokeEventTimestamp = 0;
     fullRedraw = true;
+    lastRenderedOrigin = QPoint(0, 0);
     currentLayerEditable = false;
     renderMode = RenderMode::Normal;
     layerFlashTimeout.setSingleShot(true);
@@ -272,6 +274,20 @@ void CanvasWidget::paintEvent(QPaintEvent *)
     }
 }
 
+static void insertRectTiles(TileSet &tileSet, QRect pixelRect)
+{
+    int x0 = tile_indice(pixelRect.left(), TILE_PIXEL_WIDTH);
+    int x1 = tile_indice(pixelRect.right(), TILE_PIXEL_WIDTH);
+    int y0 = tile_indice(pixelRect.top(), TILE_PIXEL_HEIGHT);
+    int y1 = tile_indice(pixelRect.bottom(), TILE_PIXEL_HEIGHT);
+
+    for (int y = y0; y <= y1; ++y)
+        for (int x = x0; x <= x1; ++x)
+        {
+            tileSet.insert({x, y});
+        }
+}
+
 void CanvasWidget::paintGL()
 {
     Q_D(CanvasWidget);
@@ -318,6 +334,20 @@ void CanvasWidget::paintGL()
     }
 
     render->renderTileMap(renderTiles);
+
+    if (d->lastRenderedOrigin != canvasOrigin)
+    {
+        // Note: shiftFramebuffer() unbinds the framebuffer
+        render->shiftFramebuffer(canvasOrigin.x() - d->lastRenderedOrigin.x(),
+                                 canvasOrigin.y() - d->lastRenderedOrigin.y());
+
+        QRegion dirtyRegion = QRegion{QRect{canvasOrigin / viewScale, render->viewSize / viewScale}};
+        dirtyRegion -= QRect{d->lastRenderedOrigin / viewScale, render->viewSize / viewScale};
+        for (auto &dirtyRect: dirtyRegion.rects())
+            insertRectTiles(tilesToDraw, dirtyRect);
+
+        d->lastRenderedOrigin = canvasOrigin;
+    }
 
     glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, render->backbufferFramebuffer);
     glViewport(0, 0, render->viewSize.width(), render->viewSize.height());
@@ -1612,7 +1642,6 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
         QPoint dPos = event->pos() - actionOrigin;
         actionOrigin = event->pos();
         canvasOrigin -= dPos;
-        d->fullRedraw = true;
     }
     else if (action == CanvasAction::MoveLayer)
     {
@@ -1664,11 +1693,8 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
 
 void CanvasWidget::wheelEvent(QWheelEvent *event)
 {
-    Q_D(CanvasWidget);
-
     mouseEventRate.addEvents(1);
     canvasOrigin += event->pixelDelta();
-    d->fullRedraw = true;
     update();
 }
 
