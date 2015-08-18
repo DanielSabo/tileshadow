@@ -313,21 +313,13 @@ void MainWindow::actionOpenFile()
     if (!promptSave())
         return;
 
-    QList<QByteArray> readerKnownFormats = QImageReader::supportedImageFormats();
-    QList<QByteArray> importFormats;
-    importFormats.append("png");
-    importFormats.append("bmp");
-    importFormats.append("jpg");
-    importFormats.append("jpeg");
-
     QStringList importWildcards;
     importWildcards.append("*.ora");
 
-    for(int i = 0; i < importFormats.size(); ++i)
-        if (readerKnownFormats.contains(importFormats[i]))
-            importWildcards.append(QStringLiteral("*.") + importFormats[i]);
+    for (auto const &readerFormat: QImageReader::supportedImageFormats())
+        importWildcards.append(QStringLiteral("*.") + readerFormat);
 
-    QString formats = QStringLiteral("(") + importWildcards.join(" ") + ")";
+    QString formats = QStringLiteral("Images (") + importWildcards.join(" ") + ")";
 
     QString filename = QFileDialog::getOpenFileName(this, "Open", QDir::homePath(), formats);
 
@@ -359,20 +351,12 @@ void MainWindow::openFile(QString const &filename)
 
 void MainWindow::actionOpenAsLayer()
 {
-    QList<QByteArray> readerKnownFormats = QImageReader::supportedImageFormats();
-    QList<QByteArray> importFormats;
-    importFormats.append("png");
-    importFormats.append("bmp");
-    importFormats.append("jpg");
-    importFormats.append("jpeg");
-
     QStringList importWildcards;
 
-    for(int i = 0; i < importFormats.size(); ++i)
-        if (readerKnownFormats.contains(importFormats[i]))
-            importWildcards.append(QStringLiteral("*.") + importFormats[i]);
+    for (auto const &readerFormat: QImageReader::supportedImageFormats())
+        importWildcards.append(QStringLiteral("*.") + readerFormat);
 
-    QString formats = QStringLiteral("(") + importWildcards.join(" ") + ")";
+    QString formats = QStringLiteral("Images (") + importWildcards.join(" ") + ")";
 
     QString filename = QFileDialog::getOpenFileName(this, "Open", QDir::homePath(), formats);
 
