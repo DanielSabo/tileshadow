@@ -27,6 +27,8 @@ public:
     void closeEvent(QCloseEvent *event);
     void keyPressEvent(QKeyEvent *event);
     void keyReleaseEvent(QKeyEvent *event);
+    void dragEnterEvent(QDragEnterEvent *event);
+    void dropEvent(QDropEvent * event);
 
 private:
     Ui::MainWindow *ui;

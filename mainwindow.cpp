@@ -16,6 +16,7 @@
 #include <QJsonDocument>
 #include <QClipboard>
 #include <QDesktopServices>
+#include <QMimeData>
 #include "canvastile.h"
 #include "hsvcolordial.h"
 #include "toolfactory.h"
@@ -48,6 +49,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(canvas, &CanvasWidget::updateStats, this, &MainWindow::canvasStats);
     connect(canvas, &CanvasWidget::updateTool, this, &MainWindow::updateTool);
     connect(canvas, &CanvasWidget::canvasModified, this, &MainWindow::canvasModified);
+
+    setAcceptDrops(true);
 
     // Resize here because the big widget is unwieldy in the designer
 
@@ -211,6 +214,26 @@ void MainWindow::keyReleaseEvent(QKeyEvent *event)
     }
 #endif
 
+}
+
+void MainWindow::dragEnterEvent(QDragEnterEvent *event)
+{
+    QList<QUrl> urls = event->mimeData()->urls();
+    if (!urls.isEmpty() && urls.at(0).isLocalFile())
+    {
+        event->acceptProposedAction();
+    }
+}
+
+void MainWindow::dropEvent(QDropEvent *event)
+{
+    QList<QUrl> urls = event->mimeData()->urls();
+    if (!urls.isEmpty() && urls.at(0).isLocalFile())
+    {
+        // FIXME: Check the filename / mime type before accepting
+        openFileRequest(urls.at(0).toLocalFile());
+        event->acceptProposedAction();
+    }
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
