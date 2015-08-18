@@ -216,10 +216,26 @@ void MainWindow::keyReleaseEvent(QKeyEvent *event)
 
 }
 
+namespace {
+    bool checkDragUrls(QList<QUrl> const &urls)
+    {
+        if (!urls.isEmpty() && urls.at(0).isLocalFile())
+        {
+            QString path = urls.at(0).toLocalFile();
+            if (path.endsWith(".ora"))
+                return true;
+            for (auto const &readerFormat: QImageReader::supportedImageFormats())
+                if (path.endsWith(QStringLiteral(".") + readerFormat))
+                    return true;
+        }
+        return false;
+    }
+}
+
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 {
     QList<QUrl> urls = event->mimeData()->urls();
-    if (!urls.isEmpty() && urls.at(0).isLocalFile())
+    if (checkDragUrls(urls))
     {
         event->acceptProposedAction();
     }
@@ -228,9 +244,8 @@ void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 void MainWindow::dropEvent(QDropEvent *event)
 {
     QList<QUrl> urls = event->mimeData()->urls();
-    if (!urls.isEmpty() && urls.at(0).isLocalFile())
+    if (checkDragUrls(urls))
     {
-        // FIXME: Check the filename / mime type before accepting
         openFileRequest(urls.at(0).toLocalFile());
         event->acceptProposedAction();
     }
