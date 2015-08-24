@@ -1470,19 +1470,6 @@ void CanvasWidget::pickColorAt(QPoint pos)
     }
 }
 
-static void runCursorHack(QWidget *target)
-{
-    //FIXME: As of Qt 5.4 the cursor does not correctly reset on OSX
-#ifdef Q_OS_MAC
-    // This works most reliably with a 1ms delay
-    QTimer::singleShot(1, target, [target]() {
-        QCursor prevCursor = target->cursor();
-        target->unsetCursor();
-        target->setCursor(prevCursor);
-    });
-#endif
-}
-
 bool CanvasWidget::eventFilter(QObject *obj, QEvent *event)
 {
     Q_D(CanvasWidget);
@@ -1493,12 +1480,10 @@ bool CanvasWidget::eventFilter(QObject *obj, QEvent *event)
     {
         if (static_cast<QTabletEvent *>(event)->pointerType() == QTabletEvent::Eraser)
             d->deviceIsEraser = true;
-        runCursorHack(this);
     }
     else if (event->type() == QEvent::TabletLeaveProximity)
     {
         d->deviceIsEraser = false;
-        runCursorHack(this);
     }
     else if (event->type() == QEvent::KeyPress ||
              event->type() == QEvent::KeyRelease)
@@ -1698,10 +1683,19 @@ void CanvasWidget::wheelEvent(QWheelEvent *event)
     update();
 }
 
+/* As of Qt 5.4 the cursor is not correctly set over OpenGL windows on OSX,
+ * this hacks around that by setting the cursor for the toplevel window instead.
+ */
+#ifdef Q_OS_MAC
+#define CURSOR_WIDGET topLevelWidget()
+#else
+#define CURSOR_WIDGET this
+#endif
+
 void CanvasWidget::leaveEvent(QEvent * event)
 {
     showToolCursor = false;
-    unsetCursor();
+    CURSOR_WIDGET->unsetCursor();
     update();
 }
 
@@ -1743,6 +1737,9 @@ void CanvasWidget::updateCursor()
 {
     Q_D(CanvasWidget);
 
+    if (!underMouse())
+        return;
+
     CanvasAction::Action cursorAction = action;
     if (cursorAction == CanvasAction::None)
         cursorAction = d->actionForMouseEvent(1, d->keyModifiers);
@@ -1751,28 +1748,28 @@ void CanvasWidget::updateCursor()
          cursorAction == CanvasAction::TabletStroke) &&
          d->activeTool && d->currentLayerEditable)
     {
-        setCursor(Qt::BlankCursor);
+       CURSOR_WIDGET->setCursor(Qt::BlankCursor);
     }
     else if (cursorAction == CanvasAction::ColorPick)
     {
-        setCursor(colorPickCursor);
+        CURSOR_WIDGET->setCursor(colorPickCursor);
     }
     else if ((cursorAction == CanvasAction::MoveLayer) &&
              d->currentLayerEditable)
     {
-        setCursor(moveLayerCursor);
+        CURSOR_WIDGET->setCursor(moveLayerCursor);
     }
     else if (cursorAction == CanvasAction::MoveView)
     {
-        setCursor(moveViewCursor);
+        CURSOR_WIDGET->setCursor(moveViewCursor);
     }
     else if (cursorAction == CanvasAction::DrawLine)
     {
-        setCursor(Qt::CrossCursor);
+        CURSOR_WIDGET->setCursor(Qt::CrossCursor);
     }
     else
     {
-        setCursor(Qt::ArrowCursor);
+        CURSOR_WIDGET->setCursor(Qt::ArrowCursor);
     }
 }
 
