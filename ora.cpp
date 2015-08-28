@@ -95,6 +95,146 @@ void writeBackground(QZipWriter &writer, QString const &path, CanvasTile *tile, 
         free(pngData);
 }
 
+static void writeStack(QXmlStreamWriter &stackXML,
+                       QZipWriter &oraZipWriter,
+                       int imageX,
+                       int imageY,
+                       QList<CanvasLayer *> const &layers,
+                       int &layerNum,
+                       int &progressStep,
+                       float progressStepTotal,
+                       std::function<void(QString const &, float)> progressCallback)
+{
+    for (int layerIdx = layers.size() - 1; layerIdx >= 0; layerIdx--)
+    {
+        CanvasLayer const *currentLayer = layers.at(layerIdx);
+
+        if (currentLayer->type == LayerType::Layer)
+        {
+            QRect tileBounds = tileSetBounds(currentLayer->getTileSet());
+
+            progressCallback(QStringLiteral("Saving layer \"%1\"").arg(currentLayer->name), progressStep++ / progressStepTotal);
+
+            QRect bounds;
+            uint16_t *layerData = NULL;
+
+            if (tileBounds.isEmpty())
+            {
+                bounds = QRect(0, 0, 1, 1);
+                layerData = new uint16_t[bounds.width() * bounds.height() * 4];
+                memset(layerData, 0, bounds.width() * bounds.height() * 4 * sizeof(uint16_t));
+            }
+            else
+            {
+                bounds = QRect(tileBounds.x() * TILE_PIXEL_WIDTH,
+                               tileBounds.y() * TILE_PIXEL_HEIGHT,
+                               tileBounds.width() * TILE_PIXEL_WIDTH,
+                               tileBounds.height() * TILE_PIXEL_HEIGHT);
+
+                // Linearize image
+                layerData = new uint16_t[bounds.width() * bounds.height() * 4];
+                size_t rowComps = bounds.width() * 4;
+
+                for (int iy = 0; iy < tileBounds.height(); ++iy)
+                    for (int ix = 0; ix < tileBounds.width(); ++ix)
+                    {
+                        CanvasTile *tile = currentLayer->getTileMaybe(ix + tileBounds.x(), iy + tileBounds.y());
+                        uint16_t *rowPtr = layerData + (rowComps * iy * TILE_PIXEL_HEIGHT)
+                                                     + (4 * ix * TILE_PIXEL_WIDTH);
+                        if (tile)
+                        {
+                            float *tileData = tile->mapHost();
+
+                            for (int row = 0; row < TILE_PIXEL_HEIGHT; row++)
+                            {
+                                for (int col = 0; col < TILE_PIXEL_WIDTH; col++)
+                                {
+
+                                    rowPtr[col * 4 + 3] = qToBigEndian((uint16_t)(tileData[col * 4 + 3] * 0xFFFF));
+                                    if (rowPtr[col * 4 + 3])
+                                    {
+                                        rowPtr[col * 4 + 0] = qToBigEndian((uint16_t)(tileData[col * 4 + 0] * 0xFFFF));
+                                        rowPtr[col * 4 + 1] = qToBigEndian((uint16_t)(tileData[col * 4 + 1] * 0xFFFF));
+                                        rowPtr[col * 4 + 2] = qToBigEndian((uint16_t)(tileData[col * 4 + 2] * 0xFFFF));
+                                    }
+                                    else
+                                    {
+                                        rowPtr[col * 4 + 0] = 0;
+                                        rowPtr[col * 4 + 1] = 0;
+                                        rowPtr[col * 4 + 2] = 0;
+                                    }
+                                }
+
+                                rowPtr += rowComps;
+                                tileData += TILE_PIXEL_WIDTH * 4;
+                            }
+                        }
+                        else
+                        {
+                            for (int row = 0; row < TILE_PIXEL_HEIGHT; row++)
+                            {
+                                memset(rowPtr, 0, TILE_PIXEL_WIDTH * sizeof(uint16_t) * 4);
+                                rowPtr += rowComps;
+                            }
+                        }
+                    }
+            }
+
+            unsigned char *pngData;
+            size_t pngDataSize;
+
+            unsigned int png_error = lodepng_encode_memory(&pngData, &pngDataSize,
+                                                           (unsigned char*)layerData,
+                                                           bounds.width(), bounds.height(),
+                                                           LCT_RGBA, 16);
+
+            if (png_error)
+                qDebug() << "lodepng error:" << lodepng_error_text(png_error);
+
+            QString layerFileName = QString().sprintf("data/layer%03d.png", layerNum++);
+
+            oraZipWriter.addFile(layerFileName, QByteArray::fromRawData((const char *)pngData, pngDataSize));
+
+            free(pngData);
+            delete[] layerData;
+
+            stackXML.writeStartElement("layer");
+            stackXML.writeAttribute("src", layerFileName);
+            stackXML.writeAttribute("name", currentLayer->name);
+            if (currentLayer->visible)
+                stackXML.writeAttribute("visibility", "visible");
+            else
+                stackXML.writeAttribute("visibility", "hidden");
+            if (!currentLayer->editable)
+                stackXML.writeAttribute("edit-locked", "true");
+            stackXML.writeAttribute("composite-op", blendModeToOraOp(currentLayer->mode));
+            stackXML.writeAttribute("opacity", QString().sprintf("%f", currentLayer->opacity));
+            stackXML.writeAttribute("x", QString().sprintf("%d", bounds.x() - imageX));
+            stackXML.writeAttribute("y", QString().sprintf("%d", bounds.y() - imageY));
+            stackXML.writeEndElement(); // layer
+        }
+        else
+        {
+            stackXML.writeStartElement("stack");
+            stackXML.writeAttribute("isolation", "isolate");
+            stackXML.writeAttribute("name", currentLayer->name);
+            if (currentLayer->visible)
+                stackXML.writeAttribute("visibility", "visible");
+            else
+                stackXML.writeAttribute("visibility", "hidden");
+            if (!currentLayer->editable)
+                stackXML.writeAttribute("edit-locked", "true");
+            stackXML.writeAttribute("composite-op", blendModeToOraOp(currentLayer->mode));
+            stackXML.writeAttribute("opacity", QString().sprintf("%f", currentLayer->opacity));
+            writeStack(stackXML, oraZipWriter,
+                       imageX, imageY,
+                       currentLayer->children, layerNum,
+                       progressStep, progressStepTotal, progressCallback);
+            stackXML.writeEndElement(); // stack
+        }
+    }
+}
+
 void saveStackAs(CanvasStack *stack, QString path, std::function<void(QString const &, float)> progressCallback)
 {
     int progressStep = 1;
@@ -129,111 +269,10 @@ void saveStackAs(CanvasStack *stack, QString path, std::function<void(QString co
 
     stackXML.writeStartElement("stack");
 
-    for (int layerIdx = stack->layers.size() - 1; layerIdx >= 0; layerIdx--)
-    {
-        CanvasLayer const *currentLayer = stack->layers.at(layerIdx);
-        QRect tileBounds = tileSetBounds(currentLayer->getTileSet());
-
-        progressCallback(QStringLiteral("Saving layer \"%1\"").arg(currentLayer->name), progressStep++ / progressStepTotal);
-
-        QRect bounds;
-        uint16_t *layerData = NULL;
-
-        if (tileBounds.isEmpty())
-        {
-            bounds = QRect(0, 0, 1, 1);
-            layerData = new uint16_t[bounds.width() * bounds.height() * 4];
-            memset(layerData, 0, bounds.width() * bounds.height() * 4 * sizeof(uint16_t));
-        }
-        else
-        {
-            bounds = QRect(tileBounds.x() * TILE_PIXEL_WIDTH,
-                           tileBounds.y() * TILE_PIXEL_HEIGHT,
-                           tileBounds.width() * TILE_PIXEL_WIDTH,
-                           tileBounds.height() * TILE_PIXEL_HEIGHT);
-
-            // Linearize image
-            layerData = new uint16_t[bounds.width() * bounds.height() * 4];
-            size_t rowComps = bounds.width() * 4;
-
-            for (int iy = 0; iy < tileBounds.height(); ++iy)
-                for (int ix = 0; ix < tileBounds.width(); ++ix)
-                {
-                    CanvasTile *tile = currentLayer->getTileMaybe(ix + tileBounds.x(), iy + tileBounds.y());
-                    uint16_t *rowPtr = layerData + (rowComps * iy * TILE_PIXEL_HEIGHT)
-                                                 + (4 * ix * TILE_PIXEL_WIDTH);
-                    if (tile)
-                    {
-                        float *tileData = tile->mapHost();
-
-                        for (int row = 0; row < TILE_PIXEL_HEIGHT; row++)
-                        {
-                            for (int col = 0; col < TILE_PIXEL_WIDTH; col++)
-                            {
-
-                                rowPtr[col * 4 + 3] = qToBigEndian((uint16_t)(tileData[col * 4 + 3] * 0xFFFF));
-                                if (rowPtr[col * 4 + 3])
-                                {
-                                    rowPtr[col * 4 + 0] = qToBigEndian((uint16_t)(tileData[col * 4 + 0] * 0xFFFF));
-                                    rowPtr[col * 4 + 1] = qToBigEndian((uint16_t)(tileData[col * 4 + 1] * 0xFFFF));
-                                    rowPtr[col * 4 + 2] = qToBigEndian((uint16_t)(tileData[col * 4 + 2] * 0xFFFF));
-                                }
-                                else
-                                {
-                                    rowPtr[col * 4 + 0] = 0;
-                                    rowPtr[col * 4 + 1] = 0;
-                                    rowPtr[col * 4 + 2] = 0;
-                                }
-                            }
-
-                            rowPtr += rowComps;
-                            tileData += TILE_PIXEL_WIDTH * 4;
-                        }
-                    }
-                    else
-                    {
-                        for (int row = 0; row < TILE_PIXEL_HEIGHT; row++)
-                        {
-                            memset(rowPtr, 0, TILE_PIXEL_WIDTH * sizeof(uint16_t) * 4);
-                            rowPtr += rowComps;
-                        }
-                    }
-                }
-        }
-
-        unsigned char *pngData;
-        size_t pngDataSize;
-
-        unsigned int png_error = lodepng_encode_memory(&pngData, &pngDataSize,
-                                                       (unsigned char*)layerData,
-                                                       bounds.width(), bounds.height(),
-                                                       LCT_RGBA, 16);
-
-        if (png_error)
-            qDebug() << "lodepng error:" << lodepng_error_text(png_error);
-
-        QString layerFileName = QString().sprintf("data/layer%03d.png", layerNum++);
-
-        oraZipWriter.addFile(layerFileName, QByteArray::fromRawData((const char *)pngData, pngDataSize));
-
-        free(pngData);
-        delete[] layerData;
-
-        stackXML.writeStartElement("layer");
-        stackXML.writeAttribute("src", layerFileName);
-        stackXML.writeAttribute("name", currentLayer->name);
-        if (currentLayer->visible)
-            stackXML.writeAttribute("visibility", "visible");
-        else
-            stackXML.writeAttribute("visibility", "hidden");
-        if (!currentLayer->editable)
-            stackXML.writeAttribute("edit-locked", "true");
-        stackXML.writeAttribute("composite-op", blendModeToOraOp(currentLayer->mode));
-        stackXML.writeAttribute("opacity", QString().sprintf("%f", currentLayer->opacity));
-        stackXML.writeAttribute("x", QString().sprintf("%d", bounds.x() - imageX));
-        stackXML.writeAttribute("y", QString().sprintf("%d", bounds.y() - imageY));
-        stackXML.writeEndElement(); // layer
-    }
+    writeStack(stackXML, oraZipWriter,
+               imageX, imageY,
+               stack->layers, layerNum,
+               progressStep, progressStepTotal, progressCallback);
 
     {
         // Save the background tile
@@ -415,6 +454,125 @@ static uint16_t *readZipPNG(QZipReader &reader, QString const &path, QSize *resu
     return layerData;
 }
 
+static void setLayerAttributes(CanvasLayer *layer,
+                               QXmlStreamAttributes const &attributes)
+{
+    QString mode;
+    QString name;
+    bool visible = true;
+    bool editLocked = false;
+    float opacity = 1.0f;
+
+
+    if (attributes.hasAttribute("name"))
+        name = attributes.value("name").toString();
+
+    if (attributes.hasAttribute("visibility"))
+        visible = attributes.value("visibility").toString() == QString("visible");
+
+    if (attributes.hasAttribute("edit-locked"))
+        editLocked = attributes.value("edit-locked").toString() == QString("true");
+
+    if (attributes.hasAttribute("composite-op"))
+        mode = attributes.value("composite-op").toString();
+
+    if (attributes.hasAttribute("opacity"))
+        opacity = attributes.value("opacity").toFloat();
+
+    layer->name = name;
+    layer->visible = visible;
+    layer->editable = !editLocked;
+    layer->mode = oraOpToMode(mode);
+    layer->opacity = opacity;
+}
+
+static QList<CanvasLayer *> readStack(QXmlStreamReader &stackXML,
+                                      std::unique_ptr<CanvasTile> &resultBackgroundTile,
+                                      QZipReader &oraZipReader)
+{
+    QList<CanvasLayer *> resultLayers;
+
+    while(!stackXML.atEnd() && !stackXML.hasError())
+    {
+        QXmlStreamReader::TokenType token = stackXML.readNext();
+
+        if (token == QXmlStreamReader::StartElement &&
+            stackXML.name() == "stack")
+        {
+            CanvasLayer *layerGroup = new CanvasLayer("");
+            layerGroup->type = LayerType::Group;
+            setLayerAttributes(layerGroup, stackXML.attributes());
+            layerGroup->children = readStack(stackXML, resultBackgroundTile, oraZipReader);
+            resultLayers.prepend(layerGroup);
+        }
+        else if (token == QXmlStreamReader::EndElement &&
+                 stackXML.name() == "stack")
+        {
+            return resultLayers;
+        }
+        else if (token == QXmlStreamReader::StartElement &&
+                 stackXML.name() == "layer")
+        {
+            QXmlStreamAttributes attributes = stackXML.attributes();
+
+            resultBackgroundTile.reset(nullptr);
+
+            int x = 0;
+            int y = 0;
+            QString src;
+
+            if (attributes.hasAttribute("x"))
+                x = attributes.value("x").toDouble();
+
+            if (attributes.hasAttribute("y"))
+                y = attributes.value("y").toDouble();
+
+            if (attributes.hasAttribute("src"))
+                src = attributes.value("src").toString();
+
+            if (attributes.hasAttribute("background_tile"))
+            {
+                QString backgroundPath = attributes.value("background_tile").toString();
+                QSize layerSize;
+                uint16_t *layerData = readZipPNG(oraZipReader, backgroundPath, &layerSize);
+
+                if (layerData)
+                {
+                    CanvasTile *bgTile = backgroundFromLinear(layerData, layerSize);
+
+                    if (bgTile)
+                        resultBackgroundTile.reset(bgTile);
+
+                    free(layerData);
+                }
+            }
+
+            if (src.isEmpty())
+                continue;
+
+            QSize layerSize;
+
+            uint16_t *layerData = readZipPNG(oraZipReader, src, &layerSize);
+
+            if (!layerData)
+                continue;
+
+            CanvasLayer *maybeLayer = layerFromLinear(layerData, QRect(x, y, layerSize.width(), layerSize.height()));
+
+            if (maybeLayer)
+            {
+                setLayerAttributes(maybeLayer, attributes);
+                resultLayers.prepend(maybeLayer);
+            }
+
+            free(layerData);
+        }
+    }
+
+    qDebug() << "Unclosed layer stack!";
+    return resultLayers;
+}
+
 void loadStackFromORA(CanvasStack *stack, QString path)
 {
     QZipReader oraZipReader(path, QIODevice::ReadOnly);
@@ -441,102 +599,12 @@ void loadStackFromORA(CanvasStack *stack, QString path)
 
     QXmlStreamReader stackXML(stackData);
 
-    /* Blind parsing of the file, the only thing we care about
-     * are layer nodes and we assume they are in a simple stack.
-     * An ORA2 file will likely cause explosions.
-     */
+    //FIXME: Error check
+    while (stackXML.name() != "stack")
+        stackXML.readNextStartElement();
 
-    QList<CanvasLayer *> resultLayers;
     std::unique_ptr<CanvasTile> resultBackgroundTile;
-
-    while(!stackXML.atEnd() && !stackXML.hasError())
-    {
-        QXmlStreamReader::TokenType token = stackXML.readNext();
-
-        if (token == QXmlStreamReader::StartElement &&
-            stackXML.name() == "layer")
-        {
-            QXmlStreamAttributes attributes = stackXML.attributes();
-
-            resultBackgroundTile.reset(nullptr);
-
-            int x = 0;
-            int y = 0;
-            QString mode;
-            QString name;
-            QString src;
-            bool visible = true;
-            bool editLocked = false;
-            float opacity = 1.0f;
-
-            if (attributes.hasAttribute("x"))
-                x = attributes.value("x").toDouble();
-
-            if (attributes.hasAttribute("y"))
-                y = attributes.value("y").toDouble();
-
-            if (attributes.hasAttribute("name"))
-                name = attributes.value("name").toString();
-
-            if (attributes.hasAttribute("src"))
-                src = attributes.value("src").toString();
-
-            if (attributes.hasAttribute("visibility"))
-                visible = attributes.value("visibility").toString() == QString("visible");
-
-            if (attributes.hasAttribute("edit-locked"))
-                editLocked = attributes.value("edit-locked").toString() == QString("true");
-
-            if (attributes.hasAttribute("composite-op"))
-                mode = attributes.value("composite-op").toString();
-
-            if (attributes.hasAttribute("opacity"))
-                opacity = attributes.value("opacity").toFloat();
-
-            if (attributes.hasAttribute("background_tile"))
-            {
-                QString backgroundPath = attributes.value("background_tile").toString();
-                QSize layerSize;
-                uint16_t *layerData = readZipPNG(oraZipReader, backgroundPath, &layerSize);
-
-                if (layerData)
-                {
-                    CanvasTile *bgTile = backgroundFromLinear(layerData, layerSize);
-
-                    if (bgTile)
-                        resultBackgroundTile.reset(bgTile);
-
-                    free(layerData);
-                }
-            }
-
-            if (src.isEmpty())
-                continue;
-
-//            qDebug() << "Found layer" << x << y << name << src;
-
-            QSize layerSize;
-
-            uint16_t *layerData = readZipPNG(oraZipReader, src, &layerSize);
-
-            if (!layerData)
-                continue;
-
-            CanvasLayer *maybeLayer = layerFromLinear(layerData, QRect(x, y, layerSize.width(), layerSize.height()));
-
-            if (maybeLayer)
-            {
-                maybeLayer->name = name;
-                maybeLayer->visible = visible;
-                maybeLayer->editable = !editLocked;
-                maybeLayer->mode = oraOpToMode(mode);
-                maybeLayer->opacity = opacity;
-                resultLayers.prepend(maybeLayer);
-            }
-
-            free(layerData);
-        }
-    }
+    QList<CanvasLayer *> resultLayers = readStack(stackXML, resultBackgroundTile, oraZipReader);
 
     if (!resultLayers.empty() && (resultLayers.first()->name == "background") && resultBackgroundTile)
     {

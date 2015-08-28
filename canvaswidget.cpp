@@ -35,6 +35,149 @@ static const QGLFormat &getFormatSingleton()
     return *single;
 }
 
+namespace { // Layer finding functions
+QList<int> pathFromAbsoluteIndex(QList<CanvasLayer *> *layers, const int index, int &currentIndex)
+{
+    for (int i = 0; i < layers->size(); ++i)
+    {
+        CanvasLayer *layer = layers->at(i);
+        if (index == currentIndex)
+            return {i};
+        currentIndex++;
+        if (!layer->children.empty())
+        {
+            QList<int> result = pathFromAbsoluteIndex(&layer->children, index, currentIndex);
+            if (!result.empty())
+            {
+                result.prepend(i);
+                return result;
+            }
+        }
+    }
+
+    return QList<int>{};
+}
+
+/*
+ * Return the list of indexes that leads to *index* in *stack*, such that
+ * stack->layers[p[0]][p[1]]...[p[n]] references *index*. Returns an empty
+ * list if index is out of range.
+ */
+QList<int> pathFromAbsoluteIndex(CanvasStack *stack, int index)
+{
+    if (index < 0)
+        return QList<int>{};
+
+    int currentIndex = 0;
+    return pathFromAbsoluteIndex(&stack->layers, index, currentIndex);
+}
+
+struct ParentInfo {
+    QList<CanvasLayer *> *container; // The container holding element
+    int index; // The relative location of *element* in it's container, container[index] == element.
+    CanvasLayer *element; // The requested layer
+
+    // The following will be filled in if *container* is not the root list
+    QList<CanvasLayer *> *parentContainer; // The parent container which holds *container*
+    int parentIndex; // The relative location of *container* in *parentContainer*, parentContainer[parentIndex] == container.
+};
+
+ParentInfo findAbsoluteParent(QList<CanvasLayer *> *layers, const int index, int &currentIndex)
+{
+    for (int i = 0; i < layers->size(); ++i)
+    {
+        CanvasLayer *layer = layers->at(i);
+        if (index == currentIndex)
+            return {layers, i, layer, nullptr, 0};
+        currentIndex++;
+        if (!layer->children.empty())
+        {
+            ParentInfo result = findAbsoluteParent(&layer->children, index, currentIndex);
+            if (result.element)
+            {
+                if (!result.parentContainer)
+                {
+                    result.parentContainer = layers;
+                    result.parentIndex = i;
+                }
+                return result;
+            }
+        }
+    }
+
+    return {nullptr, 0, nullptr};
+}
+
+/* Returns ParentInfo for the layer at the specified absolute index
+ * of the stack, if the index is out of range ParentInfo.element will
+ * be NULL.
+ */
+ParentInfo parentFromAbsoluteIndex(CanvasStack *stack, int index)
+{
+    if (index < 0)
+        return {nullptr, 0, nullptr};
+
+    int currentIndex = 0;
+    return findAbsoluteParent(&stack->layers, index, currentIndex);
+}
+
+/* Returns the layer at the specified absolute index of the stack,
+ * returns NULL if the index is out of range.
+ */
+CanvasLayer *layerFromAbsoluteIndex(CanvasStack *stack, int index)
+{
+    ParentInfo info = parentFromAbsoluteIndex(stack, index);
+    return info.element;
+}
+
+int findAbsoluteIndex(QList<CanvasLayer *> *layers, CanvasLayer const *targetLayer, int &currentIndex)
+{
+    for (int i = 0; i < layers->size(); ++i)
+    {
+        CanvasLayer *layer = layers->at(i);
+        if (layer == targetLayer)
+            return currentIndex;
+        currentIndex++;
+        if (!layer->children.empty())
+        {
+            int result = findAbsoluteIndex(&layer->children, targetLayer, currentIndex);
+            if (result != -1)
+                return result;
+        }
+    }
+
+    return -1;
+}
+
+/* Search stack for layer and return it's absolute index,
+ * returns -1 if the stack doesn't contain the layer.
+ */
+int absoluteIndexOfLayer(CanvasStack *stack, CanvasLayer const *layer) {
+    int currentIndex = 0;
+    return findAbsoluteIndex(&stack->layers, layer, currentIndex);
+}
+}
+
+namespace { // Misc utility functions
+bool indexIsEditable(CanvasStack *stack, int index)
+{
+    auto path = pathFromAbsoluteIndex(stack, index);
+    CanvasLayer *layer = nullptr;
+    QList<CanvasLayer *> *container = &stack->layers;
+    for (auto const i: path)
+    {
+        layer = container->at(i);
+        container = &layer->children;
+        if (!layer->visible || !layer->editable)
+            return false;
+    }
+
+    if (layer && layer->type == LayerType::Layer)
+        return true;
+    return false;
+}
+}
+
 namespace RenderMode
 {
     enum {
@@ -504,11 +647,10 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
         ctx->strokeTool.reset(strokeTool);
         ctx->stroke.reset(nullptr);
 
-        if (ctx->layers.layers.empty())
+        CanvasLayer *targetLayer = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
+
+        if (!targetLayer)
             return;
-
-        CanvasLayer *targetLayer = ctx->layers.layers.at(ctx->currentLayer);
-
         if (!targetLayer->visible)
             return;
 
@@ -595,7 +737,7 @@ void CanvasWidget::endStroke()
             ctx->stroke.reset();
             ctx->strokeTool.reset();
 
-            CanvasLayer *currentLayerObj = ctx->layers.layers[ctx->currentLayer];
+            CanvasLayer *currentLayerObj = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
             CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
             undoEvent->targetTileMap = currentLayerObj->tiles;
             undoEvent->currentLayer = ctx->currentLayer;
@@ -625,7 +767,7 @@ void CanvasWidget::startLine()
         ctx->stroke.reset();
         ctx->strokeModifiedTiles.clear();
 
-        if (ctx->layers.layers.empty())
+        if (ctx->layers.empty())
             ctx->strokeTool.reset();
     };
 
@@ -652,7 +794,7 @@ void CanvasWidget::lineTo(QPointF start, QPointF end)
         if (coalesceToken && coalesceToken->deref() == true)
             return;
 
-        CanvasLayer *targetLayer = ctx->layers.layers.at(ctx->currentLayer);
+        CanvasLayer *targetLayer = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
 
         for (QPoint const &iter : ctx->strokeModifiedTiles)
         {
@@ -698,7 +840,7 @@ void CanvasWidget::endLine()
         if (ctx->strokeModifiedTiles.empty())
             return;
 
-        CanvasLayer *currentLayerObj = ctx->layers.layers[ctx->currentLayer];
+        CanvasLayer *currentLayerObj = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
         CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
         undoEvent->targetTileMap = currentLayerObj->tiles;
         undoEvent->currentLayer = ctx->currentLayer;
@@ -755,7 +897,7 @@ void CanvasWidget::setActiveLayer(int layerIndex)
 
     CanvasContext *ctx = getContext();
 
-    if (layerIndex >= 0 && layerIndex < ctx->layers.layers.size())
+    if (layerFromAbsoluteIndex(&ctx->layers, layerIndex))
     {
         bool update = (ctx->currentLayer != layerIndex);
         resetCurrentLayer(ctx, layerIndex);
@@ -767,39 +909,47 @@ void CanvasWidget::setActiveLayer(int layerIndex)
 
 void CanvasWidget::addLayerAbove(int layerIndex)
 {
-    if (action != CanvasAction::None)
-        return;
-
-    CanvasContext *ctx = getContext();
-
-    ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
-
-    ctx->layers.newLayerAt(layerIndex + 1, QString().sprintf("Layer %02d", ++lastNewLayerNumber));
-    resetCurrentLayer(ctx, layerIndex + 1);
-    modified = true;
-    emit updateLayers();
+    insertLayerAbove(layerIndex, new CanvasLayer(QString().sprintf("Layer %02d", ++lastNewLayerNumber)));
 }
-
 
 void CanvasWidget::addLayerAbove(int layerIndex, QImage image, QString name)
 {
-    CanvasContext *ctx = getContext();
-
     if (image.isNull())
         return;
 
     std::unique_ptr<CanvasLayer> imported = layerFromImage(image);
 
-    ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
-
     if (name.isEmpty())
         name = QString().sprintf("Layer %02d", ++lastNewLayerNumber);
+    imported->name = name;
 
-    ctx->layers.newLayerAt(layerIndex + 1, name);
-    CanvasLayer *insertedLayer = ctx->layers.layers.at(layerIndex + 1);
-    insertedLayer->takeTiles(imported.get());
-    resetCurrentLayer(ctx, layerIndex + 1);
-    TileSet layerTiles = insertedLayer->getTileSet();
+    insertLayerAbove(layerIndex, imported.release());
+}
+
+void CanvasWidget::addGroupAbove(int layerIndex)
+{
+    CanvasLayer *layer = new CanvasLayer(QString().sprintf("Group %02d", ++lastNewLayerNumber));
+    layer->type = LayerType::Group;
+    insertLayerAbove(layerIndex, layer);
+}
+
+void CanvasWidget::insertLayerAbove(int layerIndex, CanvasLayer *newLayer)
+{
+    if (action != CanvasAction::None)
+        return;
+
+    CanvasContext *ctx = getContext();
+
+    auto parentInfo = parentFromAbsoluteIndex(&ctx->layers, layerIndex);
+    CanvasLayer *currentLayer = parentInfo.element;
+    if (!currentLayer)
+        return; // Nothing to do
+
+    ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
+
+    parentInfo.container->insert(parentInfo.index + 1, newLayer);
+    resetCurrentLayer(ctx, absoluteIndexOfLayer(&ctx->layers, newLayer));
+    TileSet layerTiles = newLayer->getTileSet();
     ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
 
     update();
@@ -814,67 +964,136 @@ void CanvasWidget::removeLayer(int layerIndex)
 
     CanvasContext *ctx = getContext();
 
-    if (layerIndex < 0 || layerIndex > ctx->layers.layers.size())
+    auto parentInfo = parentFromAbsoluteIndex(&ctx->layers, layerIndex);
+
+    if (!parentInfo.element)
         return;
-    if (ctx->layers.layers.size() == 1)
+    // Block removing the last layer or group
+    if (parentInfo.container == &(ctx->layers.layers) && ctx->layers.size() <= 1)
         return;
 
     ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
     /* Before we delete the layer, dirty all tiles it intersects */
-    TileSet layerTiles = ctx->layers.layers[layerIndex]->getTileSet();
+    TileSet layerTiles = parentInfo.element->getTileSet();
     ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
 
-    ctx->layers.layers[layerIndex]->swapOut();
+    parentInfo.element->swapOut();
 
-    ctx->layers.removeLayerAt(layerIndex);
-    if (layerIndex == ctx->currentLayer)
-    {
+    delete parentInfo.container->takeAt(parentInfo.index);
+
+    // Keep the selection inside a group when removing it's bottom layer
+    if (parentInfo.index == 0 && parentInfo.container->size())
+        resetCurrentLayer(ctx, qMax(0, ctx->currentLayer));
+    else
         resetCurrentLayer(ctx, qMax(0, ctx->currentLayer - 1));
-    }
 
     update();
     modified = true;
     emit updateLayers();
 }
 
-void CanvasWidget::moveLayer(int currentIndex, int targetIndex)
+void CanvasWidget::moveLayerUp(int layerIndex)
 {
     if (action != CanvasAction::None)
         return;
 
-    /* Move the layer at currentIndex to targetIndex, the layers at targetIndex and
-     * above will be shifted up to accommodate it.
-     */
     CanvasContext *ctx = getContext();
 
-    if (currentIndex < 0 || currentIndex >= ctx->layers.layers.size())
+    // 0. Save the undo before we modify anything
+    auto undoEvent = std::unique_ptr<CanvasUndoLayers>(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
+
+    // 1. Is "index" a valid layer?
+    auto parentInfo = parentFromAbsoluteIndex(&ctx->layers, layerIndex);
+    CanvasLayer *currentLayer = parentInfo.element;
+    if (!currentLayer)
+        return; // Nothing to do
+
+    // 2. In non-absolute terms, what is the object above it?
+    int aboveIndex = parentInfo.index + 1;
+    if (aboveIndex >= parentInfo.container->size())
+    {
+        // If currentLayer is at the top of it's container, is there an outer group?
+        if (!parentInfo.parentContainer)
+            return; // Nothing to do
+        // Move the layer out of the group
+        parentInfo.parentContainer->insert(parentInfo.parentIndex + 1, parentInfo.container->takeAt(parentInfo.index));
+    }
+    else
+    {
+        CanvasLayer *aboveLayer = parentInfo.container->at(aboveIndex);
+        if (aboveLayer->type == LayerType::Layer)
+        {
+            // If it's a layer swap pointers with it
+            (*parentInfo.container)[aboveIndex] = currentLayer;
+            (*parentInfo.container)[parentInfo.index] = aboveLayer;
+        }
+        else
+        {
+            // If it's a group move it to the bottom of the group
+            aboveLayer->children.prepend(parentInfo.container->takeAt(parentInfo.index));
+        }
+    }
+
+    // Finish up
+    ctx->addUndoEvent(undoEvent.release());
+    resetCurrentLayer(ctx, absoluteIndexOfLayer(&ctx->layers, currentLayer));
+
+    TileSet layerTiles = currentLayer->getTileSet();
+    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+
+    update();
+    modified = true;
+    emit updateLayers();
+}
+
+void CanvasWidget::moveLayerDown(int layerIndex)
+{
+    if (action != CanvasAction::None)
         return;
-    if (ctx->layers.layers.size() == 1)
-        return;
-    if (targetIndex < 0)
-        targetIndex = 0;
-    if (targetIndex >= ctx->layers.layers.size())
-        targetIndex = ctx->layers.layers.size() - 1;
 
-    if (currentIndex == targetIndex)
-        return;
+    CanvasContext *ctx = getContext();
 
-    QList<CanvasLayer *> newLayers;
+    // 0. Save the undo before we modify anything
+    auto undoEvent = std::unique_ptr<CanvasUndoLayers>(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
-    for (int i = 0; i < ctx->layers.layers.size(); ++i)
-        if (i != currentIndex)
-            newLayers.append(ctx->layers.layers.at(i));
-    newLayers.insert(targetIndex, ctx->layers.layers.at(currentIndex));
+    // 1. Is "index" a valid layer?
+    auto parentInfo = parentFromAbsoluteIndex(&ctx->layers, layerIndex);
+    CanvasLayer *currentLayer = parentInfo.element;
+    if (!currentLayer)
+        return; // Nothing to do
 
-    // Generate undo
-    ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
+    // 2. In non-absolute terms, what is the object below it?
+    int belowIndex = parentInfo.index - 1;
+    if (belowIndex < 0)
+    {
+        // currentLayer is at the bottom of it's container, is there an outer group?
+        if (!parentInfo.parentContainer)
+            return; // Nothing to do
+        // Move the layer out of the group
+        parentInfo.parentContainer->insert(parentInfo.parentIndex, parentInfo.container->takeAt(parentInfo.index));
+    }
+    else
+    {
+        CanvasLayer *belowLayer = parentInfo.container->at(belowIndex);
+        if (belowLayer->type == LayerType::Layer)
+        {
+            // If it's a layer swap pointers with it
+            (*parentInfo.container)[belowIndex] = currentLayer;
+            (*parentInfo.container)[parentInfo.index] = belowLayer;
+        }
+        else
+        {
+            // If it's a group move it to the top of the group
+            belowLayer->children.append(parentInfo.container->takeAt(parentInfo.index));
+        }
+    }
 
-    // Replace the stack's list with the reordered one
-    ctx->layers.layers = newLayers;
-    resetCurrentLayer(ctx, targetIndex);
+    // Finish up
+    ctx->addUndoEvent(undoEvent.release());
+    resetCurrentLayer(ctx, absoluteIndexOfLayer(&ctx->layers, currentLayer));
 
-    TileSet layerTiles = ctx->currentLayerCopy->getTileSet();
+    TileSet layerTiles = currentLayer->getTileSet();
     ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
 
     update();
@@ -888,16 +1107,17 @@ void CanvasWidget::renameLayer(int layerIndex, QString name)
         return;
 
     CanvasContext *ctx = getContext();
+    CanvasLayer *currentLayer = layerFromAbsoluteIndex(&ctx->layers, layerIndex);
 
-    if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
+    if (!currentLayer)
         return;
 
-    if (ctx->layers.layers[layerIndex]->name == name)
+    if (currentLayer->name == name)
         return;
 
     ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
-    ctx->layers.layers[layerIndex]->name = name;
+    currentLayer->name = name;
     modified = true;
     emit updateLayers();
 }
@@ -908,26 +1128,26 @@ void CanvasWidget::mergeLayerDown(int layerIndex)
         return;
 
     CanvasContext *ctx = getContext();
+    auto parentInfo = parentFromAbsoluteIndex(&ctx->layers, layerIndex);
 
-    auto &layerList = ctx->layers.layers;
-
-    if (layerIndex < 1 || layerIndex >= layerList.size())
+    if (!parentInfo.element || parentInfo.index == 0)
         return;
 
-    if (layerList.size() <= 1)
-        return;
+    CanvasLayer *above = parentInfo.container->at(parentInfo.index);
+    CanvasLayer *below = parentInfo.container->at(parentInfo.index - 1);
 
-    CanvasLayer *above = layerList[layerIndex];
-    CanvasLayer *below = layerList[layerIndex - 1];
+    if (above->type != LayerType::Layer || below->type != LayerType::Layer)
+        return;
 
     ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
     CanvasLayer *merged = above->mergeDown(below).release();
+    delete above;
+    parentInfo.container->replace(parentInfo.index, merged);
+    delete below;
+    parentInfo.container->removeAt(parentInfo.index - 1);
 
-    delete layerList.takeAt(layerIndex - 1);
-    delete layerList.takeAt(layerIndex - 1);
-    layerList.insert(layerIndex - 1, merged);
-    resetCurrentLayer(ctx, layerIndex - 1);
+    resetCurrentLayer(ctx, absoluteIndexOfLayer(&ctx->layers, merged));
 
     TileSet layerTiles = merged->getTileSet();
     ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
@@ -944,31 +1164,19 @@ void CanvasWidget::duplicateLayer(int layerIndex)
 
     CanvasContext *ctx = getContext();
 
-    if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
-        return;
-
-    ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
-
-    CanvasLayer *oldLayer = ctx->layers.layers[layerIndex];
-    CanvasLayer *newLayer = oldLayer->deepCopy().release();
-    newLayer->name = oldLayer->name + " Copy";
-
-    ctx->layers.layers.insert(layerIndex + 1, newLayer);
-    resetCurrentLayer(ctx, layerIndex + 1);
-
-    TileSet layerTiles = newLayer->getTileSet();
-    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
-
-    update();
-    modified = true;
-    emit updateLayers();
+    if (CanvasLayer *oldLayer = layerFromAbsoluteIndex(&ctx->layers, layerIndex))
+    {
+        std::unique_ptr<CanvasLayer> newLayer = oldLayer->deepCopy();
+        newLayer->name = oldLayer->name + " Copy";
+        insertLayerAbove(layerIndex, newLayer.release());
+    }
 }
 
 void CanvasWidget::updateLayerTranslate(int x,  int y)
 {
     CanvasContext *ctx = getContext();
 
-    CanvasLayer *currentLayer = ctx->layers.layers[ctx->currentLayer];
+    CanvasLayer *currentLayer = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
     std::unique_ptr<CanvasLayer> newLayer = ctx->currentLayerCopy->translated(x, y);
 
     TileSet layerTiles = currentLayer->getTileSet();
@@ -985,7 +1193,7 @@ void CanvasWidget::translateCurrentLayer(int x,  int y)
 {
     CanvasContext *ctx = getContext();
 
-    CanvasLayer *currentLayer = ctx->layers.layers[ctx->currentLayer];
+    CanvasLayer *currentLayer = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
     std::unique_ptr<CanvasLayer> newLayer = ctx->currentLayerCopy->translated(x, y);
     newLayer->prune();
 
@@ -1017,15 +1225,22 @@ void CanvasWidget::resetCurrentLayer(CanvasContext *ctx, int index)
 {
     Q_D(CanvasWidget);
 
-    if (index >= 0 && index < ctx->layers.layers.size())
-        ctx->currentLayer = index;
-    else
+    CanvasLayer *currentLayerObj = layerFromAbsoluteIndex(&ctx->layers, index);
+
+    if (!currentLayerObj)
+    {
         qWarning() << "Invalid layer index" << index;
+        index = 0;
+        currentLayerObj = layerFromAbsoluteIndex(&ctx->layers, index);
+    }
 
-    CanvasLayer *currentLayerObj = ctx->layers.layers[ctx->currentLayer];
-    ctx->currentLayerCopy = currentLayerObj->deepCopy();
+    ctx->currentLayer = index;
+    d->currentLayerEditable = indexIsEditable(&ctx->layers, ctx->currentLayer);
 
-    d->currentLayerEditable = currentLayerObj->visible && currentLayerObj->editable;
+    if(currentLayerObj->type == LayerType::Layer)
+        ctx->currentLayerCopy = currentLayerObj->deepCopy();
+    else
+        ctx->currentLayerCopy.reset(nullptr);
 }
 
 CanvasContext *CanvasWidget::getContext()
@@ -1055,10 +1270,10 @@ void CanvasWidget::setLayerVisible(int layerIndex, bool visible)
 
     CanvasContext *ctx = getContext();
 
-    if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
-        return;
+    CanvasLayer *layerObj = layerFromAbsoluteIndex(&ctx->layers, layerIndex);
 
-    CanvasLayer *layerObj = ctx->layers.layers[layerIndex];
+    if (!layerObj)
+        return;
 
     if (layerObj->visible == visible)
         return;
@@ -1067,8 +1282,7 @@ void CanvasWidget::setLayerVisible(int layerIndex, bool visible)
 
     layerObj->visible = visible;
 
-    if (layerIndex == ctx->currentLayer)
-        d->currentLayerEditable = layerObj->visible && layerObj->editable;
+    d->currentLayerEditable = indexIsEditable(&ctx->layers, ctx->currentLayer);
 
     TileSet layerTiles = layerObj->getTileSet();
 
@@ -1086,10 +1300,9 @@ bool CanvasWidget::getLayerVisible(int layerIndex)
 {
     CanvasContext *ctx = getContext();
 
-    if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
-        return false;
-
-    return ctx->layers.layers[layerIndex]->visible;
+    if (CanvasLayer *layerObj = layerFromAbsoluteIndex(&ctx->layers, layerIndex))
+        return layerObj->visible;
+    return false;
 }
 
 void CanvasWidget::setLayerEditable(int layerIndex, bool editable)
@@ -1101,10 +1314,10 @@ void CanvasWidget::setLayerEditable(int layerIndex, bool editable)
 
     CanvasContext *ctx = getContext();
 
-    if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
-        return;
+    CanvasLayer *layerObj = layerFromAbsoluteIndex(&ctx->layers, layerIndex);
 
-    CanvasLayer *layerObj = ctx->layers.layers[layerIndex];
+    if (!layerObj)
+        return;
 
     if (layerObj->editable == editable)
         return;
@@ -1113,8 +1326,7 @@ void CanvasWidget::setLayerEditable(int layerIndex, bool editable)
 
     layerObj->editable = editable;
 
-    if (layerIndex == ctx->currentLayer)
-        d->currentLayerEditable = layerObj->visible && layerObj->editable;
+    d->currentLayerEditable = indexIsEditable(&ctx->layers, ctx->currentLayer);
 
     modified = true;
     emit updateLayers();
@@ -1124,10 +1336,9 @@ bool CanvasWidget::getLayerEditable(int layerIndex)
 {
     CanvasContext *ctx = getContext();
 
-    if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
-        return false;
-
-    return ctx->layers.layers[layerIndex]->editable;
+    if (CanvasLayer *layerObj = layerFromAbsoluteIndex(&ctx->layers, layerIndex))
+        return layerObj->editable;
+    return false;
 }
 
 void CanvasWidget::setLayerTransientOpacity(int layerIndex, float opacity)
@@ -1141,10 +1352,10 @@ void CanvasWidget::setLayerTransientOpacity(int layerIndex, float opacity)
     opacity = qBound(0.0f, opacity, 1.0f);
 
     auto msg = [layerIndex, opacity](CanvasContext *ctx) {
-        if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
-            return;
+        CanvasLayer *layerObj = layerFromAbsoluteIndex(&ctx->layers, layerIndex);
 
-        CanvasLayer *layerObj = ctx->layers.layers[layerIndex];
+        if (!layerObj)
+            return;
 
         if (layerObj->opacity == opacity)
             return;
@@ -1187,10 +1398,9 @@ float CanvasWidget::getLayerOpacity(int layerIndex)
 {
     CanvasContext *ctx = getContext();
 
-    if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
-        return 0.0f;
-
-    return ctx->layers.layers[layerIndex]->opacity;
+    if (CanvasLayer *layerObj = layerFromAbsoluteIndex(&ctx->layers, layerIndex))
+        return layerObj->opacity;
+    return 0.0f;
 }
 
 void CanvasWidget::setLayerMode(int layerIndex, BlendMode::Mode mode)
@@ -1199,18 +1409,18 @@ void CanvasWidget::setLayerMode(int layerIndex, BlendMode::Mode mode)
         return;
 
     CanvasContext *ctx = getContext();
-
-    if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
+    CanvasLayer *layerObj = layerFromAbsoluteIndex(&ctx->layers, layerIndex);
+    if (!layerObj)
         return;
 
-    if (ctx->layers.layers[layerIndex]->mode == mode)
+    if (layerObj->mode == mode)
         return;
 
     ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
-    ctx->layers.layers[layerIndex]->mode = mode;
+    layerObj->mode = mode;
 
-    TileSet layerTiles = ctx->layers.layers[layerIndex]->getTileSet();
+    TileSet layerTiles = layerObj->getTileSet();
 
     if(!layerTiles.empty())
     {
@@ -1226,10 +1436,26 @@ BlendMode::Mode CanvasWidget::getLayerMode(int layerIndex)
 {
     CanvasContext *ctx = getContext();
 
-    if (layerIndex < 0 || layerIndex >= ctx->layers.layers.size())
-        return BlendMode::Over;
+    if (CanvasLayer *layerObj = layerFromAbsoluteIndex(&ctx->layers, layerIndex))
+        return layerObj->mode;
+    return BlendMode::Over;
+}
 
-    return ctx->layers.layers[layerIndex]->mode;
+namespace {
+    void layerListAppend(QList<CanvasWidget::LayerInfo> &result, QList<CanvasLayer *> const &layers, int &index) {
+        for (CanvasLayer *layer: layers)
+        {
+            CanvasWidget::LayerInfo info = {layer->name, layer->visible, layer->editable, layer->opacity, layer->mode, layer->type, {}, index++};
+            if (!layer->children.empty())
+                layerListAppend(info.children, layer->children, index);
+            result.append(info);
+        }
+    }
+
+    void layerListAppend(QList<CanvasWidget::LayerInfo> &result, QList<CanvasLayer *> const &layers) {
+        int index = 0;
+        layerListAppend(result, layers, index);
+    }
 }
 
 QList<CanvasWidget::LayerInfo> CanvasWidget::getLayerList()
@@ -1240,8 +1466,7 @@ QList<CanvasWidget::LayerInfo> CanvasWidget::getLayerList()
     if (!ctx)
         return result;
 
-    for (CanvasLayer *layer: ctx->layers.layers)
-        result.append({layer->name, layer->visible, layer->editable, layer->opacity, layer->mode});
+    layerListAppend(result, ctx->layers.layers);
 
     return result;
 }
@@ -1251,9 +1476,9 @@ void CanvasWidget::flashCurrentLayer()
     Q_D(CanvasWidget);
 
     CanvasContext *ctx = getContext();
-    CanvasLayer *currentLayerObj = ctx->layers.layers.at(ctx->currentLayer);
+    CanvasLayer *currentLayerObj = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
 
-    if (!currentLayerObj->visible)
+    if (!currentLayerObj || !currentLayerObj->visible)
         return;
 
     ctx->flashStack.reset(new CanvasStack);
@@ -1458,7 +1683,7 @@ void CanvasWidget::pickColorAt(QPoint pos)
 
     int ix = tile_indice(pos.x(), TILE_PIXEL_WIDTH);
     int iy = tile_indice(pos.y(), TILE_PIXEL_HEIGHT);
-    CanvasTile *tile = ctx->layers.layers[ctx->currentLayer]->getTileMaybe(ix, iy);
+    CanvasTile *tile = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer)->getTileMaybe(ix, iy);
 
     if (tile)
     {
@@ -1562,8 +1787,16 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
         }
         else if (action == CanvasAction::MoveLayer)
         {
-            actionButton = event->button();
-            actionOrigin = event->pos();
+            if (d->currentLayerEditable)
+            {
+                actionButton = event->button();
+                actionOrigin = event->pos();
+            }
+            else
+            {
+                action = CanvasAction::None;
+            }
+
         }
 
         updateCursor();
@@ -1918,13 +2151,27 @@ void CanvasWidget::newDrawing()
     render->clearTiles();
     lastNewLayerNumber = 0;
     ctx->layers.clearLayers();
-    ctx->layers.newLayerAt(0, QString().sprintf("Layer %02d", ++lastNewLayerNumber));
+    ctx->layers.layers.append(new CanvasLayer(QString().sprintf("Layer %02d", ++lastNewLayerNumber)));
     setActiveLayer(0); // Sync up the undo layer
     canvasOrigin = QPoint(0, 0);
     d->fullRedraw = true;
     update();
     modified = false;
     emit updateLayers();
+}
+
+namespace {
+    int findHighestLayerNumber(QList<CanvasLayer *> const &layers, QRegExp &regex)
+    {
+        int high = 0;
+        for (CanvasLayer const *layer: layers)
+        {
+            if (regex.exactMatch(layer->name))
+                high = qMax(high, regex.cap(1).toInt());
+            high = qMax(high, findHighestLayerNumber(layer->children, regex));
+        }
+        return high;
+    }
 }
 
 void CanvasWidget::openORA(QString path)
@@ -1938,12 +2185,7 @@ void CanvasWidget::openORA(QString path)
     ctx->clearRedoHistory();
     render->clearTiles();
     loadStackFromORA(&ctx->layers, path);
-    lastNewLayerNumber = 0;
-    for (CanvasLayer const *layer: ctx->layers.layers)
-    {
-        if (layerNameReg.exactMatch(layer->name))
-            lastNewLayerNumber = qMax(lastNewLayerNumber, layerNameReg.cap(1).toInt());
-    }
+    lastNewLayerNumber = findHighestLayerNumber(ctx->layers.layers, layerNameReg);
     setActiveLayer(0); // Sync up the undo layer
     canvasOrigin = QPoint(0, 0);
     ctx->dirtyTiles = ctx->layers.getTileSet();
@@ -1965,7 +2207,8 @@ void CanvasWidget::openImage(QImage image)
     render->clearTiles();
     lastNewLayerNumber = 0;
     ctx->layers.clearLayers();
-    ctx->layers.newLayerAt(0, QString().sprintf("Layer %02d", ++lastNewLayerNumber));
+    CanvasLayer *imageLayer = new CanvasLayer(QString().sprintf("Layer %02d", ++lastNewLayerNumber));
+    ctx->layers.layers.append(imageLayer);
     if (image.isNull())
     {
         qWarning() << "CanvasWidget::openImage called with a null image";
@@ -1973,7 +2216,7 @@ void CanvasWidget::openImage(QImage image)
     else
     {
         std::unique_ptr<CanvasLayer> imported = layerFromImage(image);
-        ctx->layers.layers.at(0)->takeTiles(imported.get());
+        imageLayer->takeTiles(imported.get());
     }
     setActiveLayer(0); // Sync up the undo layer
     canvasOrigin = QPoint(0, 0);

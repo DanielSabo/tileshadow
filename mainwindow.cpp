@@ -566,6 +566,17 @@ void MainWindow::actionMergeLayerDown()
     canvas->mergeLayerDown(canvas->getActiveLayer());
 }
 
+void MainWindow::actionNewLayer()
+{
+    canvas->addLayerAbove(canvas->getActiveLayer());
+}
+
+
+void MainWindow::actionNewGroup()
+{
+    canvas->addGroupAbove(canvas->getActiveLayer());
+}
+
 void MainWindow::actionDrawLine()
 {
     canvas->lineDrawMode();

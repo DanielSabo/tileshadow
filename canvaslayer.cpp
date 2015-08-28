@@ -10,12 +10,28 @@ CanvasLayer::CanvasLayer(QString name)
       editable(true),
       mode(BlendMode::Over),
       opacity(1.0f),
+      type(LayerType::Layer),
       tiles(new TileMap)
 {
 }
 
+CanvasLayer::CanvasLayer(CanvasLayer const& from)
+    : name(from.name),
+      visible(from.visible),
+      editable(from.editable),
+      mode(from.mode),
+      opacity(from.opacity),
+      type(from.type),
+      tiles(from.tiles)
+{
+    for (CanvasLayer const *child: from.children)
+        children.push_back(new CanvasLayer(*child));
+}
+
 CanvasLayer::~CanvasLayer()
 {
+    while (!children.isEmpty())
+        delete children.takeLast();
 }
 
 std::unique_ptr<CanvasLayer> CanvasLayer::deepCopy() const
@@ -26,11 +42,15 @@ std::unique_ptr<CanvasLayer> CanvasLayer::deepCopy() const
     result->editable = editable;
     result->mode = mode;
     result->opacity = opacity;
+    result->type = type;
 
     for (TileMap::iterator iter = tiles->begin(); iter != tiles->end(); ++iter)
     {
         (*result->tiles)[iter->first] = iter->second->copy();
     }
+
+    for (CanvasLayer *child: children)
+        result->children.append(child->deepCopy().release());
 
     return result;
 }
@@ -59,6 +79,9 @@ void CanvasLayer::swapOut()
 {
     for (auto &iter: *tiles)
         iter.second->swapHost();
+
+    for (CanvasLayer *child: children)
+        child->swapOut();
 }
 
 static void subrectCopy(cl_mem src, int srcX, int srcY, cl_mem dst, int dstX, int dstY)
@@ -169,6 +192,15 @@ TileSet CanvasLayer::getTileSet() const
     for (iter = tiles->begin(); iter != tiles->end(); ++iter)
     {
         result.insert(iter->first);
+    }
+
+    if (!children.empty())
+    {
+        for (auto const &child: children)
+        {
+            TileSet layerSet = child->getTileSet();
+            result.insert(layerSet.begin(), layerSet.end());
+        }
     }
 
     return result;

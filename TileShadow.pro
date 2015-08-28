@@ -130,7 +130,8 @@ HEADERS  += mainwindow.h \
     gradienttool.h \
     nativeeventfilter.h \
     toollistview.h \
-    toolextendedsettingswindow.h
+    toolextendedsettingswindow.h \
+    layertype.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \

@@ -28,9 +28,6 @@ public:
     };
 
 protected:
-    QList<CanvasWidget::LayerInfo> things;
-    int selectedThing;
-
     void paintEvent(QPaintEvent *event);
     void mousePressEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
@@ -41,7 +38,6 @@ protected:
     QIcon lockedIcon;
 
     void recalulateSize();
-    int rowFixup(int row);
 
 private:
     LayerListViewPrivate *d_ptr;

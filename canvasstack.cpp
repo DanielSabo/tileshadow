@@ -15,20 +15,6 @@ CanvasStack::~CanvasStack()
     clearLayers();
 }
 
-void CanvasStack::newLayerAt(int index, QString name)
-{
-    layers.insert(index, new CanvasLayer(name));
-}
-
-void CanvasStack::removeLayerAt(int index)
-{
-    if (index < 0 || index >= layers.size())
-        return;
-    if (layers.size() == 1)
-        return;
-    delete layers.takeAt(index);
-}
-
 void CanvasStack::clearLayers()
 {
     for (CanvasLayer *layer: layers)
@@ -36,26 +22,54 @@ void CanvasStack::clearLayers()
     layers.clear();
 }
 
-std::unique_ptr<CanvasTile> CanvasStack::getTileMaybe(int x, int y) const
+namespace {
+std::unique_ptr<CanvasTile> renderList(QList<CanvasLayer *> const &children, int x, int y, CanvasTile *background)
 {
     std::unique_ptr<CanvasTile> result(nullptr);
 
-    for (CanvasLayer *layer: layers)
+    for (CanvasLayer *layer: children)
     {
+        std::unique_ptr<CanvasTile> childRender = nullptr;
         CanvasTile *auxTile = nullptr;
 
         if (layer->visible && layer->opacity > 0.0f)
-            auxTile = layer->getTileMaybe(x, y);
+        {
+            if (layer->type == LayerType::Layer)
+            {
+                auxTile = layer->getTileMaybe(x, y);
+            }
+            else if (layer->type == LayerType::Group)
+            {
+                childRender = renderList(layer->children, x, y, nullptr);
+                auxTile = childRender.get();
+            }
+        }
 
         if (auxTile)
         {
             if (!result)
-                result = backgroundTileCL->copy();
+            {
+                if (background)
+                {
+                    result = background->copy();
+                }
+                else
+                {
+                    result.reset(new CanvasTile());
+                    result->fill(0, 0, 0, 0);
+                }
+            }
             auxTile->blendOnto(result.get(), layer->mode, layer->opacity);
         }
     }
 
     return result;
+}
+}
+
+std::unique_ptr<CanvasTile> CanvasStack::getTileMaybe(int x, int y) const
+{
+    return renderList(layers, x, y, backgroundTileCL.get());
 }
 
 TileSet CanvasStack::getTileSet() const

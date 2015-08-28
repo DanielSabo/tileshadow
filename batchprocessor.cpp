@@ -231,7 +231,7 @@ void BatchProcessor::execute(QString path)
     {
         SharedOpenCL::getSharedOpenCL();
         BatchProcessorContext ctx;
-        ctx.layers.newLayerAt(0);
+        ctx.layers.layers.append(new CanvasLayer());
         ctx.currentLayerCopy = ctx.layers.layers.at(0)->deepCopy();
 
         for (auto &commandIter: commandList)

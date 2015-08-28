@@ -70,6 +70,8 @@ public slots:
     void actionAdvancedToolSettings();
     void actionSetBackgroundColor();
     void actionMergeLayerDown();
+    void actionNewLayer();
+    void actionNewGroup();
     void actionDrawLine();
     void canvasStats();
     void showStatusBar(bool visible);

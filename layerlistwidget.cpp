@@ -53,25 +53,22 @@ void LayerListWidget::updateLayers()
 
     freezeLayerList = true;
     QList<CanvasWidget::LayerInfo> layerList = canvas->getLayerList();
-    int currentLayer = canvas->getActiveLayer();
-    ui->layerList->setData(layerList, currentLayer);
-
-    BlendMode::Mode currentMode;
-    float opacity;
-
-    if (layerList.size())
+    if (layerList.empty())
     {
-        currentMode = layerList.at(currentLayer).mode;
-        opacity = layerList.at(currentLayer).opacity;
+        setEnabled(false);
     }
     else
     {
-        currentMode = BlendMode::Over;
-        opacity = 1.0f;
-    }
+        setEnabled(true);
+        int currentLayer = canvas->getActiveLayer();
+        ui->layerList->setData(layerList, currentLayer);
 
-    ui->layerModeComboBox->setCurrentIndex(ui->layerModeComboBox->findData(QVariant(currentMode)));
-    ui->opacitySlider->setValue(100.0f * opacity);
+        BlendMode::Mode currentMode = canvas->getLayerMode(currentLayer);
+        float opacity = canvas->getLayerOpacity(currentLayer);
+
+        ui->layerModeComboBox->setCurrentIndex(ui->layerModeComboBox->findData(QVariant(currentMode)));
+        ui->opacitySlider->setValue(100.0f * opacity);
+    }
     freezeLayerList = false;
 }
 
@@ -116,14 +113,12 @@ void LayerListWidget::layerListItemEdited(int row, int column, QVariant const &d
     if (freezeLayerList)
         return;
 
-    freezeLayerList = true;
     if (column == LayerListView::VisibleColumn)
         canvas->setLayerVisible(row, data.toBool());
     else if (column == LayerListView::EditableColumn)
         canvas->setLayerEditable(row, data.toBool());
     else if (column == LayerListView::NameColumn)
         canvas->renameLayer(row, data.toString());
-    freezeLayerList = false;
 }
 
 void LayerListWidget::layerListSelectionChanged(int row)
@@ -158,12 +153,10 @@ void LayerListWidget::layerListDuplicate()
 
 void LayerListWidget::layerListMoveUp()
 {
-    int activeLayerIdx = canvas->getActiveLayer();
-    canvas->moveLayer(activeLayerIdx, activeLayerIdx + 1);
+    canvas->moveLayerUp(canvas->getActiveLayer());
 }
 
 void LayerListWidget::layerListMoveDown()
 {
-    int activeLayerIdx = canvas->getActiveLayer();
-    canvas->moveLayer(activeLayerIdx, activeLayerIdx - 1);
+    canvas->moveLayerDown(canvas->getActiveLayer());
 }

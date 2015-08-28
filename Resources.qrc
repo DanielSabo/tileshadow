@@ -56,10 +56,12 @@
         <file>icons/app-tileshadow-16.png</file>
         <file>icons/app-tileshadow-32.png</file>
         <file>icons/app-tileshadow-128.png</file>
-        <file>icons/tileshadow-lock-off.png</file>
         <file>icons/tileshadow-lock.png</file>
-        <file>icons/tileshadow-visible-off.png</file>
+        <file>icons/tileshadow-lock-off.png</file>
+        <file>icons/tileshadow-lock-disabled-on.png</file>
         <file>icons/tileshadow-visible.png</file>
+        <file>icons/tileshadow-visible-off.png</file>
+        <file>icons/tileshadow-visible-disabled-off.png</file>
         <file>CursorCircle.frag</file>
         <file>CursorCircle.vert</file>
         <file>ColorDot.frag</file>

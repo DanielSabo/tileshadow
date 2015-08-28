@@ -15,6 +15,7 @@ public:
     int vPad;
     int hPad;
     int iconSize;
+    int indentSize;
 
     bool hasFocus;
     int focusRow;
@@ -27,6 +28,29 @@ public:
     QSize rowSize;
 
     QLineEdit *nameEditor;
+
+    struct RowEntry {
+        RowEntry(CanvasWidget::LayerInfo const &entry)
+            : name(entry.name),
+              visible(entry.visible),
+              parentVisible(true),
+              editable(entry.editable),
+              parentEditable(true),
+              type(entry.type),
+              absoluteIndex(entry.index) {}
+
+        QString name;
+        bool visible;
+        bool parentVisible;
+        bool editable;
+        bool parentEditable;
+        LayerType::Type type;
+        int absoluteIndex;
+        int indent;
+    };
+
+    QList<RowEntry> things;
+    int selectedThing;
 
     int clickedColumn(int x) {
         if (x <= (hPad * 2 + iconSize))
@@ -57,13 +81,16 @@ LayerListView::LayerListView(QWidget *parent) :
     visibleIcon = QIcon(":/icons/tileshadow-visible.png");
     visibleIcon.addFile(":/icons/tileshadow-visible.png", QSize(), QIcon::Normal, QIcon::On);
     visibleIcon.addFile(":/icons/tileshadow-visible-off.png", QSize(), QIcon::Normal, QIcon::Off);
+    visibleIcon.addFile(":/icons/tileshadow-visible-disabled-off.png", QSize(), QIcon::Disabled, QIcon::Off);
     lockedIcon = QIcon(":/icons/tileshadow-lock.png");
     lockedIcon.addFile(":/icons/tileshadow-lock.png", QSize(), QIcon::Normal, QIcon::On);
     lockedIcon.addFile(":/icons/tileshadow-lock-off.png", QSize(), QIcon::Normal, QIcon::Off);
+    lockedIcon.addFile(":/icons/tileshadow-lock-disabled-on.png", QSize(), QIcon::Disabled, QIcon::On);
 
     d->hPad = 2;
     d->vPad = 1;
     d->iconSize = 16;
+    d->indentSize = 16;
     d->hasFocus = false;
 
     d->nameEditor = new QLineEdit(this);
@@ -84,7 +111,7 @@ QSize LayerListView::sizeHint() const
     Q_D(const LayerListView);
 
     return QSize(d->rowSize.width(),
-                 d->rowSize.height() * qMax<int>(1, things.size()));
+                 d->rowSize.height() * qMax<int>(1, d->things.size()));
 }
 
 int LayerListView::rowHeight()
@@ -94,18 +121,40 @@ int LayerListView::rowHeight()
     return d->rowSize.height();
 }
 
+namespace {
+    void appendEntries(QList<LayerListViewPrivate::RowEntry> &entryList,
+                       const QList<CanvasWidget::LayerInfo> &infoList,
+                       int indent, bool parentVisible, bool parentEditable) {
+        for (auto const &info: infoList)
+        {
+            LayerListViewPrivate::RowEntry entry = {info};
+            entry.indent = indent;
+            entry.parentVisible = parentVisible;
+            entry.parentEditable = parentEditable;
+            if (!info.children.empty())
+                appendEntries(entryList, info.children, indent + 1, entry.visible && parentVisible, entry.editable && parentEditable);
+            entryList.prepend(entry);
+        }
+    };
+}
+
 void LayerListView::setData(const QList<CanvasWidget::LayerInfo> &data, int selection)
 {
     Q_D(LayerListView);
 
-    if (selection < 0 || selection >= data.size())
-        selection = 0;
-
     d->nameEditor->hide();
 
-    things = data;
-    std::reverse(things.begin(), things.end());
-    selectedThing = rowFixup(selection);
+    d->things.clear();
+    appendEntries(d->things, data, 0, true, true);
+    d->selectedThing = 0;
+    for (int i = 0; i < d->things.size(); ++i)
+    {
+        if (d->things.at(i).absoluteIndex == selection)
+        {
+            d->selectedThing = i;
+            break;
+        }
+    }
 
     recalulateSize();
     update();
@@ -113,7 +162,8 @@ void LayerListView::setData(const QList<CanvasWidget::LayerInfo> &data, int sele
 
 int LayerListView::getSelectedRow()
 {
-    return rowFixup(selectedThing);
+    Q_D(LayerListView);
+    return d->things[d->selectedThing].absoluteIndex;
 }
 
 void LayerListView::paintEvent(QPaintEvent *event)
@@ -124,16 +174,16 @@ void LayerListView::paintEvent(QPaintEvent *event)
 
     QSize widgetRowSize(width(), d->rowSize.height());
 
-    for (int i = 0; i < things.size(); ++i)
+    for (int i = 0; i < d->things.size(); ++i)
     {
-        CanvasWidget::LayerInfo const &thing = things.at(i);
+        auto const &thing = d->things.at(i);
 
         QPoint rowOrigin = QPoint(0, d->rowSize.height() * i);
         QPoint contentOrigin = rowOrigin + QPoint(d->hPad, d->vPad);
 
         if (d->hasFocus && i == d->focusRow && d->focusColumn == NameColumn)
             painter.fillRect(QRect(rowOrigin, widgetRowSize), palette().brush(QPalette::Normal, QPalette::Highlight));
-        else if (i == selectedThing)
+        else if (i == d->selectedThing)
             painter.fillRect(QRect(rowOrigin, widgetRowSize), palette().brush(QPalette::Inactive, QPalette::Highlight));
 
         QRect visibleIconRect = QRect(contentOrigin, QSize(d->iconSize, d->iconSize));
@@ -161,17 +211,48 @@ void LayerListView::paintEvent(QPaintEvent *event)
             }
         }
 
-        if (thing.visible)
+        if (!thing.parentVisible)
+            visibleIcon.paint(&painter, visibleIconRect, Qt::AlignCenter, QIcon::Disabled, QIcon::Off);
+        else if (thing.visible)
             visibleIcon.paint(&painter, visibleIconRect, Qt::AlignCenter, QIcon::Normal, QIcon::On);
         else
             visibleIcon.paint(&painter, visibleIconRect, Qt::AlignCenter, QIcon::Normal, QIcon::Off);
 
-        if (!thing.editable)
+        if (!thing.parentEditable)
+            lockedIcon.paint(&painter, lockIconRect, Qt::AlignCenter, QIcon::Disabled, QIcon::On);
+        else if (!thing.editable)
             lockedIcon.paint(&painter, lockIconRect, Qt::AlignCenter, QIcon::Normal, QIcon::On);
         else
             lockedIcon.paint(&painter, lockIconRect, Qt::AlignCenter, QIcon::Normal, QIcon::Off);
 
-        QPoint textOrigin = QPoint(lockIconRect.x() + visibleIconRect.width() + d->hPad,
+        painter.save();
+        painter.setPen(palette().color(QPalette::Normal, QPalette::Mid));
+        int textIndent = thing.indent;
+        if (thing.type == LayerType::Group)
+        {
+            int x0 = lockIconRect.x() + visibleIconRect.width() + d->hPad + d->indentSize * thing.indent;
+            int y0 = contentOrigin.y() + (widgetRowSize.height() - d->vPad * 2) / 2;
+            int x1 = x0 + d->indentSize / 2;
+            int y1 = contentOrigin.y() + (widgetRowSize.height() - d->vPad * 2);
+
+            if (thing.indent > 0)
+                x0 -= + d->indentSize / 2;
+
+            painter.drawLine(QLine{x0, y0, x1, y0});
+            painter.drawLine(QLine{x1, y0, x1, y1});
+            textIndent += 1;
+        }
+
+        for (int indent = 1; indent <= thing.indent; ++indent)
+        {
+            int y0 = rowOrigin.y();
+            int x0 = lockIconRect.x() + visibleIconRect.width() + d->hPad + d->indentSize * indent - d->indentSize / 2;
+            int y1 = contentOrigin.y() + (widgetRowSize.height() - d->vPad * 2);
+            painter.drawLine(QLine{x0, y0, x0, y1});
+        }
+        painter.restore();
+
+        QPoint textOrigin = QPoint(lockIconRect.x() + visibleIconRect.width() + d->hPad + d->indentSize * textIndent,
                                    contentOrigin.y());
         QRect textRect = QRect(textOrigin,
                                QSize(widgetRowSize.width() - textOrigin.x() - d->hPad,
@@ -180,7 +261,7 @@ void LayerListView::paintEvent(QPaintEvent *event)
         painter.save();
         if (d->hasFocus && i == d->focusRow && d->focusColumn == NameColumn)
             painter.setPen(palette().color(QPalette::Normal, QPalette::HighlightedText));
-        else if (i == selectedThing)
+        else if (i == d->selectedThing)
             painter.setPen(palette().color(QPalette::Inactive, QPalette::HighlightedText));
         else
             painter.setPen(palette().color(QPalette::Normal, QPalette::Text));
@@ -208,18 +289,18 @@ void LayerListView::mousePressEvent(QMouseEvent *event)
     if (d->nameEditor->isVisible())
         return;
 
-    int clickedRow = qMax(qMin(event->y() / d->rowSize.height(), things.size() - 1), 0);
+    int clickedRow = qMax(qMin(event->y() / d->rowSize.height(), d->things.size() - 1), 0);
     int clickedColumn = d->clickedColumn(event->x());
 
     if (event->type() == QEvent::MouseButtonDblClick &&
         clickedColumn == NameColumn)
     {
-        selectedThing = clickedRow;
-        d->nameEditor->setText(things[clickedRow].name);
+        d->selectedThing = clickedRow;
+        d->nameEditor->setText(d->things[clickedRow].name);
         d->nameEditor->selectAll();
         int leadingWidth = d->iconSize * 2 + d->vPad * 2;
         d->nameEditor->move(d->iconSize * 2 + d->vPad * 2,
-                            d->rowSize.height() * selectedThing);
+                            d->rowSize.height() * d->selectedThing);
         d->nameEditor->setMaximumWidth(width() - leadingWidth - d->vPad);
         d->nameEditor->show();
         d->nameEditor->setFocus(Qt::MouseFocusReason);
@@ -240,34 +321,34 @@ void LayerListView::mouseReleaseEvent(QMouseEvent *event)
     if (event->button() != Qt::LeftButton)
         return;
 
-    int clickedRow = qMax(qMin(event->y() / d->rowSize.height(), things.size() - 1), 0);
+    int clickedRow = qMax(qMin(event->y() / d->rowSize.height(), d->things.size() - 1), 0);
     int clickedColumn = d->clickedColumn(event->x());
 
     if (d->nameEditor->isVisible() &&
-        (clickedRow != selectedThing || clickedColumn != NameColumn))
+        (clickedRow != d->selectedThing || clickedColumn != NameColumn))
     {
-        things[selectedThing].name = d->nameEditor->text();
+        d->things[d->selectedThing].name = d->nameEditor->text();
         d->nameEditor->hide();
-        emit edited(rowFixup(selectedThing), NameColumn,
-                    QVariant::fromValue<QString>(things[selectedThing].name));
+        emit edited(d->things[d->selectedThing].absoluteIndex, NameColumn,
+                    QVariant::fromValue<QString>(d->things[d->selectedThing].name));
         recalulateSize();
     }
     else if (clickedColumn == VisibleColumn)
     {
-        things[clickedRow].visible = !things[clickedRow].visible;
-        emit edited(rowFixup(clickedRow), VisibleColumn,
-                    QVariant::fromValue<bool>(things[clickedRow].visible));
+        d->things[clickedRow].visible = !d->things[clickedRow].visible;
+        emit edited(d->things[clickedRow].absoluteIndex, VisibleColumn,
+                    QVariant::fromValue<bool>(d->things[clickedRow].visible));
     }
     else if (clickedColumn == EditableColumn)
     {
-        things[clickedRow].editable = !things[clickedRow].editable;
-        emit edited(rowFixup(clickedRow), EditableColumn,
-                    QVariant::fromValue<bool>(things[clickedRow].editable));
+        d->things[clickedRow].editable = !d->things[clickedRow].editable;
+        emit edited(d->things[clickedRow].absoluteIndex, EditableColumn,
+                    QVariant::fromValue<bool>(d->things[clickedRow].editable));
     }
     else if (clickedColumn == NameColumn)
     {
-        selectedThing = clickedRow;
-        emit selectionChanged(rowFixup(selectedThing));
+        d->selectedThing = clickedRow;
+        emit selectionChanged(d->things[d->selectedThing].absoluteIndex);
     }
 
     d->hasFocus = false;
@@ -283,7 +364,7 @@ void LayerListView::mouseMoveEvent(QMouseEvent *event)
     if (d->nameEditor->isVisible())
         return;
 
-    int clickedRow = qMax(qMin(event->y() / d->rowSize.height(), things.size() - 1), 0);
+    int clickedRow = qMax(qMin(event->y() / d->rowSize.height(), d->things.size() - 1), 0);
     int clickedColumn = d->clickedColumn(event->x());
 
     d->focusRow = clickedRow;
@@ -301,10 +382,10 @@ bool LayerListView::eventFilter(QObject *watched, QEvent *event)
         if (key->key() == Qt::Key_Enter ||
             key->key() == Qt::Key_Return)
         {
-            things[selectedThing].name = d->nameEditor->text();
+            d->things[d->selectedThing].name = d->nameEditor->text();
             d->nameEditor->hide();
-            emit edited(rowFixup(selectedThing), NameColumn,
-                        QVariant::fromValue<QString>(things[selectedThing].name));
+            emit edited(d->things[d->selectedThing].absoluteIndex, NameColumn,
+                        QVariant::fromValue<QString>(d->things[d->selectedThing].name));
             recalulateSize();
             return true;
         }
@@ -324,17 +405,12 @@ void LayerListView::recalulateSize()
 
     int textWidth = d->unnamedItemWidth;
 
-    for (CanvasWidget::LayerInfo const &thing: things)
+    for (auto const &thing: d->things)
     {
-        textWidth = qMax(textWidth, fontMetrics().boundingRect(thing.name).width());
+        textWidth = qMax(textWidth, d->indentSize * thing.indent + fontMetrics().boundingRect(thing.name).width());
     }
 
     d->rowSize.setWidth(d->iconSize * 2 + d->hPad * 4 + textWidth);
 
     emit updateGeometry();
-}
-
-int LayerListView::rowFixup(int row)
-{
-    return (things.size() - row - 1);
 }

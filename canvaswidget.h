@@ -7,6 +7,7 @@
 #include <QColor>
 #include "boxcartimer.h"
 #include "blendmodes.h"
+#include "layertype.h"
 #include "toolsettinginfo.h"
 
 namespace CanvasAction
@@ -24,6 +25,7 @@ namespace CanvasAction
 }
 
 class BaseTool;
+class CanvasLayer;
 class CanvasContext;
 class CanvasRender;
 class CanvasUndoEvent;
@@ -42,6 +44,9 @@ public:
         bool editable;
         float opacity;
         BlendMode::Mode mode;
+        LayerType::Type type;
+        QList<LayerInfo> children;
+        int index;
     };
 
     void setToolColor(const QColor &color);
@@ -73,9 +78,11 @@ public:
     void setActiveLayer(int layerIndex);
     void addLayerAbove(int layerIndex);
     void addLayerAbove(int layerIndex, QImage image, QString name);
+    void addGroupAbove(int layerIndex);
     void removeLayer(int layerIndex);
     void duplicateLayer(int layerIndex);
-    void moveLayer(int currentIndex, int targetIndex);
+    void moveLayerUp(int layerIndex);
+    void moveLayerDown(int layerIndex);
     void renameLayer(int layerIndex, QString name);
     void mergeLayerDown(int layerIndex);
     void setLayerVisible(int layerIndex, bool visible);
@@ -149,6 +156,7 @@ private:
     void updateLayerTranslate(int x, int y);
     void translateCurrentLayer(int x, int y);
 
+    void insertLayerAbove(int layerIndex, CanvasLayer *newLayer);
     void resetCurrentLayer(CanvasContext *ctx, int index);
 
     CanvasContext *getContext();

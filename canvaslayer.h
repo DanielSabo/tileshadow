@@ -1,9 +1,11 @@
 #ifndef CANVASLAYER_H
 #define CANVASLAYER_H
 
+#include <QList>
 #include <memory>
 #include "canvaswidget-opencl.h"
 #include "blendmodes.h"
+#include "layertype.h"
 #include "tileset.h"
 
 class CanvasTile;
@@ -12,6 +14,7 @@ class CanvasLayer
 {
 public:
     CanvasLayer(QString name = "");
+    CanvasLayer(CanvasLayer const& from);
     ~CanvasLayer();
 
     QString name;
@@ -19,8 +22,10 @@ public:
     bool editable;
     BlendMode::Mode mode;
     float opacity;
+    LayerType::Type type;
 
     std::shared_ptr<TileMap> tiles;
+    QList<CanvasLayer *> children;
 
     TileSet getTileSet() const;
 

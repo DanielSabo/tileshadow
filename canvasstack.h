@@ -15,9 +15,10 @@ public:
     CanvasStack();
     ~CanvasStack();
 
-    void newLayerAt(int index, QString name = "");
-    void removeLayerAt(int index);
     void clearLayers();
+
+    int size() const { return layers.size(); }
+    bool empty() const { return layers.empty(); }
 
     QList<CanvasLayer *> layers;
 
