@@ -25,6 +25,7 @@ public:
     OptionsList options;
     float min;
     float max;
+    QList<QPair<QString, QString>> mapping;
 
     static ToolSettingInfo exponentSlider(QString const &settingID, QString const &name, float min, float max);
     static ToolSettingInfo linearSlider(QString const &settingID, QString const &name, float min, float max);
