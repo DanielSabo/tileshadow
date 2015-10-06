@@ -394,8 +394,11 @@ bool MainWindow::doSave(QString filename)
 {
     if (filename.isEmpty())
     {
+        QString saveDirectory = QDir::homePath();
+        if (!windowFilePath().isEmpty())
+            saveDirectory = QFileInfo(windowFilePath()).dir().path();
         filename = QFileDialog::getSaveFileName(this, "Save As...",
-                                                QDir::homePath() + QDir::toNativeSeparators("/untitled.ora"),
+                                                saveDirectory + QDir::toNativeSeparators("/untitled.ora"),
                                                 "OpenRaster (*.ora)");
 
         if (filename.isEmpty())
