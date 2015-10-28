@@ -22,7 +22,7 @@ void CanvasStack::newLayerAt(int index, QString name)
 
 void CanvasStack::removeLayerAt(int index)
 {
-    if (index < 0 || index > layers.size())
+    if (index < 0 || index >= layers.size())
         return;
     if (layers.size() == 1)
         return;
