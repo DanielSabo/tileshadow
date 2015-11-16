@@ -47,6 +47,7 @@ QMAKE_CFLAGS += -O2
 CONFIG += c++11
 
 DEFINES += CL_USE_DEPRECATED_OPENCL_1_1_APIS
+DEFINES += CL_USE_DEPRECATED_OPENCL_2_0_APIS
 # Disable lodepng's file operations, which have deprecation warnings on Win32
 DEFINES += LODEPNG_NO_COMPILE_DISK
 
