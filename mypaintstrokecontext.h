@@ -14,10 +14,10 @@ class MyPaintStrokeContext : public StrokeContext
 {
 public:
     MyPaintStrokeContext(CanvasLayer *layer);
-    ~MyPaintStrokeContext();
+    ~MyPaintStrokeContext() override;
 
-    TileSet startStroke(QPointF point, float pressure);
-    TileSet strokeTo(QPointF point, float pressure, float dt);
+    TileSet startStroke(QPointF point, float pressure) override;
+    TileSet strokeTo(QPointF point, float pressure, float dt) override;
 
     bool fromSettings(MyPaintToolSettings const &settings);
     void fromDefaults();

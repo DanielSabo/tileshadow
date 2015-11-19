@@ -12,13 +12,13 @@ public:
     GradientTool();
     ~GradientTool() override;
 
-    BaseTool *clone();
-    StrokeContext *newStroke(StrokeContextArgs const &args);
+    BaseTool *clone() override;
+    StrokeContext *newStroke(StrokeContextArgs const &args) override;
 
-    void reset();
-    float getPixelRadius();
-    void setColor(QColor const &color);
-    bool coalesceMovement();
+    void reset() override;
+    float getPixelRadius() override;
+    void setColor(QColor const &color) override;
+    bool coalesceMovement() override;
 
 private:
     GradientToolPrivate *priv;

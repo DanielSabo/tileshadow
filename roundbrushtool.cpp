@@ -21,8 +21,8 @@ class RoundBrushStrokeContext : public StrokeContext
 public:
     RoundBrushStrokeContext(CanvasLayer *layer, CanvasLayer const *srcLayer);
     ~RoundBrushStrokeContext() override;
-    TileSet startStroke(QPointF point, float pressure);
-    TileSet strokeTo(QPointF point, float pressure, float dt);
+    TileSet startStroke(QPointF point, float pressure) override;
+    TileSet strokeTo(QPointF point, float pressure, float dt) override;
     void drawDab(QPointF point, float pressure, TileSet &modTiles);
     void applyLayer(TileSet const &modTiles);
 

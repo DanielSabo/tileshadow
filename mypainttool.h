@@ -9,19 +9,19 @@ class MyPaintTool : public BaseTool
 {
 public:
     explicit MyPaintTool(const QString &path);
-    ~MyPaintTool();
-    BaseTool *clone();
+    ~MyPaintTool() override;
+    BaseTool *clone() override;
 
-    void reset();
-    float getPixelRadius();
-    void setColor(const QColor &color);
+    void reset() override;
+    float getPixelRadius() override;
+    void setColor(const QColor &color) override;
 
-    virtual void setToolSetting(QString const &name, QVariant const &value);
-    virtual QVariant getToolSetting(QString const &name);
-    virtual QList<ToolSettingInfo> listToolSettings();
-    virtual QList<ToolSettingInfo> listAdvancedSettings();
+    virtual void setToolSetting(QString const &name, QVariant const &value) override;
+    virtual QVariant getToolSetting(QString const &name) override;
+    virtual QList<ToolSettingInfo> listToolSettings() override;
+    virtual QList<ToolSettingInfo> listAdvancedSettings() override;
 
-    StrokeContext *newStroke(StrokeContextArgs const &args);
+    StrokeContext *newStroke(StrokeContextArgs const &args) override;
 
 private:
     MyPaintTool(const MyPaintTool &tool);

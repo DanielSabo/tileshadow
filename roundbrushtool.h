@@ -8,18 +8,18 @@ class RoundBrushTool : public BaseTool
 {
 public:
     RoundBrushTool();
-    ~RoundBrushTool();
-    BaseTool *clone();
+    ~RoundBrushTool() override;
+    BaseTool *clone() override;
 
-    void reset();
-    float getPixelRadius();
-    void setColor(const QColor &color);
+    void reset() override;
+    float getPixelRadius() override;
+    void setColor(const QColor &color) override;
 
-    virtual void setToolSetting(QString const &name, QVariant const &value);
-    virtual QVariant getToolSetting(QString const &name);
-    virtual QList<ToolSettingInfo> listToolSettings();
+    virtual void setToolSetting(QString const &name, QVariant const &value) override;
+    virtual QVariant getToolSetting(QString const &name) override;
+    virtual QList<ToolSettingInfo> listToolSettings() override;
 
-    StrokeContext *newStroke(StrokeContextArgs const &args);
+    StrokeContext *newStroke(StrokeContextArgs const &args) override;
 
 private:
     RoundBrushToolPrivate *priv;

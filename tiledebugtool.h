@@ -8,18 +8,18 @@ class TileDebugTool : public BaseTool
 {
 public:
     TileDebugTool();
-    ~TileDebugTool();
-    BaseTool *clone();
+    ~TileDebugTool() override;
+    BaseTool *clone() override;
 
-    void reset();
-    float getPixelRadius();
-    void setColor(const QColor &color);
+    void reset() override;
+    float getPixelRadius() override;
+    void setColor(const QColor &color) override;
 
-    void setToolSetting(const QString &name, const QVariant &value);
-    virtual QVariant getToolSetting(QString const &name);
-    virtual QList<ToolSettingInfo> listToolSettings();
+    void setToolSetting(const QString &name, const QVariant &value) override;
+    virtual QVariant getToolSetting(QString const &name) override;
+    virtual QList<ToolSettingInfo> listToolSettings() override;
 
-    StrokeContext *newStroke(StrokeContextArgs const &args);
+    StrokeContext *newStroke(StrokeContextArgs const &args) override;
 
 private:
     TileDebugToolPrivate *priv;

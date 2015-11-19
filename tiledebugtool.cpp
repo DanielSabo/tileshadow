@@ -11,8 +11,8 @@ class TileDebugStrokeContext : public StrokeContext
 public:
     TileDebugStrokeContext(CanvasLayer *layer, float radius);
 
-    TileSet startStroke(QPointF point, float pressure);
-    TileSet strokeTo(QPointF point, float pressure, float dt);
+    TileSet startStroke(QPointF point, float pressure) override;
+    TileSet strokeTo(QPointF point, float pressure, float dt) override;
     void drawDab(QPointF point, TileSet &modTiles);
 
     float radius;

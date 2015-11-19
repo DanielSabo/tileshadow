@@ -13,8 +13,8 @@ public:
     GradientStrokeContext(CanvasLayer *layer, CanvasLayer const *srcLayer, QColor const &color);
     ~GradientStrokeContext() override;
 
-    TileSet startStroke(QPointF point, float pressure);
-    TileSet strokeTo(QPointF point, float pressure, float dt);
+    TileSet startStroke(QPointF point, float pressure) override;
+    TileSet strokeTo(QPointF point, float pressure, float dt) override;
 
     CanvasLayer const *srcLayer;
 
