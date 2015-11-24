@@ -23,6 +23,19 @@ void CanvasStack::clearLayers()
 }
 
 namespace {
+/* If filterErase is true convert erasing modes to BlendMode::Normal, otherwise return mode. */
+BlendMode::Mode filterEraseModes(BlendMode::Mode mode, bool filterErase)
+{
+    if (filterErase)
+    {
+        if (mode == BlendMode::DestinationOut)
+            return BlendMode::Over;
+        if (mode == BlendMode::SourceAtop)
+            return BlendMode::Over;
+    }
+    return mode;
+}
+
 std::unique_ptr<CanvasTile> renderList(QList<CanvasLayer *> const &children, int x, int y, CanvasTile *background)
 {
     std::unique_ptr<CanvasTile> result(nullptr);
@@ -60,7 +73,8 @@ std::unique_ptr<CanvasTile> renderList(QList<CanvasLayer *> const &children, int
                     result->fill(0, 0, 0, 0);
                 }
             }
-            auxTile->blendOnto(result.get(), layer->mode, layer->opacity);
+            BlendMode::Mode mode = filterEraseModes(layer->mode, background);
+            auxTile->blendOnto(result.get(), mode, layer->opacity);
         }
     }
 

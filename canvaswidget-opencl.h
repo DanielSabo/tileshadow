@@ -71,6 +71,10 @@ public:
     cl_kernel blendKernel_colorDodge;
     cl_kernel blendKernel_colorBurn;
     cl_kernel blendKernel_screen;
+    cl_kernel blendKernel_dstOut;
+    cl_kernel blendKernel_dstIn;
+    cl_kernel blendKernel_srcAtop;
+    cl_kernel blendKernel_dstAtop;
 
     cl_kernel mypaintDabKernel;
     cl_kernel mypaintDabLockedKernel;

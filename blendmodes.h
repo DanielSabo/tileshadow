@@ -8,7 +8,9 @@ namespace BlendMode
         Multiply,
         ColorDodge,
         ColorBurn,
-        Screen
+        Screen,
+        DestinationOut,
+        SourceAtop
     } Mode;
 }
 

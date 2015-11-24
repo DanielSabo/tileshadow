@@ -1457,9 +1457,8 @@ void CanvasWidget::setLayerMode(int layerIndex, BlendMode::Mode mode)
 
     ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
-    layerObj->mode = mode;
-
     TileSet layerTiles = layerObj->getTileSet();
+    layerObj->mode = mode;
 
     if(!layerTiles.empty())
     {

@@ -21,6 +21,8 @@ LayerListWidget::LayerListWidget(CanvasWidget *canvas, QWidget *parent) :
     ui->layerModeComboBox->addItem(tr("Dodge"), QVariant(BlendMode::ColorDodge));
     ui->layerModeComboBox->addItem(tr("Burn"), QVariant(BlendMode::ColorBurn));
     ui->layerModeComboBox->addItem(tr("Screen"), QVariant(BlendMode::Screen));
+    ui->layerModeComboBox->addItem(tr("Erase"), QVariant(BlendMode::DestinationOut));
+    ui->layerModeComboBox->addItem(tr("Source Atop"), QVariant(BlendMode::SourceAtop));
 
     connect(ui->addLayerButton,  SIGNAL(clicked()), this, SLOT(layerListAdd()));
     connect(ui->delLayerButton,  SIGNAL(clicked()), this, SLOT(layerListRemove()));

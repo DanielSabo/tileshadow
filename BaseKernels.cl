@@ -232,3 +232,66 @@ __kernel void tileSVGScreen(__global float4 *out,
 
   out[get_global_id(0)] = out_pixel;
 }
+
+__kernel void tileSVGDstOut(__global float4 *out,
+                            __global float4 *in,
+                            __global float4 *aux,
+                                     float   opacity)
+{
+  float4 in_pixel = in[get_global_id(0)];
+  float4 aux_pixel = aux[get_global_id(0)];
+
+  in_pixel.s3 *= 1.0f - (aux_pixel.s3 * opacity);
+
+  out[get_global_id(0)] = in_pixel;
+}
+
+__kernel void tileSVGDstIn(__global float4 *out,
+                           __global float4 *in,
+                           __global float4 *aux,
+                                    float   opacity)
+{
+  float4 in_pixel = in[get_global_id(0)];
+  float4 aux_pixel = aux[get_global_id(0)];
+
+  in_pixel.s3 *= aux_pixel.s3 * opacity;
+
+  out[get_global_id(0)] = in_pixel;
+}
+
+__kernel void tileSVGSrcAtop(__global float4 *out,
+                             __global float4 *in,
+                             __global float4 *aux,
+                                      float   opacity)
+{
+    float4 out_pixel;
+    float4 in_pixel = in[get_global_id(0)];
+    float4 aux_pixel = aux[get_global_id(0)];
+
+    // SVG Src-Atop (Premultiplied):
+    //(as x Cs x ab + ab x Cb x (1 – as))
+    //(as x Cs + Cb x (1 – as)) x ab
+    // Any common terms can be discarded because they don't impact the ratio of src to dst
+    //(as x Cs + Cb x (1 – as))
+    float alpha = aux_pixel.s3 * opacity;
+    out_pixel.s012 = aux_pixel.s012 * alpha + in_pixel.s012 * (1.0f - alpha);
+    out_pixel.s3 = in_pixel.s3;
+
+    out[get_global_id(0)] = out_pixel;
+}
+
+__kernel void tileSVGDstAtop(__global float4 *out,
+                             __global float4 *in,
+                             __global float4 *aux,
+                                      float   opacity)
+{
+    float4 out_pixel;
+    float4 in_pixel = in[get_global_id(0)];
+    float4 aux_pixel = aux[get_global_id(0)];
+
+    float alpha = aux_pixel.s3 * opacity;
+    out_pixel.s012 = aux_pixel.s012 * (1.0f - in_pixel.s3) + in_pixel.s012 * in_pixel.s3;
+    out_pixel.s3 = alpha;
+
+    out[get_global_id(0)] = out_pixel;
+}
