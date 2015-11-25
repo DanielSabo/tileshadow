@@ -158,26 +158,6 @@ int absoluteIndexOfLayer(CanvasStack *stack, CanvasLayer const *layer) {
 }
 }
 
-namespace { // Misc utility functions
-bool indexIsEditable(CanvasStack *stack, int index)
-{
-    auto path = pathFromAbsoluteIndex(stack, index);
-    CanvasLayer *layer = nullptr;
-    QList<CanvasLayer *> *container = &stack->layers;
-    for (auto const i: path)
-    {
-        layer = container->at(i);
-        container = &layer->children;
-        if (!layer->visible || !layer->editable)
-            return false;
-    }
-
-    if (layer && layer->type == LayerType::Layer)
-        return true;
-    return false;
-}
-}
-
 namespace RenderMode
 {
     enum {
@@ -218,6 +198,7 @@ public:
     CanvasEventThread eventThread;
 
     bool currentLayerEditable;
+    bool currentLayerMoveable;
 
     bool deviceIsEraser;
     CanvasAction::Action primaryAction;
@@ -237,6 +218,7 @@ public:
     std::shared_ptr<QAtomicInt> motionCoalesceToken;
 
     CanvasAction::Action actionForMouseEvent(int button, Qt::KeyboardModifiers modifiers);
+    void updateEditable(CanvasContext *ctx);
 };
 
 CanvasWidgetPrivate::CanvasWidgetPrivate()
@@ -252,6 +234,7 @@ CanvasWidgetPrivate::CanvasWidgetPrivate()
     fullRedraw = true;
     lastRenderedOrigin = QPoint(0, 0);
     currentLayerEditable = false;
+    currentLayerMoveable = false;
     renderMode = RenderMode::Normal;
     layerFlashTimeout.setSingleShot(true);
     dotPreviewColor = QColor();
@@ -264,7 +247,6 @@ CanvasWidgetPrivate::~CanvasWidgetPrivate()
         delete iter.value();
     tools.clear();
 }
-
 
 CanvasAction::Action CanvasWidgetPrivate::actionForMouseEvent(int button, Qt::KeyboardModifiers modifiers)
 {
@@ -293,6 +275,29 @@ CanvasAction::Action CanvasWidgetPrivate::actionForMouseEvent(int button, Qt::Ke
     }
 
     return CanvasAction::None;
+}
+
+void CanvasWidgetPrivate::updateEditable(CanvasContext *ctx)
+{
+    auto path = pathFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
+    CanvasLayer *layer = nullptr;
+    QList<CanvasLayer *> *container = &ctx->layers.layers;
+    currentLayerMoveable = true;
+    for (auto const i: path)
+    {
+        layer = container->at(i);
+        container = &layer->children;
+        if (!layer->visible || !layer->editable)
+        {
+            currentLayerMoveable = false;
+            break;
+        }
+    }
+
+    if (layer && layer->type == LayerType::Layer)
+        currentLayerEditable = currentLayerMoveable;
+    else
+        currentLayerEditable = false;
 }
 
 CanvasWidget::CanvasWidget(QWidget *parent) :
@@ -1177,6 +1182,16 @@ void CanvasWidget::updateLayerTranslate(int x,  int y)
     CanvasContext *ctx = getContext();
 
     CanvasLayer *currentLayer = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
+    if (!ctx->currentLayerCopy)
+    {
+        ctx->currentLayerCopy.reset(new CanvasLayer());
+        for (auto const &idx: currentLayer->getTileSet())
+        {
+            auto tile = renderList(currentLayer->children, idx.x(), idx.y());
+            if (tile)
+                (*ctx->currentLayerCopy->tiles)[idx] = std::move(tile);
+        }
+    }
     std::unique_ptr<CanvasLayer> newLayer = ctx->currentLayerCopy->translated(x, y);
 
     TileSet layerTiles = currentLayer->getTileSet();
@@ -1193,29 +1208,53 @@ void CanvasWidget::translateCurrentLayer(int x,  int y)
 {
     CanvasContext *ctx = getContext();
 
-    CanvasLayer *currentLayer = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
-    std::unique_ptr<CanvasLayer> newLayer = ctx->currentLayerCopy->translated(x, y);
-    newLayer->prune();
+    auto parentInfo = parentFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
+    CanvasLayer *currentLayer = parentInfo.element;
+    if (currentLayer->type == LayerType::Layer)
+    {
+        std::unique_ptr<CanvasLayer> newLayer = ctx->currentLayerCopy->translated(x, y);
+        newLayer->prune();
 
-    CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
-    undoEvent->targetTileMap = currentLayer->tiles;
-    undoEvent->currentLayer = ctx->currentLayer;
+        CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
+        undoEvent->targetTileMap = currentLayer->tiles;
+        undoEvent->currentLayer = ctx->currentLayer;
 
-    /* Add the layers currently visible tiles (which may differ from the undo tiles) to the dirty list */
-    TileSet layerTiles = currentLayer->getTileSet();
-    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
-    /* Add the newly translated tiles*/
-    layerTiles = newLayer->getTileSet();
-    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+        /* Add the layers currently visible tiles (which may differ from the undo tiles) to the dirty list */
+        TileSet layerTiles = currentLayer->getTileSet();
+        ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+        /* Add the newly translated tiles*/
+        layerTiles = newLayer->getTileSet();
+        ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
 
-    // The undo tiles are the original layer + new layer
-    TileSet originalTiles = ctx->currentLayerCopy->getTileSet();
-    layerTiles.insert(originalTiles.begin(), originalTiles.end());
+        // The undo tiles are the original layer + new layer
+        TileSet originalTiles = ctx->currentLayerCopy->getTileSet();
+        layerTiles.insert(originalTiles.begin(), originalTiles.end());
 
-    currentLayer->takeTiles(newLayer.get());
+        currentLayer->takeTiles(newLayer.get());
 
-    transferUndoEventTiles(undoEvent, layerTiles, ctx->currentLayerCopy.get(), currentLayer);
-    ctx->addUndoEvent(undoEvent);
+        transferUndoEventTiles(undoEvent, layerTiles, ctx->currentLayerCopy.get(), currentLayer);
+        ctx->addUndoEvent(undoEvent);
+    }
+    else if (currentLayer->type == LayerType::Group)
+    {
+        /* Add the layers currently visible tiles to the dirty list */
+        TileSet dirtyTiles = currentLayer->getTileSet();
+        ctx->dirtyTiles.insert(dirtyTiles.begin(), dirtyTiles.end());
+        /* Discard the temporary render */
+        currentLayer->tiles->clear();
+        ctx->currentLayerCopy.reset(nullptr);
+
+        std::unique_ptr<CanvasLayer> newLayer = currentLayer->translated(x, y);
+        newLayer->prune();
+
+        /* Add the newly translated tiles*/
+        dirtyTiles = newLayer->getTileSet();
+        ctx->dirtyTiles.insert(dirtyTiles.begin(), dirtyTiles.end());
+
+        ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
+        delete (*parentInfo.container)[parentInfo.index];
+        (*parentInfo.container)[parentInfo.index] = newLayer.release();
+    }
 
     update();
     modified = true;
@@ -1235,7 +1274,7 @@ void CanvasWidget::resetCurrentLayer(CanvasContext *ctx, int index)
     }
 
     ctx->currentLayer = index;
-    d->currentLayerEditable = indexIsEditable(&ctx->layers, ctx->currentLayer);
+    d->updateEditable(ctx);
 
     if(currentLayerObj->type == LayerType::Layer)
         ctx->currentLayerCopy = currentLayerObj->deepCopy();
@@ -1282,7 +1321,7 @@ void CanvasWidget::setLayerVisible(int layerIndex, bool visible)
 
     layerObj->visible = visible;
 
-    d->currentLayerEditable = indexIsEditable(&ctx->layers, ctx->currentLayer);
+    d->updateEditable(ctx);
 
     TileSet layerTiles = layerObj->getTileSet();
 
@@ -1326,7 +1365,7 @@ void CanvasWidget::setLayerEditable(int layerIndex, bool editable)
 
     layerObj->editable = editable;
 
-    d->currentLayerEditable = indexIsEditable(&ctx->layers, ctx->currentLayer);
+    d->updateEditable(ctx);
 
     modified = true;
     emit updateLayers();
@@ -1787,7 +1826,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
         }
         else if (action == CanvasAction::MoveLayer)
         {
-            if (d->currentLayerEditable)
+            if (d->currentLayerMoveable)
             {
                 actionButton = event->button();
                 actionOrigin = event->pos();
@@ -1996,7 +2035,7 @@ void CanvasWidget::updateCursor()
         CURSOR_WIDGET->setCursor(colorPickCursor);
     }
     else if ((cursorAction == CanvasAction::MoveLayer) &&
-             d->currentLayerEditable)
+             d->currentLayerMoveable)
     {
         CURSOR_WIDGET->setCursor(moveLayerCursor);
     }

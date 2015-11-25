@@ -31,4 +31,7 @@ public:
     void setBackground(std::unique_ptr<CanvasTile> newBackground);
 };
 
+//FIXME: Probably shouldn't be public API
+std::unique_ptr<CanvasTile> renderList(QList<CanvasLayer *> const &children, int x, int y);
+
 #endif // CANVASSTACK_H

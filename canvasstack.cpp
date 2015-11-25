@@ -34,7 +34,8 @@ std::unique_ptr<CanvasTile> renderList(QList<CanvasLayer *> const &children, int
 
         if (layer->visible && layer->opacity > 0.0f)
         {
-            if (layer->type == LayerType::Layer)
+            if (layer->type == LayerType::Layer ||
+                (layer->type == LayerType::Group && !layer->tiles->empty()))
             {
                 auxTile = layer->getTileMaybe(x, y);
             }
@@ -65,6 +66,11 @@ std::unique_ptr<CanvasTile> renderList(QList<CanvasLayer *> const &children, int
 
     return result;
 }
+}
+
+std::unique_ptr<CanvasTile> renderList(QList<CanvasLayer *> const &children, int x, int y)
+{
+    return renderList(children, x, y, nullptr);
 }
 
 std::unique_ptr<CanvasTile> CanvasStack::getTileMaybe(int x, int y) const

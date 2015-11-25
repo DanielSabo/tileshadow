@@ -73,6 +73,9 @@ void CanvasLayer::prune()
         else
             ++iter;
     }
+
+    for (CanvasLayer *child: children)
+        child->prune();
 }
 
 void CanvasLayer::swapOut()
@@ -113,6 +116,11 @@ std::unique_ptr<CanvasLayer> CanvasLayer::translated(int x, int y) const
     result->editable = editable;
     result->mode = mode;
     result->opacity = opacity;
+    result->type = type;
+
+    if (type == LayerType::Group)
+        for (auto const &child: children)
+            result->children.append(child->translated(x, y).release());
 
     for (TileMap::iterator iter = tiles->begin(); iter != tiles->end(); ++iter)
     {
