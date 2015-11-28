@@ -341,10 +341,18 @@ void CanvasWidget::paintGL()
         render->shiftFramebuffer(canvasOrigin.x() - d->lastRenderedOrigin.x(),
                                  canvasOrigin.y() - d->lastRenderedOrigin.y());
 
-        QRegion dirtyRegion = QRegion{QRect{canvasOrigin / viewScale, render->viewSize / viewScale}};
-        dirtyRegion -= QRect{d->lastRenderedOrigin / viewScale, render->viewSize / viewScale};
-        for (auto &dirtyRect: dirtyRegion.rects())
-            insertRectTiles(tilesToDraw, dirtyRect);
+        QRegion dirtyRegion = QRegion{QRect{canvasOrigin, render->viewSize}};
+        dirtyRegion -= QRect{d->lastRenderedOrigin, render->viewSize};
+        for (QRect &dirtyRect: dirtyRegion.rects())
+        {
+            int pad = viewScale > 1.0f ? std::ceil(viewScale) : 0;
+            int x = std::floor(dirtyRect.x() / viewScale);
+            int y = std::floor(dirtyRect.y() / viewScale);
+            int w = std::ceil((dirtyRect.width() + pad) / viewScale);
+            int h = std::ceil((dirtyRect.height() + pad) / viewScale);
+
+            insertRectTiles(tilesToDraw, {x, y, w, h});
+        }
 
         d->lastRenderedOrigin = canvasOrigin;
     }
