@@ -9,6 +9,7 @@
 #include <QVBoxLayout>
 #include <QLabel>
 
+#include <QComboBox>
 #include <QDebug>
 
 class ToolSettingsWidgetPrivate
@@ -28,12 +29,14 @@ public:
     void colorDialDrag(const QColor &color);
     void colorDialChanged(const QColor &color);
 
+    template <typename T> void updateSetting(const QString &settingID, T value);
     void updateFloatSetting(const QString &settingID, float value);
     void updateBoolSetting(const QString &settingID, bool value);
 
     void addSetting(const ToolSettingInfo &info);
     void addSlider(const QString &settingID, ToolSettingInfoType::Type sliderType, const QString &name, float min, float max);
     void addCheckbox(const QString &settingID, const QString &name);
+    void addListbox(const QString &settingID, const QString &name, const ToolSettingInfo::OptionsList &options);
 
     void removeSettings();
 
@@ -97,6 +100,17 @@ void ToolSettingsWidgetPrivate::updateBoolSetting(const QString &settingID, bool
     freezeUpdates = false;
 }
 
+template <typename T> void ToolSettingsWidgetPrivate::updateSetting(const QString &settingID, T value)
+{
+    if (freezeUpdates)
+        return;
+
+    freezeUpdates = true;
+    canvas->setToolSetting(settingID, QVariant::fromValue<T>(value));
+    freezeUpdates = false;
+}
+
+
 void ToolSettingsWidgetPrivate::addSlider(const QString &settingID, ToolSettingInfoType::Type sliderType, const QString &name, float min, float max)
 {
     Q_Q(ToolSettingsWidget);
@@ -127,6 +141,25 @@ void ToolSettingsWidgetPrivate::addCheckbox(const QString &settingID, const QStr
     items.push_back({settingID, ToolSettingInfoType::Checkbox, nullptr, check});
 }
 
+void ToolSettingsWidgetPrivate::addListbox(const QString &settingID, const QString &name, const ToolSettingInfo::OptionsList &options)
+{
+    Q_Q(ToolSettingsWidget);
+
+    QComboBox *listbox = new QComboBox();
+    listbox->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
+    for (auto const &option: options)
+        listbox->addItem(option.second, option.first);
+    QLabel *label = new QLabel(name + ":");
+    q->layout()->addWidget(label);
+    q->layout()->addWidget(listbox);
+
+    QObject::connect(listbox, static_cast<void (QComboBox::*)(int)>(&QComboBox::activated), [=] (int row) {
+        updateSetting<QString>(settingID, listbox->itemData(row).toString());
+    });
+
+    items.push_back({settingID, ToolSettingInfoType::Listbox, label, listbox});
+}
+
 void ToolSettingsWidgetPrivate::removeSettings()
 {
     for (auto &iter: items)
@@ -146,6 +179,8 @@ void ToolSettingsWidgetPrivate::addSetting(const ToolSettingInfo &info)
         addSlider(info.settingID, info.type, info.name, info.min, info.max);
     else if (info.type == ToolSettingInfoType::Checkbox)
         addCheckbox(info.settingID, info.name);
+    else if (info.type == ToolSettingInfoType::Listbox)
+        addListbox(info.settingID, info.name, info.options);
     else
         qDebug() << "Attempted to add unknown setting type" << info.type << info.settingID;
 }

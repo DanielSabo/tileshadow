@@ -8,14 +8,6 @@
 
 static const float SUBPIXEL_FACTOR = 8.0f;
 
-template<typename T> static inline float dist(T a, T b)
-{
-    float dx = a.x() - b.x();
-    float dy = a.y() - b.y();
-
-    return sqrt(dx * dx + dy * dy);
-}
-
 class RoundBrushStrokeContext : public StrokeContext
 {
 public:

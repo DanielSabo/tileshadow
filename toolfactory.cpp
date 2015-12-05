@@ -1,3 +1,4 @@
+#include "patternfilltool.h"
 #include "toolfactory.h"
 
 #include <QDir>
@@ -111,6 +112,7 @@ ToolList ToolFactory::listTools()
     toolList.append(QPair<QString, QString>("debug", "Debug"));
     toolList.append(QPair<QString, QString>("round", "Round"));
     toolList.append(QPair<QString, QString>("gradient", "Apply Gradient"));
+    toolList.append(QPair<QString, QString>("pattern-fill", "Pattern Fill"));
 
     std::map<SortKey, QString> items;
 
@@ -147,6 +149,14 @@ BaseTool *ToolFactory::loadTool(QString toolName)
     else if (toolName == QStringLiteral("gradient"))
     {
         result = new GradientTool();
+    }
+    else if (toolName == QStringLiteral("pattern-fill"))
+    {
+        QStringList directories = {
+            QStringLiteral(":/patterns/"),
+            QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/patterns/")
+        };
+        result = new PatternFillTool(directories);
     }
 
     return result;

@@ -89,7 +89,8 @@ SOURCES += main.cpp\
     gradienttool.cpp \
     nativeeventfilter.cpp \
     toollistview.cpp \
-    toolextendedsettingswindow.cpp
+    toolextendedsettingswindow.cpp \
+    patternfilltool.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -131,7 +132,8 @@ HEADERS  += mainwindow.h \
     nativeeventfilter.h \
     toollistview.h \
     toolextendedsettingswindow.h \
-    layertype.h
+    layertype.h \
+    patternfilltool.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \

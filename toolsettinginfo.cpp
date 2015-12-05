@@ -33,6 +33,16 @@ ToolSettingInfo ToolSettingInfo::checkbox(const QString &settingID, const QStrin
     return result;
 }
 
+ToolSettingInfo ToolSettingInfo::listBox(const QString &settingID, const QString &name, const OptionsList &options)
+{
+    ToolSettingInfo result(ToolSettingInfoType::Listbox);
+    result.settingID = settingID;
+    result.name = name;
+    result.options = options;
+
+    return result;
+}
+
 ToolSettingInfo::ToolSettingInfo(ToolSettingInfoType::Type type)
     : type(type)
 {

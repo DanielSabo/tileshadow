@@ -497,4 +497,14 @@ SharedOpenCL::SharedOpenCL()
 
         clReleaseProgram(paintKernelsProg);
     }
+
+    cl_program patternKernelsProg = compileFile(this, ":/PatternKernels.cl", kernelDefs);
+    if (patternKernelsProg)
+    {
+        patternFill_fillCircle = buildOrWarn(patternKernelsProg, "patternFillCircle");
+
+        clReleaseProgram(patternKernelsProg);
+    }
+
+
 }

@@ -87,6 +87,8 @@ public:
     cl_kernel paintKernel_maskCircle;
     cl_kernel paintKernel_applyMaskTile;
 
+    cl_kernel patternFill_fillCircle;
+
     bool gl_sharing;
 private:
     SharedOpenCL();

@@ -5,6 +5,7 @@
         <file>BaseKernels.cl</file>
         <file>MyPaintKernels.cl</file>
         <file>PaintKernels.cl</file>
+        <file>PatternKernels.cl</file>
         <file>mypaint-tools/core/fixed.myb</file>
         <file>mypaint-tools/core/fixed_radius.myb</file>
         <file>mypaint-tools/deevad/2B_pencil.myb</file>
