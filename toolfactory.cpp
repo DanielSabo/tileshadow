@@ -30,18 +30,16 @@ static void asciiTitleCase(QString &instr)
 
 static QStringList findBrushFiles(QDir const &path)
 {
-    QFileInfoList infoList = path.entryInfoList();
+    QFileInfoList infoList = path.entryInfoList({"*.myb", "*.mbi"}, QDir::AllDirs | QDir::NoDotAndDotDot | QDir::Files);
     QStringList result;
 
     QFileInfoList directories;
 
     for (QFileInfo const &info: infoList)
     {
-        if (info.isDir() && info.fileName() != "." && info.fileName() != "..")
+        if (info.isDir())
             directories << info;
-        else if (info.fileName().endsWith(".myb"))
-            result << info.filePath();
-        else if (info.fileName().endsWith(".mbi"))
+        else
             result << info.filePath();
     }
 
