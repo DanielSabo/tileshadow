@@ -933,7 +933,7 @@ void CanvasWidget::addLayerAbove(int layerIndex, QImage image, QString name)
 
 void CanvasWidget::addGroupAbove(int layerIndex)
 {
-    CanvasLayer *layer = new CanvasLayer(QString().sprintf("Group %02d", ++lastNewLayerNumber));
+    CanvasLayer *layer = new CanvasLayer(QStringLiteral("Group"));
     layer->type = LayerType::Group;
     insertLayerAbove(layerIndex, layer);
 }
