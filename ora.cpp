@@ -28,6 +28,10 @@ static QString blendModeToOraOp(BlendMode::Mode mode)
         return QStringLiteral("svg:color-dodge");
     if (mode == BlendMode::Screen)
         return QStringLiteral("svg:screen");
+    if (mode == BlendMode::Color)
+        return QStringLiteral("svg:color");
+    if (mode == BlendMode::Luminosity)
+        return QStringLiteral("svg:luminosity");
     if (mode == BlendMode::DestinationOut)
         return QStringLiteral("svg:dst-out");
     if (mode == BlendMode::SourceAtop)
@@ -47,6 +51,10 @@ static BlendMode::Mode oraOpToMode(QString opName)
         return BlendMode::ColorDodge;
     if (opName == "svg:screen")
         return BlendMode::Screen;
+    if (opName == "svg:color")
+        return BlendMode::Color;
+    if (opName == "svg:luminosity")
+        return BlendMode::Luminosity;
     if (opName == "svg:dst-out")
         return BlendMode::DestinationOut;
     if (opName == "svg:src-atop")

@@ -233,6 +233,103 @@ __kernel void tileSVGScreen(__global float4 *out,
   out[get_global_id(0)] = out_pixel;
 }
 
+/* Color compositing operations from:
+ * http://www.w3.org/TR/2015/CR-compositing-1-20150113/#blendingnonseparable */
+
+float3 hsl_clip_color(float3 color);
+float hsl_lum(float3 color);
+float3 hsl_set_lum(float3 color, float lum);
+float hsl_sat(float3 color);
+
+float3 hsl_clip_color(float3 color)
+{
+  float lum = hsl_lum(color);
+  float3 lum_vec = (float3)(lum, lum, lum);
+  float n = min(min(color.s0, color.s1), color.s2);
+  float x = max(max(color.s0, color.s1), color.s2);
+  if (n < 0.0f)
+    color = lum_vec + (((color - lum_vec) * lum_vec) / (lum_vec - (float3)(n, n, n)));
+  if (x > 1.0f)
+    color = lum_vec + (((color - lum_vec) * ((float3)(1.0f, 1.0f, 1.0f) - lum_vec)) / ((float3)(x, x, x) - lum_vec));
+  // Sanity clamp, the above code sometimes produces bad values when lum is zero
+  color = clamp(color, (float3)(0.0f, 0.0f, 0.0f), (float3)(1.0f, 1.0f, 1.0f));
+  return color;
+}
+
+float hsl_lum(float3 color)
+{
+  return 0.3f * color.s0 + 0.59f * color.s1 + 0.11f * color.s2;
+}
+
+float3 hsl_set_lum(float3 color, float lum)
+{
+  float d = lum - hsl_lum(color);
+  color += (float3)(d, d, d);
+  return hsl_clip_color(color);
+}
+
+float hsl_sat(float3 color)
+{
+  return max(max(color.s0, color.s1), color.s2) - min(min(color.s0, color.s1), color.s2);
+}
+
+__kernel void tileSVGColor(__global float4 *out,
+                           __global float4 *in,
+                           __global float4 *aux,
+                                    float   opacity)
+{
+  float4 out_pixel;
+  float4 in_pixel = in[get_global_id(0)];
+  float4 aux_pixel = aux[get_global_id(0)];
+
+  float alpha = aux_pixel.s3 * opacity;
+  if (alpha > 0.0f)
+  {
+    float dst_alpha = in_pixel.s3;
+    aux_pixel.s012 = hsl_set_lum(aux_pixel.s012, hsl_lum(in_pixel.s012));
+
+    float a = alpha + dst_alpha * (1.0f - alpha);
+    float src_term = alpha / a;
+    float aux_term = 1.0f - src_term;
+    out_pixel.s012 = aux_pixel.s012 * src_term + in_pixel.s012 * aux_term;
+    out_pixel.s3   = a;
+  }
+  else
+    out_pixel = in_pixel;
+
+  out[get_global_id(0)] = out_pixel;
+}
+
+__kernel void tileSVGLuminosity(__global float4 *out,
+                                __global float4 *in,
+                                __global float4 *aux,
+                                         float   opacity)
+{
+  float4 out_pixel;
+  float4 in_pixel = in[get_global_id(0)];
+  float4 aux_pixel = aux[get_global_id(0)];
+
+  float alpha = aux_pixel.s3 * opacity;
+  if (alpha > 0.0f)
+  {
+    float dst_alpha = in_pixel.s3;
+    aux_pixel.s012 = hsl_set_lum(in_pixel.s012, hsl_lum(aux_pixel.s012));
+
+    float a = alpha + dst_alpha * (1.0f - alpha);
+    float src_term = alpha / a;
+    float aux_term = 1.0f - src_term;
+    out_pixel.s012 = aux_pixel.s012 * src_term + in_pixel.s012 * aux_term;
+    out_pixel.s3   = a;
+  }
+  else
+    out_pixel = in_pixel;
+
+  out[get_global_id(0)] = out_pixel;
+}
+
+/* Porter-Duff operations from:
+ * http://www.w3.org/TR/2015/CR-compositing-1-20150113/ */
+
 __kernel void tileSVGDstOut(__global float4 *out,
                             __global float4 *in,
                             __global float4 *aux,

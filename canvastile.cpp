@@ -140,6 +140,12 @@ void CanvasTile::blendOnto(CanvasTile *target, BlendMode::Mode mode, float opaci
     case BlendMode::Screen:
         kernel = SharedOpenCL::getSharedOpenCL()->blendKernel_screen;
         break;
+    case BlendMode::Color:
+        kernel = SharedOpenCL::getSharedOpenCL()->blendKernel_color;
+        break;
+    case BlendMode::Luminosity:
+        kernel = SharedOpenCL::getSharedOpenCL()->blendKernel_luminosity;
+        break;
     case BlendMode::DestinationOut:
         kernel = SharedOpenCL::getSharedOpenCL()->blendKernel_dstOut;
         break;

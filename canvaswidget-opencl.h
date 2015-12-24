@@ -71,6 +71,8 @@ public:
     cl_kernel blendKernel_colorDodge;
     cl_kernel blendKernel_colorBurn;
     cl_kernel blendKernel_screen;
+    cl_kernel blendKernel_color;
+    cl_kernel blendKernel_luminosity;
     cl_kernel blendKernel_dstOut;
     cl_kernel blendKernel_dstIn;
     cl_kernel blendKernel_srcAtop;
