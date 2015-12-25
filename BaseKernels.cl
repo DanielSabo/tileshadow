@@ -69,8 +69,10 @@ __kernel void gradientApply(__global const float4 *src,
   float value = vec.x * coord.x + vec.y * coord.y + dither[idx % dither_size];
   value = clamp(value, 0.0f, 1.0f);
 
-  float3 outColor = color.s012 * value + src[idx].s012 * (1.0f - value);
-  dst[idx] = (float4)(outColor, src[idx].s3);
+  float4 outColor = src[idx];
+  if (outColor.s3 > 0.0f)
+    outColor.s012 = color.s012 * value + outColor.s012 * (1.0f - value);
+  dst[idx] = outColor;
 }
 
 __kernel void fill(__global float4 *buf,
