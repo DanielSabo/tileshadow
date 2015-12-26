@@ -9,6 +9,8 @@ namespace BlendMode
         ColorDodge,
         ColorBurn,
         Screen,
+        Hue,
+        Saturation,
         Color,
         Luminosity,
         DestinationOut,

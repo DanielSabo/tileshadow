@@ -467,6 +467,8 @@ SharedOpenCL::SharedOpenCL()
         blendKernel_colorDodge = buildOrWarn(baseKernelProg, "tileSVGMColorDodge");
         blendKernel_colorBurn = buildOrWarn(baseKernelProg, "tileSVGColorBurn");
         blendKernel_screen = buildOrWarn(baseKernelProg, "tileSVGScreen");
+        blendKernel_hue = buildOrWarn(baseKernelProg, "tileSVGHue");
+        blendKernel_saturation = buildOrWarn(baseKernelProg, "tileSVGSaturation");
         blendKernel_color = buildOrWarn(baseKernelProg, "tileSVGColor");
         blendKernel_luminosity = buildOrWarn(baseKernelProg, "tileSVGLuminosity");
         blendKernel_dstOut = buildOrWarn(baseKernelProg, "tileSVGDstOut");

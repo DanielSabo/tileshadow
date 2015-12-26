@@ -242,6 +242,7 @@ float3 hsl_clip_color(float3 color);
 float hsl_lum(float3 color);
 float3 hsl_set_lum(float3 color, float lum);
 float hsl_sat(float3 color);
+float3 hsl_set_sat(float3 color, float s);
 
 float3 hsl_clip_color(float3 color)
 {
@@ -273,6 +274,94 @@ float3 hsl_set_lum(float3 color, float lum)
 float hsl_sat(float3 color)
 {
   return max(max(color.s0, color.s1), color.s2) - min(min(color.s0, color.s1), color.s2);
+}
+
+float3 hsl_set_sat(float3 src_color, float s)
+{
+  float colors[3] = {src_color.s0, src_color.s1, src_color.s2};
+  int Cmin = 0;
+  int Cmid = 1;
+  int Cmax = 2;
+
+  // mini-bubble sort to find Cmin, Cmid, Cmax
+  if (colors[Cmin] > colors[Cmid])
+   { int tmp = Cmin; Cmin = Cmid; Cmid = tmp; }
+  if (colors[Cmid] > colors[Cmax])
+   { int tmp = Cmid; Cmid = Cmax; Cmax = tmp; }
+  if (colors[Cmin] > colors[Cmid])
+   { int tmp = Cmin; Cmin = Cmid; Cmid = tmp; }
+
+  if (colors[Cmax] > colors[Cmin])
+  {
+    colors[Cmid] = ((colors[Cmid] - colors[Cmin]) * s) / (colors[Cmax] - colors[Cmin]);
+    colors[Cmax] = s;
+    colors[Cmin] = 0;
+  }
+  else
+  {
+    return (float3){0.0f, 0.0f, 0.0f};
+  }
+  return (float3){colors[0], colors[1], colors[2]};
+}
+
+__kernel void tileSVGHue(__global float4 *out,
+                         __global float4 *in,
+                         __global float4 *aux,
+                                  float   opacity)
+{
+  float4 out_pixel;
+  float4 in_pixel = in[get_global_id(0)];
+  float4 aux_pixel = aux[get_global_id(0)];
+
+  float alpha = aux_pixel.s3 * opacity;
+  if (alpha > 0.0f)
+  {
+    float dst_alpha = in_pixel.s3;
+    aux_pixel.s012 = hsl_set_lum(
+                       hsl_set_sat(aux_pixel.s012, hsl_sat(in_pixel.s012)),
+                       hsl_lum(in_pixel.s012)
+                     );
+
+    float a = alpha + dst_alpha * (1.0f - alpha);
+    float src_term = alpha / a;
+    float aux_term = 1.0f - src_term;
+    out_pixel.s012 = aux_pixel.s012 * src_term + in_pixel.s012 * aux_term;
+    out_pixel.s3   = a;
+  }
+  else
+    out_pixel = in_pixel;
+
+  out[get_global_id(0)] = out_pixel;
+}
+
+__kernel void tileSVGSaturation(__global float4 *out,
+                                __global float4 *in,
+                                __global float4 *aux,
+                                         float   opacity)
+{
+  float4 out_pixel;
+  float4 in_pixel = in[get_global_id(0)];
+  float4 aux_pixel = aux[get_global_id(0)];
+
+  float alpha = aux_pixel.s3 * opacity;
+  if (alpha > 0.0f)
+  {
+    float dst_alpha = in_pixel.s3;
+    aux_pixel.s012 = hsl_set_lum(
+                       hsl_set_sat(in_pixel.s012, hsl_sat(aux_pixel.s012)),
+                       hsl_lum(in_pixel.s012)
+                     );
+
+    float a = alpha + dst_alpha * (1.0f - alpha);
+    float src_term = alpha / a;
+    float aux_term = 1.0f - src_term;
+    out_pixel.s012 = aux_pixel.s012 * src_term + in_pixel.s012 * aux_term;
+    out_pixel.s3   = a;
+  }
+  else
+    out_pixel = in_pixel;
+
+  out[get_global_id(0)] = out_pixel;
 }
 
 __kernel void tileSVGColor(__global float4 *out,
