@@ -144,12 +144,24 @@ namespace {
         return false;
     }
 
+    bool checkQtVersionGreaterOrEqual(int major, int minor, int micro)
+    {
+        QStringList parts = QString(qVersion()).split(".");
+        if (major > parts.value(0).toInt())
+            return false;
+        if (minor > parts.value(1).toInt())
+            return false;
+        if (micro > parts.value(2).toInt())
+            return false;
+        return true;
+    }
+
     int xinputOpcode;
 }
 
 void NativeEventFilter::install(QGuiApplication *app)
 {
-    if (app->platformName() == "xcb")
+    if (app->platformName() == "xcb" && !checkQtVersionGreaterOrEqual(5, 5, 0))
     {
         display = QX11Info::display();
         int eventBase, errorBase; // Unused values
