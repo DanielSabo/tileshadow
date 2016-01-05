@@ -44,6 +44,9 @@ public:
 
     ~CLMaskImage();
 
+    int width() const { return size.width(); }
+    int height() const { return size.height(); }
+
     cl_mem image;
     QSize  size;
 };
@@ -73,7 +76,7 @@ class MyPaintStrokeContextPrivate
 public:
     MyPaintBrush            *brush;
     int                      activeMask;
-    std::vector<CLMaskImage> masks;
+    std::vector<MipSet<CLMaskImage>> masks;
     CanvasMyPaintSurface     surface;
     TileSet                  modTiles;
 };
@@ -139,20 +142,38 @@ void MyPaintStrokeContext::setMasks(const QList<MaskBuffer> &masks)
     priv->masks.clear();
     priv->activeMask = 0;
 
-    for (auto const &mask: masks)
+    for (auto const &baseMask: masks)
     {
-        cl_int err = CL_SUCCESS;
-        cl_image_format fmt = {CL_INTENSITY, CL_UNORM_INT8};
+        MipSet<CLMaskImage> clMips;
+        MipSet<MaskBuffer> maskMips = mipsFromMask(baseMask);
 
-        cl_mem maskImage = clCreateImage2D(SharedOpenCL::getSharedOpenCL()->ctx,
-                                          CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                                          &fmt,
-                                          mask.width(), mask.height(), 0,
-                                          (void *)mask.constData(), &err);
-        check_cl_error(err);
+//        qDebug() << "mips:" << maskMips.mips.size();
 
-        if (err == CL_SUCCESS)
-            priv->masks.emplace_back(maskImage, QSize(mask.width(), mask.height()));
+        for (auto const mask: maskMips)
+        {
+            cl_int err = CL_SUCCESS;
+            cl_image_format fmt = {CL_INTENSITY, CL_UNORM_INT8};
+
+            cl_mem maskImage = clCreateImage2D(SharedOpenCL::getSharedOpenCL()->ctx,
+                                              CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+                                              &fmt,
+                                              mask.width(), mask.height(), 0,
+                                              (void *)mask.constData(), &err);
+            check_cl_error(err);
+
+            if (err == CL_SUCCESS)
+            {
+//                qDebug() << "  loaded:" << mask.width() << mask.height();
+                clMips.mips.emplace_back(maskImage, QSize(mask.width(), mask.height()));
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        if (!clMips.mips.empty())
+        priv->masks.push_back(std::move(clMips));
     }
 }
 
@@ -394,7 +415,7 @@ static int drawDabFunction (MyPaintSurface *base_surface,
     else
     {
         QMatrix transform;
-        CLMaskImage const &maskImage = priv->masks[priv->activeMask];
+        CLMaskImage const &maskImage = *(priv->masks[priv->activeMask].bestForSize(radius * 2));
         priv->activeMask = (priv->activeMask + 1) % priv->masks.size();
         float maskWidth = maskImage.size.width();
         float maskHeight = maskImage.size.height();
