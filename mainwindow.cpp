@@ -81,6 +81,15 @@ MainWindow::MainWindow(QWidget *parent) :
 
 #ifdef Q_OS_MAC
     QApplication::instance()->installEventFilter(this);
+    ui->splitter->installEventFilter(this);
+    ui->splitter->setStyleSheet(QStringLiteral(
+        "QSplitterHandle:hover {}"
+        "QSplitter::Handle {"
+        "background-image: none;"
+        "}"
+        "QSplitter::Handle:hover {"
+        "background-color: palette(highlight);"
+        "}"));
 #endif
 
     setFocus();
@@ -91,13 +100,37 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-bool MainWindow::eventFilter(QObject *, QEvent *event)
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 {
     if (event->type() == QEvent::FileOpen)
     {
         openFileRequest(static_cast<QFileOpenEvent *>(event)->file());
         return true;
     }
+#ifdef Q_OS_MAC
+    if (QSplitterHandle *handle = qobject_cast<QSplitterHandle *>(obj))
+    {
+        /* Hack around QTBUG-33479 */
+        if (event->type() == QEvent::Leave)
+        {
+            unsetCursor();
+        }
+        else if (event->type() == QEvent::Enter)
+        {
+            if (handle->orientation() == Qt::Horizontal)
+                setCursor(Qt::SplitHCursor);
+            else
+                setCursor(Qt::SplitVCursor);
+        }
+        else if (event->type() == QEvent::Polish)
+        {
+            /* Enable the :hover selector in custom stylesheets */
+            handle->setAttribute(Qt::WA_Hover);
+        }
+
+        return false;
+    }
+#endif
 
     return false;
 }
