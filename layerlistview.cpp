@@ -301,7 +301,7 @@ void LayerListView::mousePressEvent(QMouseEvent *event)
         int leadingWidth = d->iconSize * 2 + d->vPad * 2;
         d->nameEditor->move(d->iconSize * 2 + d->vPad * 2,
                             d->rowSize.height() * d->selectedThing);
-        d->nameEditor->setMaximumWidth(width() - leadingWidth - d->vPad);
+        d->nameEditor->setFixedWidth(width() - leadingWidth - d->vPad);
         d->nameEditor->show();
         d->nameEditor->setFocus(Qt::MouseFocusReason);
     }
