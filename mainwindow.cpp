@@ -35,13 +35,17 @@ MainWindow::MainWindow(QWidget *parent) :
 
     canvas = ui->mainCanvas;
 
-    auto addSidebarWidget = [&](QWidget *widget) {
-        ui->sidebarLayout->insertWidget(ui->sidebarLayout->count() - 1, widget);
+    auto addSidebarWidget = [&](QWidget *widget, QSizePolicy::Policy vp) {
+        ui->sidebarLayout->insertWidget(ui->sidebarLayout->count(), widget);
+        QSizePolicy sizePolicy = widget->sizePolicy();
+        sizePolicy.setVerticalPolicy(vp);
+        widget->setSizePolicy(sizePolicy);
+
     };
 
-    addSidebarWidget(new ToolSettingsWidget(canvas, this));
-    addSidebarWidget(new LayerListWidget(canvas, this));
-    addSidebarWidget(new ToolListWidget(canvas, this));
+    addSidebarWidget(new ToolSettingsWidget(canvas, this), QSizePolicy::Preferred);
+    addSidebarWidget(new ToolListWidget(canvas, this), QSizePolicy::Preferred);
+    addSidebarWidget(new LayerListWidget(canvas, this), QSizePolicy::Expanding);
 
     updateTitle();
     updateStatus();
