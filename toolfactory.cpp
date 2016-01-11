@@ -171,3 +171,14 @@ QString ToolFactory::defaultEraserName()
 {
     return QStringLiteral(":/mypaint-tools/deevad/thin_hard_eraser.myb");
 }
+
+QString ToolFactory::savePathForExtension(QString extension)
+{
+    if (extension == QStringLiteral("myb") ||
+        extension == QStringLiteral("mbi"))
+    {
+        return ToolFactory::getUserToolsPath();
+    }
+
+    return QString();
+}

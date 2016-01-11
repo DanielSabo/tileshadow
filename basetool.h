@@ -3,6 +3,7 @@
 
 #include <QList>
 #include <QColor>
+#include <QByteArray>
 #include "strokecontext.h"
 #include "toolsettinginfo.h"
 
@@ -32,6 +33,8 @@ public:
     virtual QVariant getToolSetting(QString const &name);
     virtual QList<ToolSettingInfo> listToolSettings();
     virtual QList<ToolSettingInfo> listAdvancedSettings();
+    virtual QString saveExtension();
+    virtual bool saveTo(QByteArray &output);
 };
 
 #endif // BASETOOL_H

@@ -14,6 +14,7 @@ namespace ToolFactory {
     QString getUserToolsPath();
     QString defaultToolName();
     QString defaultEraserName();
+    QString savePathForExtension(QString extension);
 }
 
 #endif // TOOLFACTORY_H

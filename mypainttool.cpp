@@ -10,6 +10,7 @@
 #include <QJsonArray>
 #include <QColor>
 #include <QImage>
+#include "lodepng.h"
 
 extern "C" {
 #include "mypaint-brush.h"
@@ -397,6 +398,67 @@ QList<ToolSettingInfo> MyPaintTool::listAdvancedSettings()
     }
 
     return result;
+}
+
+QString MyPaintTool::saveExtension()
+{
+    return QStringLiteral("mbi");
+}
+
+bool MyPaintTool::saveTo(QByteArray &output)
+{
+    QVariantMap document;
+    document["version"] = 3;
+    document["group"] = "";
+    document["comment"] = "";
+    document["parent_brush_name"] = "";
+
+    QVariantMap settingsMap;
+    for (auto iter = priv->currentSettings.cbegin(); iter != priv->currentSettings.cend(); ++iter)
+    {
+        QVariantMap settingMap;
+        QVariantMap inputMap;
+
+        settingMap["base_value"] = iter.value().first;
+
+        auto const &mappings = iter.value().second;
+        for (auto mapping = mappings.cbegin(); mapping != mappings.cend(); ++mapping)
+        {
+            QVariantList points;
+            for (auto &p: mapping.value())
+                points.push_back(QVariantList({p.x(), p.y()}));
+            inputMap[mapping.key()] = points;
+        }
+
+        settingMap["inputs"] = inputMap;
+
+        settingsMap[iter.key()] = settingMap;
+    }
+    document["settings"] = settingsMap;
+
+    if (!priv->maskImages.isEmpty())
+    {
+        QVariantMap imageSettingsMap;
+        QVariantList maskList;
+        for (auto const &mask: priv->maskImages)
+        {
+            MaskBuffer inverted = mask.invert();
+            size_t encodedSize;
+            unsigned char *encoded;
+
+            lodepng_encode_memory(&encoded, &encodedSize, inverted.constData(), inverted.width(), inverted.height(), LCT_GREY, 8);
+            QByteArray encodedBytes = QByteArray::fromRawData((const char *)encoded, encodedSize);
+            maskList.append(QString(encodedBytes.toBase64()));
+            encodedBytes.clear();
+            free(encoded);
+        }
+        imageSettingsMap["masks"] = maskList;
+        document["image_settings"] = imageSettingsMap;
+    }
+
+    output = QJsonDocument::fromVariant(QVariant(document)).toJson();
+
+    return true;
 }
 
 float MyPaintTool::getPixelRadius()

@@ -18,6 +18,7 @@
 #include <QElapsedTimer>
 #include <QAction>
 #include <QDebug>
+#include <QFileDialog>
 
 static const QGLFormat &getFormatSingleton()
 {
@@ -2146,6 +2147,52 @@ QVariant CanvasWidget::getToolSetting(const QString &settingName)
         return QVariant();
 
     return d->activeTool->getToolSetting(settingName);
+}
+
+bool CanvasWidget::getToolSaveable()
+{
+    Q_D(CanvasWidget);
+
+    if (!d->activeTool)
+        return false;
+
+    QString extension = d->activeTool->saveExtension();
+    if (!extension.isEmpty() && !ToolFactory::savePathForExtension(extension).isEmpty())
+        return true;
+
+    return false;
+}
+
+void CanvasWidget::saveToolSettings()
+{
+    Q_D(CanvasWidget);
+
+    if (!d->activeTool)
+        return;
+
+    QString extension = d->activeTool->saveExtension();
+    if (extension.isEmpty())
+        return;
+
+    QString savePath = ToolFactory::savePathForExtension(extension);
+    if (savePath.isEmpty())
+        return;
+
+    QByteArray output;
+    if (d->activeTool->saveTo(output) && output.size() > 0)
+    {
+        QString filename = QFileDialog::getSaveFileName(this, tr("Save As..."),
+                                                        savePath + QDir::toNativeSeparators("/") + "untitled." + extension,
+                                                        QString("%1 (*.%1)").arg(extension));
+
+        if (filename.isEmpty())
+            return;
+
+        QFile outfile(filename);
+        outfile.open(QIODevice::WriteOnly | QIODevice::Truncate);
+        outfile.write(output);
+        outfile.close();
+    }
 }
 
 void CanvasWidget::resetToolSettings()

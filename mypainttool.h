@@ -20,6 +20,8 @@ public:
     virtual QVariant getToolSetting(QString const &name) override;
     virtual QList<ToolSettingInfo> listToolSettings() override;
     virtual QList<ToolSettingInfo> listAdvancedSettings() override;
+    virtual QString saveExtension() override;
+    virtual bool saveTo(QByteArray &output) override;
 
     StrokeContext *newStroke(StrokeContextArgs const &args) override;
 

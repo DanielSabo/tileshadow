@@ -21,6 +21,7 @@ public:
 
     QVBoxLayout *settingsWidgetLayout;
     QScrollArea *scroll;
+    QPushButton *saveButton;
     CanvasWidget *canvas;
 
     QWidget     *inputEditorWindow;
@@ -65,6 +66,7 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
 
     QVBoxLayout *layout = new QVBoxLayout();
     layout->setContentsMargins(QMargins());
+    layout->setSpacing(0);
     setLayout(layout);
 
     d->scroll = new QScrollArea();
@@ -113,6 +115,19 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
         "}"
     ));
 
+    QHBoxLayout *buttonsLayout = new QHBoxLayout();
+    QWidget *buttonsBox = new QWidget();
+    buttonsBox->setLayout(buttonsLayout);
+    d->saveButton = new QPushButton(tr("Save As..."));
+    buttonsLayout->addStretch(1);
+    buttonsLayout->addWidget(d->saveButton);
+    connect(d->saveButton, &QPushButton::clicked, this, [this](bool) {
+        Q_D(ToolExtendedSettingsWindow);
+        if (d->canvas)
+            d->canvas->saveToolSettings();
+    });
+    layout->addWidget(buttonsBox);
+
     QSettings appSettings;
 
     if (appSettings.contains("ToolExtendedSettingsWindow/geometry"))
@@ -155,6 +170,7 @@ void ToolExtendedSettingsWindow::updateTool()
         d->activeToolpath = canvasActiveTool;
         bool keepInputEditorOpen = false;
 
+        d->saveButton->setDisabled(d->canvas->getToolSaveable() == false);
         d->removeSettings();
         for (const ToolSettingInfo info: d->canvas->getAdvancedToolSettings())
         {

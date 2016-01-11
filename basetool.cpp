@@ -39,3 +39,13 @@ QList<ToolSettingInfo> BaseTool::listAdvancedSettings()
 {
     return QList<ToolSettingInfo>();
 }
+
+QString BaseTool::saveExtension()
+{
+    return QString();
+}
+
+bool BaseTool::saveTo(QByteArray &)
+{
+    return false;
+}

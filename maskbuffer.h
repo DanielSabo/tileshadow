@@ -17,6 +17,8 @@ public:
         return data.get();
     }
 
+    MaskBuffer invert() const;
+
 protected:
     QSize bounds;
     std::shared_ptr<uint8_t> data;

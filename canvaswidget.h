@@ -57,6 +57,8 @@ public:
     QList<ToolSettingInfo> getAdvancedToolSettings();
     void setToolSetting(const QString &settingName, const QVariant &value);
     QVariant getToolSetting(const QString &settingName);
+    bool getToolSaveable();
+    void saveToolSettings();
     void resetToolSettings();
 
     void startStroke(QPointF pos, float pressure);
