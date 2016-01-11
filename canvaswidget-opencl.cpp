@@ -349,7 +349,7 @@ static cl_context createSharedContext()
             }
         }
     }
-#elif defined(Q_OS_MAC)
+#elif defined(Q_OS_MAC) && 0 /* Disable sharing on OSX due to instability */
     /* FIXME: This assumes there will only be the Apple platform and that it will
      * inherently support sharing.
      */
