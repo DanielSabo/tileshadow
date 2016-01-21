@@ -19,16 +19,19 @@ public:
     ToolExtendedSettingsWindowPrivate(CanvasWidget *canvas)
         : canvas(canvas), freezeUpdates(false) {}
 
-    QVBoxLayout *settingsWidgetLayout;
-    QScrollArea *scroll;
-    QPushButton *saveButton;
     CanvasWidget *canvas;
+
+    QWidget     *settingsAreaBody;
+    QScrollArea *scroll;
+    QPointer<QWidget> settingsAreaSettings;
 
     QWidget     *inputEditorWindow;
     QWidget     *inputEditorBody;
     QPushButton *inputEditorApplyButton;
     QString      inputEditorSettingID;
     QPointer<QWidget> inputEditorSettings;
+
+    QPushButton *saveButton;
 
     QString activeToolpath;
     bool freezeUpdates;
@@ -37,7 +40,6 @@ public:
     {
         QString settingID;
         QString settingName;
-        QWidget *box;
         QLabel *label;
         QWidget *input;
         QPushButton *mappingButton;
@@ -53,7 +55,6 @@ public:
 
     QList<InputEditorItem> inputEditorItems;
 
-    void removeSettings();
     void showMappingsFor(ToolSettingInfo const &info);
     void applyMappings();
 };
@@ -75,12 +76,13 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
     d->scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     d->scroll->setFrameShape(QFrame::NoFrame);
 
-    QWidget *settingsArea = new QWidget();
-    d->scroll->setWidget(settingsArea);
+    d->settingsAreaBody = new QWidget();
+    d->settingsAreaBody->setLayout(new QVBoxLayout());
+    d->settingsAreaBody->layout()->setContentsMargins(QMargins());
+    d->settingsAreaBody->layout()->setSpacing(0);
+    d->settingsAreaSettings = nullptr;
 
-    d->settingsWidgetLayout = new QVBoxLayout();
-    d->settingsWidgetLayout->setSpacing(3);
-    settingsArea->setLayout(d->settingsWidgetLayout);
+    d->scroll->setWidget(d->settingsAreaBody);
     layout->addWidget(d->scroll);
 
     d->inputEditorWindow = new QWidget(this, Qt::Tool);
@@ -171,22 +173,22 @@ void ToolExtendedSettingsWindow::updateTool()
         bool keepInputEditorOpen = false;
 
         d->saveButton->setDisabled(d->canvas->getToolSaveable() == false);
-        d->removeSettings();
+
+        if (!d->settingsAreaSettings.isNull())
+            delete d->settingsAreaSettings.data();
+        d->items.clear();
+
+        auto settingsBox = new QWidget();
+        auto layout = new QGridLayout();
+        layout->setSpacing(3);
+        layout->setColumnStretch(0, 1);
+        settingsBox->setLayout(layout);
+
         for (const ToolSettingInfo info: d->canvas->getAdvancedToolSettings())
         {
             if (info.type == ToolSettingInfoType::ExponentSlider || info.type == ToolSettingInfoType::LinearSlider)
             {
                 QString settingID = info.settingID;
-
-                QWidget *box = new QWidget();
-                auto boxLayout = new QVBoxLayout();
-                boxLayout->setContentsMargins(QMargins());
-                boxLayout->setSpacing(0);
-                box->setLayout(boxLayout);
-                QWidget *rowBox = new QWidget();
-                auto rowLayout = new QHBoxLayout();
-                rowLayout->setContentsMargins(QMargins());
-                rowBox->setLayout(rowLayout);
 
                 QLabel *label = new QLabel(info.name);
                 QPushButton *mappingButton = new QPushButton();
@@ -210,11 +212,9 @@ void ToolExtendedSettingsWindow::updateTool()
                 slider->setMaximum(info.max * 100);
                 slider->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 
-                rowLayout->addWidget(label);
-                rowLayout->addStretch(1);
-                rowLayout->addWidget(mappingButton);
-                boxLayout->addWidget(rowBox);
-                boxLayout->addWidget(slider);
+                layout->addWidget(label, layout->rowCount(), 0, 1, 2, Qt::AlignLeft);
+                layout->addWidget(slider, layout->rowCount(), 0);
+                layout->addWidget(mappingButton, layout->rowCount() - 1, 1);
 
                 connect(slider, &QSlider::valueChanged, this, [d, settingID] (int value) {
                     if (!d->freezeUpdates)
@@ -231,10 +231,12 @@ void ToolExtendedSettingsWindow::updateTool()
                     d->inputEditorWindow->activateWindow();
                 });
 
-                d->settingsWidgetLayout->addWidget(box);
-                d->items.push_back({info.settingID, info.name, box, label, slider, mappingButton});
+                d->items.push_back({info.settingID, info.name, label, slider, mappingButton});
             }
         }
+
+        d->settingsAreaSettings = settingsBox;
+        d->settingsAreaBody->layout()->addWidget(settingsBox);
 
         d->scroll->setMinimumWidth(d->scroll->widget()->minimumSizeHint().width() +
                                    d->scroll->verticalScrollBar()->width());
@@ -266,16 +268,6 @@ void ToolExtendedSettingsWindow::updateTool()
     }
 
     d->freezeUpdates = false;
-}
-
-void ToolExtendedSettingsWindowPrivate::removeSettings()
-{
-    for (auto &iter: items)
-    {
-        if (iter.box)
-            delete iter.box;
-    }
-    items.clear();
 }
 
 void ToolExtendedSettingsWindowPrivate::showMappingsFor(ToolSettingInfo const &info)
