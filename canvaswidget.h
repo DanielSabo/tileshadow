@@ -120,11 +120,11 @@ protected:
     void paintGL();
 
     void paintEvent(QPaintEvent *event);
-    void mousePressEvent(QMouseEvent * event);
-    void mouseReleaseEvent(QMouseEvent * event);
-    void mouseMoveEvent(QMouseEvent * event);
+    void mousePressEvent(QMouseEvent *event);
+    void mouseReleaseEvent(QMouseEvent *event);
+    void mouseMoveEvent(QMouseEvent *event);
     void tabletEvent(QTabletEvent *event);
-    void wheelEvent(QWheelEvent *);
+    void wheelEvent(QWheelEvent *event);
     void leaveEvent(QEvent *event);
     void enterEvent(QEvent *event);
 
