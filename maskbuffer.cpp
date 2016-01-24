@@ -1,4 +1,5 @@
 #include "maskbuffer.h"
+#include "lodepng.h"
 #include <qmath.h>
 
 MaskBuffer::MaskBuffer(QImage const &image)
@@ -97,6 +98,19 @@ MaskBuffer MaskBuffer::downscale() const
     }
 
     return result;
+}
+
+QByteArray MaskBuffer::toPNG() const
+{
+    /* FIXME: This should be converted to use QImage::Format_Grayscale8 once we can require Qt 5.5 */
+    size_t encodedSize;
+    unsigned char *encoded;
+
+    lodepng_encode_memory(&encoded, &encodedSize, constData(), width(), height(), LCT_GREY, 8);
+    QByteArray encodedBytes = QByteArray((const char *)encoded, encodedSize);
+    free(encoded);
+
+    return encodedBytes;
 }
 
 MipSet<MaskBuffer> singleFromMask(MaskBuffer const &source)

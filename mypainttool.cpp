@@ -10,7 +10,6 @@
 #include <QJsonArray>
 #include <QColor>
 #include <QImage>
-#include "lodepng.h"
 
 extern "C" {
 #include "mypaint-brush.h"
@@ -443,14 +442,7 @@ bool MyPaintTool::saveTo(QByteArray &output)
         for (auto const &mask: priv->maskImages)
         {
             MaskBuffer inverted = mask.invert();
-            size_t encodedSize;
-            unsigned char *encoded;
-
-            lodepng_encode_memory(&encoded, &encodedSize, inverted.constData(), inverted.width(), inverted.height(), LCT_GREY, 8);
-            QByteArray encodedBytes = QByteArray::fromRawData((const char *)encoded, encodedSize);
-            maskList.append(QString(encodedBytes.toBase64()));
-            encodedBytes.clear();
-            free(encoded);
+            maskList.append(QString(inverted.toPNG().toBase64()));
         }
         imageSettingsMap["masks"] = maskList;
         document["image_settings"] = imageSettingsMap;

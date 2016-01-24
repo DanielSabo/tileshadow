@@ -19,6 +19,7 @@ public:
 
     MaskBuffer invert() const;
     MaskBuffer downscale() const;
+    QByteArray toPNG() const;
 
 protected:
     QSize bounds;
