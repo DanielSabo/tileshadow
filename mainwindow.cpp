@@ -13,6 +13,7 @@
 #include <QSettings>
 #include <QImageWriter>
 #include <QImageReader>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QClipboard>
 #include <QDesktopServices>
@@ -742,7 +743,11 @@ void MainWindow::runCircleBenchmark()
 
 void MainWindow::actionCopyStrokeData()
 {
-    QJsonDocument result = QJsonDocument::fromVariant(canvas->getLastStrokeData());
+    QJsonArray strokeArray;
+    for (auto const &point : canvas->getLastStrokeData())
+        strokeArray.push_back(QJsonArray{point.x, point.y, point.p, point.dt});
+    QJsonDocument result(strokeArray);
+
     QString formattedResult = QString::fromUtf8(result.toJson());
     QApplication::clipboard()->setText(formattedResult);
 }

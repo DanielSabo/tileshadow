@@ -76,7 +76,7 @@ public:
     bool getSynchronous();
     void setSynchronous(bool synced);
 
-    QVariant getLastStrokeData();
+    std::vector<CanvasStrokePoint> getLastStrokeData();
 
     int getActiveLayer();
     void setActiveLayer(int layerIndex);

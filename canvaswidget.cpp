@@ -1697,14 +1697,11 @@ void CanvasWidget::setSynchronous(bool synced)
     return d->eventThread.setSynchronous(synced);
 }
 
-QVariant CanvasWidget::getLastStrokeData()
+std::vector<CanvasStrokePoint> CanvasWidget::getLastStrokeData()
 {
     Q_D(CanvasWidget);
 
-    QVariantList result;
-    for (auto const &point : d->savedStrokePoints)
-        result.push_back(QVariantList{point.x, point.y, point.p, point.dt});
-
+    std::vector<CanvasStrokePoint> result(d->savedStrokePoints.begin(), d->savedStrokePoints.end());
     return result;
 }
 
