@@ -26,6 +26,8 @@ protected:
     std::shared_ptr<uint8_t> data;
 };
 
+Q_DECLARE_METATYPE (MaskBuffer)
+
 template <typename T>
 class MipSet {
 public:

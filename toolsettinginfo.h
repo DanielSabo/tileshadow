@@ -10,7 +10,8 @@ namespace ToolSettingInfoType {
         ExponentSlider,
         LinearSlider,
         Checkbox,
-        Listbox
+        Listbox,
+        MaskSet
     } Type;
 }
 
@@ -31,6 +32,7 @@ public:
     static ToolSettingInfo linearSlider(QString const &settingID, QString const &name, float min, float max);
     static ToolSettingInfo checkbox(QString const &settingID, QString const &name);
     static ToolSettingInfo listBox(QString const &settingID, QString const &name, OptionsList const &options);
+    static ToolSettingInfo maskSet(QString const &settingID, QString const &name);
 private:
     ToolSettingInfo(ToolSettingInfoType::Type type);
 };

@@ -261,6 +261,10 @@ void MyPaintTool::setToolSetting(QString const &name, QVariant const &value)
     {
         ;
     }
+    else if (name == QStringLiteral("masks"))
+    {
+        priv->maskImages = value.value<QList<MaskBuffer>>();
+    }
     else
     {
         BaseTool::setToolSetting(name, value);
@@ -279,6 +283,8 @@ QVariant MyPaintTool::getToolSetting(const QString &name)
         return QVariant::fromValue<bool>(priv->getBrushValue("eraser") > 0.0f);
     else if (priv->currentSettings.contains(name))
         return QVariant::fromValue<float>(priv->getBrushValue(name));
+    else if (name == QStringLiteral("masks"))
+        return QVariant::fromValue(priv->maskImages);
     else if (name.endsWith(":mapping"))
     {
         QString lookup = name;
@@ -395,6 +401,8 @@ QList<ToolSettingInfo> MyPaintTool::listAdvancedSettings()
             toolSetting.mapping = mappingNames;
         result.append(toolSetting);
     }
+
+    result.append(ToolSettingInfo::maskSet("masks", "Masks"));
 
     return result;
 }
