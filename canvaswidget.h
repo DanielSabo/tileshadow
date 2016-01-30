@@ -9,6 +9,7 @@
 #include "blendmodes.h"
 #include "layertype.h"
 #include "toolsettinginfo.h"
+#include "canvasstrokepoint.h"
 
 namespace CanvasAction
 {
@@ -60,6 +61,7 @@ public:
     bool getToolSaveable();
     void saveToolSettings();
     void resetToolSettings();
+    QImage previewTool(std::vector<CanvasStrokePoint> const &stroke);
 
     void startStroke(QPointF pos, float pressure);
     void strokeTo(QPointF pos, float pressure, float dt);

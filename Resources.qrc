@@ -69,5 +69,6 @@
         <file>cursors/eyedropper.png</file>
         <file>cursors/move-view.png</file>
         <file>cursors/move-layer.png</file>
+        <file>preview_strokes/default.json</file>
     </qresource>
 </RCC>

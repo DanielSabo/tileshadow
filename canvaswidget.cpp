@@ -175,14 +175,6 @@ struct SavedTabletEvent
     ulong timestamp;
 };
 
-struct CanvasStrokePoint
-{
-    float x;
-    float y;
-    float p;
-    float dt;
-};
-
 class CanvasWidgetPrivate
 {
 public:
@@ -2207,6 +2199,38 @@ void CanvasWidget::resetToolSettings()
 
     emit updateTool();
     update();
+}
+
+QImage CanvasWidget::previewTool(std::vector<CanvasStrokePoint> const &stroke)
+{
+    Q_D(CanvasWidget);
+
+    if (!d->activeTool)
+        return QImage();
+
+    if (stroke.empty())
+        return QImage();
+
+    /* Nothing here uses the context but it must be in sync for thread safety */
+    getContext();
+
+    std::unique_ptr<CanvasLayer> targetLayer(new CanvasLayer);
+    std::unique_ptr<CanvasLayer> undoLayer(new CanvasLayer);
+
+    { // The stroke needs to go out of scope before anything else does
+        StrokeContextArgs args = {targetLayer.get(), undoLayer.get()};
+        std::unique_ptr<StrokeContext> strokeContext(d->activeTool->newStroke(args));
+
+        auto iter = stroke.begin();
+        strokeContext->startStroke({iter->x, iter->y}, iter->p);
+
+        for (++iter; iter != stroke.end(); ++iter)
+        {
+            strokeContext->strokeTo({iter->x, iter->y}, iter->p, iter->dt);
+        }
+    }
+
+    return layerToImage(targetLayer.get());
 }
 
 void CanvasWidget::setToolColor(const QColor &color)

@@ -584,7 +584,7 @@ void MainWindow::actionAdvancedToolSettings()
         toolSettingsWindow->raise();
     else
     {
-        toolSettingsWindow = new ToolExtendedSettingsWindow(canvas, this);
+        toolSettingsWindow = new ToolExtendedSettingsWindow(canvas);
         toolSettingsWindow->setAttribute(Qt::WA_DeleteOnClose, true);
         toolSettingsWindow->show();
     }

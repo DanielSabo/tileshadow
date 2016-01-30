@@ -2,6 +2,7 @@
 #define TOOLEXTENDEDSETTINGSWINDOW_H
 
 #include <QWidget>
+#include <QImage>
 
 class CanvasWidget;
 class ToolExtendedSettingsWindowPrivate;
@@ -14,6 +15,7 @@ public:
 protected:
     void closeEvent(QCloseEvent *);
     void keyPressEvent(QKeyEvent *);
+    bool event(QEvent *);
 
 private:
     ToolExtendedSettingsWindowPrivate * const d_ptr;
@@ -23,6 +25,22 @@ signals:
 
 public slots:
     void updateTool();
+};
+
+class PreviewWidget : public QWidget
+{
+    Q_OBJECT
+
+public:
+    PreviewWidget(QWidget *parent = 0);
+    QSize sizeHint() const;
+    void setImage(QImage const &image, QColor const &background);
+
+protected:
+    void paintEvent(QPaintEvent *event);
+
+    QColor background;
+    QImage image;
 };
 
 #endif // TOOLEXTENDEDSETTINGSWINDOW_H

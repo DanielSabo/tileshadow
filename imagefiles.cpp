@@ -48,6 +48,59 @@ QImage stackToImage(CanvasStack *stack)
     return result;
 }
 
+QImage layerToImage(CanvasLayer *layer)
+{
+    QRect tileBounds = tileSetBounds(layer->getTileSet());
+    if (tileBounds.isEmpty())
+        return QImage();
+
+    QRect bounds = QRect(tileBounds.x() * TILE_PIXEL_WIDTH,
+                         tileBounds.y() * TILE_PIXEL_HEIGHT,
+                         tileBounds.width() * TILE_PIXEL_WIDTH,
+                         tileBounds.height() * TILE_PIXEL_HEIGHT);
+
+    QImage result(bounds.width(), bounds.height(), QImage::Format_ARGB32);
+
+    for (int iy = 0; iy < tileBounds.height(); ++iy)
+        for (int ix = 0; ix < tileBounds.width(); ++ix)
+        {
+            CanvasTile *tile = layer->getTileMaybe(ix + tileBounds.x(), iy + tileBounds.y());
+
+            if (tile)
+            {
+                float *tileData = tile->mapHost();
+
+                for (int row = 0; row < TILE_PIXEL_HEIGHT; row++)
+                {
+                    QRgb *rowPixels = (QRgb *)result.scanLine(iy * TILE_PIXEL_HEIGHT + row);
+                    rowPixels += ix * TILE_PIXEL_WIDTH;
+
+                    for (int col = 0; col < TILE_PIXEL_WIDTH; col++)
+                    {
+                        rowPixels[col] = qRgba(tileData[col * 4 + 0] * 0xFF,
+                                               tileData[col * 4 + 1] * 0xFF,
+                                               tileData[col * 4 + 2] * 0xFF,
+                                               tileData[col * 4 + 3] * 0xFF);
+                    }
+
+                    tileData += TILE_PIXEL_WIDTH * 4;
+                }
+            }
+            else
+            {
+                for (int row = 0; row < TILE_PIXEL_HEIGHT; row++)
+                {
+                    QRgb *rowPixels = (QRgb *)result.scanLine(iy * TILE_PIXEL_HEIGHT + row);
+                    rowPixels += ix * TILE_PIXEL_WIDTH;
+
+                    memset(rowPixels, 0, sizeof(QRgb) * TILE_PIXEL_WIDTH);
+                }
+            }
+        }
+
+    return result;
+}
+
 std::unique_ptr<CanvasLayer> layerFromImage(QImage image)
 {
     image = image.convertToFormat(QImage::Format_ARGB32);

@@ -5,6 +5,7 @@
 #include <QImage>
 
 QImage stackToImage(CanvasStack *stack);
+QImage layerToImage(CanvasLayer *layer);
 std::unique_ptr<CanvasLayer> layerFromImage(QImage image);
 
 #endif // IMAGEFILES_H

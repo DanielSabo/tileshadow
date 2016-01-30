@@ -1,5 +1,6 @@
 #include "toolextendedsettingswindow.h"
 #include "canvaswidget.h"
+#include "maskbuffer.h"
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QSlider>
@@ -12,6 +13,10 @@
 #include <QLineEdit>
 #include <QFormLayout>
 #include <QPointer>
+#include <QImageReader>
+#include <QFileDialog>
+#include <QMessageBox>
+#include <QDir>
 
 class ToolExtendedSettingsWindowPrivate
 {
@@ -25,14 +30,21 @@ public:
     QScrollArea *scroll;
     QPointer<QWidget> settingsAreaSettings;
 
-    QWidget     *inputEditorWindow;
     QWidget     *inputEditorBody;
     QPushButton *inputEditorApplyButton;
     QString      inputEditorSettingID;
     QPointer<QWidget> inputEditorSettings;
 
+    PreviewWidget *previewWidget;
+    bool needsPreview;
+
+    QString maskSettingName;
+
+    QPushButton *setMasksButton;
+    QPushButton *exportMasksButton;
     QPushButton *saveButton;
 
+    std::vector<CanvasStrokePoint> previewStrokeData;
     QString activeToolpath;
     bool freezeUpdates;
 
@@ -55,12 +67,19 @@ public:
 
     QList<InputEditorItem> inputEditorItems;
 
+    void hideMappings();
     void showMappingsFor(ToolSettingInfo const &info);
     void applyMappings();
+
+    void importMasks();
+    void exportMasks();
+
+    void loadPreviewStroke(QString const &path);
+    void updatePreview();
 };
 
 ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWidget *parent)
-    : QWidget(parent, Qt::Tool),
+    : QWidget(parent, Qt::Dialog),
       d_ptr(new ToolExtendedSettingsWindowPrivate(canvas))
 {
     Q_D(ToolExtendedSettingsWindow);
@@ -69,6 +88,18 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
     layout->setContentsMargins(QMargins());
     layout->setSpacing(0);
     setLayout(layout);
+
+    auto windowBody = new QWidget();
+    auto windowHorizontal = new QHBoxLayout();
+    windowHorizontal->setSpacing(3);
+    windowBody->setLayout(windowHorizontal);
+    layout->addWidget(windowBody);
+
+    auto rightBody = new QWidget();
+    auto rightVertical = new QVBoxLayout();
+    rightVertical->setSpacing(3);
+    rightVertical->setContentsMargins(QMargins());
+    rightBody->setLayout(rightVertical);
 
     d->scroll = new QScrollArea();
     d->scroll->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
@@ -83,13 +114,25 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
     d->settingsAreaSettings = nullptr;
 
     d->scroll->setWidget(d->settingsAreaBody);
-    layout->addWidget(d->scroll);
+    windowHorizontal->addWidget(d->scroll);
+    windowHorizontal->addWidget(rightBody);
 
-    d->inputEditorWindow = new QWidget(this, Qt::Tool);
-    d->inputEditorWindow->setWindowTitle(tr("Inputs"));
-    d->inputEditorWindow->setLayout(new QVBoxLayout());
-    d->inputEditorWindow->layout()->setContentsMargins(QMargins());
-    d->inputEditorWindow->layout()->setSpacing(0);
+    auto previewScroll = new QScrollArea();
+    d->previewWidget = new PreviewWidget();
+    d->previewWidget->setImage(QImage(), Qt::white);
+    previewScroll->setWidgetResizable(true);
+    previewScroll->setWidget(d->previewWidget);
+
+    auto inputEditorArea = new QWidget();
+    inputEditorArea->setLayout(new QVBoxLayout());
+    inputEditorArea->layout()->setContentsMargins(QMargins());
+    inputEditorArea->layout()->setSpacing(0);
+    inputEditorArea->setFixedWidth(600);
+
+    rightVertical->addWidget(previewScroll);
+    rightVertical->addWidget(inputEditorArea);
+    rightVertical->setStretch(0, 1);
+    rightVertical->setStretch(1, 1);
 
     d->inputEditorBody = new QWidget();
     d->inputEditorBody->setLayout(new QVBoxLayout());
@@ -101,8 +144,8 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
     QHBoxLayout *inputEditorButtonsLayout = new QHBoxLayout();
     inputEditorButtonsLayout->setContentsMargins(QMargins());
     inputEditorButtons->setLayout(inputEditorButtonsLayout);
-    d->inputEditorWindow->layout()->addWidget(d->inputEditorBody);
-    d->inputEditorWindow->layout()->addWidget(inputEditorButtons);
+    inputEditorArea->layout()->addWidget(d->inputEditorBody);
+    inputEditorArea->layout()->addWidget(inputEditorButtons);
 
     d->inputEditorApplyButton = new QPushButton(tr("Apply"));
     connect(d->inputEditorApplyButton, &QPushButton::clicked, this, [d](bool) {
@@ -111,7 +154,7 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
     inputEditorButtonsLayout->addStretch(1);
     inputEditorButtonsLayout->addWidget(d->inputEditorApplyButton);
 
-    d->inputEditorWindow->setStyleSheet(QStringLiteral(
+    inputEditorArea->setStyleSheet(QStringLiteral(
         "QLineEdit[valid=\"false\"] {"
         "color: red;"
         "}"
@@ -120,27 +163,45 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
     QHBoxLayout *buttonsLayout = new QHBoxLayout();
     QWidget *buttonsBox = new QWidget();
     buttonsBox->setLayout(buttonsLayout);
+
     d->saveButton = new QPushButton(tr("Save As..."));
-    buttonsLayout->addStretch(1);
-    buttonsLayout->addWidget(d->saveButton);
     connect(d->saveButton, &QPushButton::clicked, this, [this](bool) {
         Q_D(ToolExtendedSettingsWindow);
         if (d->canvas)
             d->canvas->saveToolSettings();
     });
+
+    d->setMasksButton = new QPushButton(tr("Import Masks..."));
+    connect(d->setMasksButton, &QPushButton::clicked, this, [this](bool) {
+        Q_D(ToolExtendedSettingsWindow);
+        if (d->canvas)
+            d->importMasks();
+    });
+
+    d->exportMasksButton = new QPushButton(tr("Export Masks..."));
+    connect(d->exportMasksButton, &QPushButton::clicked, this, [this](bool) {
+        Q_D(ToolExtendedSettingsWindow);
+        if (d->canvas)
+            d->exportMasks();
+    });
+
+    buttonsLayout->addStretch(1);
+    buttonsLayout->addWidget(d->setMasksButton);
+    buttonsLayout->addWidget(d->exportMasksButton);
+    buttonsLayout->addWidget(d->saveButton);
+
     layout->addWidget(buttonsBox);
+
+    d->loadPreviewStroke(":/preview_strokes/default.json");
+    d->needsPreview = true;
 
     QSettings appSettings;
 
     if (appSettings.contains("ToolExtendedSettingsWindow/geometry"))
         restoreGeometry(appSettings.value("ToolExtendedSettingsWindow/geometry").toByteArray());
 
-    //FIXME: This is an ugly hack around the window position getting lost on hide
-    // For some reason under KDE this window will always get moved to the lower left corner unless
-    // setGeometry has been called.
-    d->inputEditorWindow->setGeometry(x(), y() + height() / 2, 600, 10);
-
     setWindowTitle(tr("Tool Settings"));
+
 
     connect(d->canvas, &CanvasWidget::updateTool, this, &ToolExtendedSettingsWindow::updateTool);
     updateTool();
@@ -160,6 +221,16 @@ void ToolExtendedSettingsWindow::keyPressEvent(QKeyEvent *keyEvent)
         keyEvent->ignore();
 }
 
+bool ToolExtendedSettingsWindow::event(QEvent *event)
+{
+    Q_D(ToolExtendedSettingsWindow);
+
+    if ((event->type() == QEvent::WindowActivate) && d->needsPreview)
+        d->updatePreview();
+
+    return QWidget::event(event);
+}
+
 void ToolExtendedSettingsWindow::updateTool()
 {
     Q_D(ToolExtendedSettingsWindow);
@@ -169,8 +240,10 @@ void ToolExtendedSettingsWindow::updateTool()
 
     if (d->activeToolpath != canvasActiveTool)
     {
+        bool keepInputEditor = false;
+        d->maskSettingName = QString();
+
         d->activeToolpath = canvasActiveTool;
-        bool keepInputEditorOpen = false;
 
         d->saveButton->setDisabled(d->canvas->getToolSaveable() == false);
 
@@ -194,10 +267,9 @@ void ToolExtendedSettingsWindow::updateTool()
                 QPushButton *mappingButton = new QPushButton();
                 if (!info.mapping.empty())
                 {
-                    mappingButton->setText("<no>");
                     if (settingID == d->inputEditorSettingID)
                     {
-                        keepInputEditorOpen = true;
+                        keepInputEditor = true;
                         d->showMappingsFor(info);
                     }
                 }
@@ -227,11 +299,13 @@ void ToolExtendedSettingsWindow::updateTool()
 
                 connect(mappingButton, &QPushButton::clicked, this, [d, info] (bool) {
                     d->showMappingsFor(info);
-                    d->inputEditorWindow->raise();
-                    d->inputEditorWindow->activateWindow();
                 });
 
                 d->items.push_back({info.settingID, info.name, label, slider, mappingButton});
+            }
+            else if (info.type == ToolSettingInfoType::MaskSet)
+            {
+                d->maskSettingName = info.settingID;
             }
         }
 
@@ -241,8 +315,8 @@ void ToolExtendedSettingsWindow::updateTool()
         d->scroll->setMinimumWidth(d->scroll->widget()->minimumSizeHint().width() +
                                    d->scroll->verticalScrollBar()->width());
 
-        if (!keepInputEditorOpen)
-            d->inputEditorWindow->hide();
+        if (!keepInputEditor)
+            d->hideMappings();
     }
 
     for (auto &iter: d->items)
@@ -267,7 +341,32 @@ void ToolExtendedSettingsWindow::updateTool()
         }
     }
 
+    if (!d->maskSettingName.isEmpty())
+    {
+        bool hasMasks = !d->canvas->getToolSetting(d->maskSettingName).value<QList<MaskBuffer>>().empty();
+        d->exportMasksButton->setEnabled(hasMasks);
+        d->setMasksButton->setEnabled(true);
+    }
+    else
+    {
+        d->exportMasksButton->setEnabled(false);
+        d->setMasksButton->setEnabled(false);
+    }
+
+    if (isActiveWindow())
+        d->updatePreview();
+    else
+        d->needsPreview = true;
+
     d->freezeUpdates = false;
+}
+
+void ToolExtendedSettingsWindowPrivate::hideMappings()
+{
+    if (!inputEditorSettings.isNull())
+        delete inputEditorSettings.data();
+    inputEditorItems.clear();
+    inputEditorApplyButton->hide();
 }
 
 void ToolExtendedSettingsWindowPrivate::showMappingsFor(ToolSettingInfo const &info)
@@ -281,7 +380,6 @@ void ToolExtendedSettingsWindowPrivate::showMappingsFor(ToolSettingInfo const &i
     layout->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
     settingsBox->setLayout(layout);
 
-    inputEditorWindow->setWindowTitle(QString(QObject::tr("Inputs for %1")).arg(info.name));
     inputEditorSettingID = info.settingID;
 
     auto mappingList = canvas->getToolSetting(info.settingID + ":mapping").value<QMap<QString, QList<QPointF>>>();
@@ -303,8 +401,8 @@ void ToolExtendedSettingsWindowPrivate::showMappingsFor(ToolSettingInfo const &i
     }
 
     inputEditorBody->layout()->addWidget(settingsBox);
+    inputEditorApplyButton->show();
     inputEditorSettings = settingsBox;
-    inputEditorWindow->show();
 }
 
 void ToolExtendedSettingsWindowPrivate::applyMappings()
@@ -339,4 +437,120 @@ void ToolExtendedSettingsWindowPrivate::applyMappings()
 
     if (ok)
         canvas->setToolSetting(inputEditorSettingID + ":mapping", QVariant::fromValue(mappingList));
+}
+
+void ToolExtendedSettingsWindowPrivate::importMasks()
+{
+    if (maskSettingName.isEmpty())
+        return;
+
+    QStringList importWildcards;
+
+    for (auto const &readerFormat: QImageReader::supportedImageFormats())
+        importWildcards.append(QStringLiteral("*.") + readerFormat);
+
+    QString formats = QObject::tr("Images") + " (" + importWildcards.join(" ") + ")";
+
+    QStringList filenames = QFileDialog::getOpenFileNames(nullptr,
+                                                          QObject::tr("Import Masks"),
+                                                          QDir::homePath(),
+                                                          formats);
+
+    QList<MaskBuffer> masks;
+
+    for (auto const &filename: filenames)
+    {
+        QImage image(filename);
+        if (!image.isNull())
+        {
+            MaskBuffer mask(image);
+            mask = mask.invert();
+            masks.append(mask);
+        }
+    }
+
+    canvas->setToolSetting(maskSettingName, QVariant::fromValue(masks));
+}
+
+void ToolExtendedSettingsWindowPrivate::exportMasks()
+{
+    if (maskSettingName.isEmpty())
+        return;
+
+    QList<MaskBuffer> masks = canvas->getToolSetting(maskSettingName).value<QList<MaskBuffer>>();
+
+    if (masks.empty())
+        return;
+
+    QString exportPath = QFileDialog::getSaveFileName(nullptr,
+                                                      QObject::tr("Export Masks"),
+                                                      QDir::homePath());
+
+    if (exportPath.isEmpty())
+        return;
+
+    if (QFileInfo::exists(exportPath))
+    {
+        QMessageBox::warning(nullptr,
+                             QObject::tr("Export path already exists"),
+                             QObject::tr("Export can't overwrite files or directores, please pick a different file name."));
+        return;
+    }
+
+    QDir exportDirectory(exportPath);
+    exportDirectory.mkpath(exportDirectory.absolutePath());
+
+    int index = 1;
+    for (auto const &mask: masks)
+    {
+        QString exportFilename = QObject::tr("mask") + QString("-%1.png").arg(index++, 2, 10, QChar('0'));
+        QFile exportFile(exportDirectory.absoluteFilePath(exportFilename));
+        exportFile.open(QIODevice::WriteOnly);
+        exportFile.write(mask.invert().toPNG());
+        exportFile.close();
+    }
+}
+
+void ToolExtendedSettingsWindowPrivate::loadPreviewStroke(const QString &path)
+{
+    previewStrokeData = CanvasStrokePoint::pointsFromFile(path);
+}
+
+void ToolExtendedSettingsWindowPrivate::updatePreview()
+{
+    QImage preview = canvas->previewTool(previewStrokeData);
+    previewWidget->setImage(preview, Qt::white);
+    needsPreview = false;
+}
+
+PreviewWidget::PreviewWidget(QWidget *parent) :
+    QWidget(parent)
+{
+}
+
+QSize PreviewWidget::sizeHint() const
+{
+    return image.size();
+}
+
+void PreviewWidget::setImage(const QImage &image, const QColor &background)
+{
+    this->image = image;
+    this->background = background;
+
+    update();
+}
+
+void PreviewWidget::paintEvent(QPaintEvent *event)
+{
+    QPainter painter(this);
+
+    QSize widgetArea = size();
+    QSize imageArea = image.size();
+    QPoint origin = {
+        widgetArea.width() / 2 - imageArea.width() / 2,
+        widgetArea.height() / 2 - imageArea.height() / 2,
+    };
+    painter.fillRect(event->rect(), background);
+    painter.drawImage(origin, image);
 }

@@ -90,7 +90,8 @@ SOURCES += main.cpp\
     nativeeventfilter.cpp \
     toollistview.cpp \
     toolextendedsettingswindow.cpp \
-    patternfilltool.cpp
+    patternfilltool.cpp \
+    canvasstrokepoint.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -133,7 +134,8 @@ HEADERS  += mainwindow.h \
     toollistview.h \
     toolextendedsettingswindow.h \
     layertype.h \
-    patternfilltool.h
+    patternfilltool.h \
+    canvasstrokepoint.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \

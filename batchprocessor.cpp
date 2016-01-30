@@ -1,6 +1,7 @@
 #include "batchprocessor.h"
 #include "canvaswidget-opencl.h"
 #include "canvasstack.h"
+#include "canvasstrokepoint.h"
 #include "imagefiles.h"
 #include "toolfactory.h"
 #include <QApplication>
@@ -27,13 +28,6 @@ public:
 class BatchCommandStroke : public BatchCommand
 {
 public:
-    struct StrokePoint {
-        float x;
-        float y;
-        float pressure;
-        float dt;
-    };
-
     BatchCommandStroke(QJsonObject const &json);
     void apply(BatchProcessorContext *ctx) override;
 
@@ -41,7 +35,7 @@ public:
     QColor color;
     QMap<QString, QVariant> toolSettings;
     QPointF pointsOffset;
-    std::vector<StrokePoint> points;
+    std::vector<CanvasStrokePoint> points;
 };
 
 class BatchCommandExport : public BatchCommand
@@ -83,18 +77,7 @@ BatchCommandStroke::BatchCommandStroke(const QJsonObject &json)
     }
 
     QJsonArray const &pointsArray = json["points"].toArray();
-    for (QJsonValue const &pointIter: pointsArray)
-    {
-        //FIXME: Error handling for malformed points
-        QJsonArray pointObj = pointIter.toArray();
-        StrokePoint point = {
-            (float)pointObj.at(0).toDouble(),
-            (float)pointObj.at(1).toDouble(),
-            (float)pointObj.at(2).toDouble(),
-            (float)pointObj.at(3).toDouble()
-        };
-        points.push_back(point);
-    }
+    points = CanvasStrokePoint::pointsFromJSON(pointsArray);
 }
 
 void BatchCommandStroke::apply(BatchProcessorContext *ctx)
@@ -120,14 +103,14 @@ void BatchCommandStroke::apply(BatchProcessorContext *ctx)
     if (pointsIter != points.end())
     {
         QPointF xy(pointsIter->x, pointsIter->y);
-        stroke->startStroke(xy + pointsOffset, pointsIter->pressure);
+        stroke->startStroke(xy + pointsOffset, pointsIter->p);
         ++pointsIter;
     }
 
     while (pointsIter != points.end())
     {
         QPointF xy(pointsIter->x, pointsIter->y);
-        stroke->strokeTo(xy + pointsOffset, pointsIter->pressure, pointsIter->dt);
+        stroke->strokeTo(xy + pointsOffset, pointsIter->p, pointsIter->dt);
         ++pointsIter;
     }
 
