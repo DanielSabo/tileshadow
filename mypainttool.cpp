@@ -24,7 +24,8 @@ class MyPaintToolPrivate
 public:
     MyPaintToolSettings originalSettings;
     MyPaintToolSettings currentSettings;
-    QList<MaskBuffer> maskImages;
+    QList<MaskBuffer> currentMaskImages;
+    QList<MaskBuffer> originalMaskImages;
 
     float cursorRadius;
 
@@ -172,7 +173,7 @@ MyPaintTool::MyPaintTool(const QString &path) : priv(new MyPaintToolPrivate())
                 else
                     throw QString("MBI brush error, empty mask");
             }
-            priv->maskImages = masks;
+            priv->originalMaskImages = masks;
         }
 
         priv->originalSettings = settings;
@@ -184,6 +185,7 @@ MyPaintTool::MyPaintTool(const QString &path) : priv(new MyPaintToolPrivate())
     }
 
     priv->currentSettings = priv->originalSettings;
+    priv->currentMaskImages = priv->originalMaskImages;
     priv->updateRadius();
 }
 
@@ -205,6 +207,7 @@ BaseTool *MyPaintTool::clone()
 void MyPaintTool::reset()
 {
     priv->currentSettings = priv->originalSettings;
+    priv->currentMaskImages = priv->originalMaskImages;
     priv->updateRadius();
 }
 
@@ -259,7 +262,7 @@ void MyPaintTool::setToolSetting(QString const &name, QVariant const &value)
     }
     else if (name == QStringLiteral("masks"))
     {
-        priv->maskImages = value.value<QList<MaskBuffer>>();
+        priv->currentMaskImages = value.value<QList<MaskBuffer>>();
     }
     else
     {
@@ -278,7 +281,7 @@ QVariant MyPaintTool::getToolSetting(const QString &name)
     else if (priv->currentSettings.contains(name))
         return QVariant::fromValue<float>(priv->getBrushValue(name));
     else if (name == QStringLiteral("masks"))
-        return QVariant::fromValue(priv->maskImages);
+        return QVariant::fromValue(priv->currentMaskImages);
     else if (name.endsWith(":mapping"))
     {
         QString lookup = name;
@@ -314,7 +317,7 @@ QList<ToolSettingInfo> MyPaintTool::listToolSettings()
 
     result.append(ToolSettingInfo::exponentSlider("size", "SizeExp", -2.0f, 6.0f));
     result.append(ToolSettingInfo::linearSlider("opaque", "Opacity", 0.0f, 1.0f));
-    if (priv->maskImages.isEmpty())
+    if (priv->currentMaskImages.isEmpty())
         result.append(ToolSettingInfo::linearSlider("hardness", "Hardness", 0.0f, 1.0f));
     result.append(ToolSettingInfo::checkbox("lock_alpha", "Lock Alpha"));
     result.append(ToolSettingInfo::checkbox("eraser", "Erase"));
@@ -437,11 +440,11 @@ bool MyPaintTool::saveTo(QByteArray &output)
     }
     document["settings"] = settingsMap;
 
-    if (!priv->maskImages.isEmpty())
+    if (!priv->currentMaskImages.isEmpty())
     {
         QVariantMap imageSettingsMap;
         QVariantList maskList;
-        for (auto const &mask: priv->maskImages)
+        for (auto const &mask: priv->currentMaskImages)
         {
             MaskBuffer inverted = mask.invert();
             maskList.append(QString(inverted.toPNG().toBase64()));
@@ -472,7 +475,7 @@ StrokeContext *MyPaintTool::newStroke(const StrokeContextArgs &args)
     MyPaintStrokeContext *stroke = new MyPaintStrokeContext(args.layer);
 
     stroke->fromSettings(priv->currentSettings);
-    stroke->setMasks(priv->maskImages);
+    stroke->setMasks(priv->currentMaskImages);
 
     return stroke;
 }
