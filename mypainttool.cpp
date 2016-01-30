@@ -241,10 +241,6 @@ void MyPaintTool::setToolSetting(QString const &name, QVariant const &value)
         setMyPaintSetting("radius_logarithmic", value.toFloat());
         priv->updateRadius();
     }
-    else if (name == QStringLiteral("opacity") && value.canConvert<float>())
-    {
-        setMyPaintSetting("opaque", value.toFloat());
-    }
     else if (name == QStringLiteral("lock_alpha") && value.canConvert<bool>())
     {
         priv->setBrushValue("lock_alpha", value.toBool() ? 1.0f : 0.0f);
@@ -275,8 +271,6 @@ QVariant MyPaintTool::getToolSetting(const QString &name)
 {
     if (name == QStringLiteral("size"))
         return QVariant::fromValue<float>(priv->getBrushValue("radius_logarithmic"));
-    else if (name == QStringLiteral("opacity"))
-        return QVariant::fromValue<float>(priv->getBrushValue("opaque"));
     else if (name == QStringLiteral("lock_alpha"))
         return QVariant::fromValue<bool>(priv->getBrushValue("lock_alpha") > 0.0f);
     else if (name == QStringLiteral("eraser"))
@@ -319,7 +313,7 @@ QList<ToolSettingInfo> MyPaintTool::listToolSettings()
     QList<ToolSettingInfo> result;
 
     result.append(ToolSettingInfo::exponentSlider("size", "SizeExp", -2.0f, 6.0f));
-    result.append(ToolSettingInfo::linearSlider("opacity", "Opacity", 0.0f, 1.0f));
+    result.append(ToolSettingInfo::linearSlider("opaque", "Opacity", 0.0f, 1.0f));
     if (priv->maskImages.isEmpty())
         result.append(ToolSettingInfo::linearSlider("hardness", "Hardness", 0.0f, 1.0f));
     result.append(ToolSettingInfo::checkbox("lock_alpha", "Lock Alpha"));
