@@ -323,7 +323,6 @@ QList<ToolSettingInfo> MyPaintTool::listToolSettings()
     result.append(ToolSettingInfo::checkbox("eraser", "Erase"));
 
     return result;
-
 }
 
 QList<ToolSettingInfo> MyPaintTool::listAdvancedSettings()
