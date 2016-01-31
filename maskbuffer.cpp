@@ -41,26 +41,14 @@ MaskBuffer MaskBuffer::downscale() const
     float bin_width = float(bounds.width()) / result.width();
     float bin_height = float(bounds.height()) / result.height();
 
-    auto safeGet = [this](int x, int y) -> uint8_t {
-        if (x < 0)
-            x = 0;
-        else if (x >= width())
-            x = width() - 1;
-        if (y < 0)
-            y = 0;
-        else if (y >= height())
-            y = height() - 1;
-
-        return data.get()[width() * y + x];
-    };
-
     float y_bin_start = 0.0f;
     for (int y = 0; y < result.height(); ++y)
     {
         float y_bin_end = y_bin_start + bin_height;
         float x_bin_start = 0.0f;
         int iy_start = floor(y_bin_start);
-        int iy_end = floor(y_bin_end);
+        // y_bin_end is never less than 0.0, so capping at height() gurantees the value is always in range
+        int iy_end = std::min<int>(floor(y_bin_end), height());
 
         for (int x = 0; x < result.width(); ++x)
         {
@@ -68,25 +56,29 @@ MaskBuffer MaskBuffer::downscale() const
             float value = 0.0f;
             float weight = 0.0f;
             int ix_start = floor(x_bin_start);
-            int ix_end = floor(x_bin_end);
+            int ix_end = std::min<int>(floor(x_bin_end), width());
 
             for (int iy = iy_start; iy < iy_end; ++iy)
+            {
+                float y_before = y_bin_start - iy;
+                float y_after  = iy + 1 - y_bin_end;
+                float y_weight = (1.0f - std::max(y_before, 0.0f) - std::max(y_after, 0.0f));
+
                 for (int ix = ix_start; ix < ix_end; ++ix)
                 {
-                    float p = safeGet(ix, iy);
-                    float y_before = y_bin_start - iy;
-                    float y_after  = iy + 1 - y_bin_end;
+                    float p = data.get()[width() * iy + ix];
                     float x_before = x_bin_start - ix;
                     float x_after  = ix + 1 - x_bin_end;
+                    float x_weight = (1.0f - std::max(x_before, 0.0f) - std::max(x_after, 0.0f));
 
-                    float i_weight = (1.0 - std::max(x_before, 0.0f) - std::max(x_after, 0.0f)) *
-                                     (1.0 - std::max(y_before, 0.0f) - std::max(y_after, 0.0f));
+                    float i_weight = x_weight * y_weight;
 
                     value = value + p * i_weight;
                     weight += i_weight;
                 }
+            }
 
-            if (weight <= 0)
+            if (weight <= 0.0f)
                 value = 0.0f;
             else
                 value /= weight;
