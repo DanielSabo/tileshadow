@@ -211,101 +211,95 @@ void MyPaintTool::reset()
     priv->updateRadius();
 }
 
-void MyPaintTool::setToolSetting(QString const &name, QVariant const &value)
+namespace {
+static const QString MAPPING_SUFFIX = QStringLiteral(":mapping");
+static const QStringList BOOL_SETTING_NAMES = {"lock_alpha", "eraser"};
+
+const MyPaintBrushSettingInfo *getMypaintBrushSettingInfo(QString const &name)
 {
-    auto setMyPaintSetting = [&] (QString const &name, float value) -> bool {
-        MyPaintBrushSetting settingId = mypaint_brush_setting_from_cname(name.toUtf8().constData());
-        if (settingId != (MyPaintBrushSetting)-1)
-        {
-            auto settingInfo = mypaint_brush_setting_info(settingId);
-            value = qBound<float>(settingInfo->min, value, settingInfo->max);
-            priv->setBrushValue(name, value);
-            return true;
-        }
-        return false;
-    };
-
-    auto setMyPaintMapping = [&] (QString const &name, QVariant const &value) -> bool {
-        QString lookup = name;
-        lookup.chop(8);
-        if (priv->currentSettings.contains(lookup))
-        {
-            priv->setBrushMapping(lookup, value.value<BrushValueMapping>());
-            return true;
-        }
-        qDebug() << "Can't set mapping for" << name << "because it has no base value";
-        return false;
-    };
-
-
-
-    if (name == QStringLiteral("size") && value.canConvert<float>())
-    {
-        setMyPaintSetting("radius_logarithmic", value.toFloat());
-        priv->updateRadius();
-    }
-    else if (name == QStringLiteral("lock_alpha") && value.canConvert<bool>())
-    {
-        priv->setBrushValue("lock_alpha", value.toBool() ? 1.0f : 0.0f);
-    }
-    else if (name == QStringLiteral("eraser") && value.canConvert<bool>())
-    {
-        priv->setBrushValue("eraser", value.toBool() ? 1.0f : 0.0f);
-    }
-    else if (value.canConvert<float>() && setMyPaintSetting(name, value.toFloat()))
-    {
-        ;
-    }
-    else if (name.endsWith(":mapping") && setMyPaintMapping(name, value))
-    {
-        ;
-    }
-    else if (name == QStringLiteral("masks"))
-    {
-        priv->currentMaskImages = value.value<QList<MaskBuffer>>();
-    }
-    else
-    {
-        BaseTool::setToolSetting(name, value);
-    }
+    MyPaintBrushSetting settingId = mypaint_brush_setting_from_cname(name.toUtf8().constData());
+    if (settingId != (MyPaintBrushSetting)-1)
+        return mypaint_brush_setting_info(settingId);
+    return nullptr;
+}
 }
 
-QVariant MyPaintTool::getToolSetting(const QString &name)
+void MyPaintTool::setToolSetting(QString const &inName, QVariant const &value)
 {
+    QString name = inName;
+    bool isMapping = name.endsWith(MAPPING_SUFFIX);
+
+    if (isMapping)
+        name.chop(MAPPING_SUFFIX.length());
+
     if (name == QStringLiteral("size"))
-        return QVariant::fromValue<float>(priv->getBrushValue("radius_logarithmic"));
-    else if (name == QStringLiteral("lock_alpha"))
-        return QVariant::fromValue<bool>(priv->getBrushValue("lock_alpha") > 0.0f);
-    else if (name == QStringLiteral("eraser"))
-        return QVariant::fromValue<bool>(priv->getBrushValue("eraser") > 0.0f);
-    else if (priv->currentSettings.contains(name))
-        return QVariant::fromValue<float>(priv->getBrushValue(name));
-    else if (name == QStringLiteral("masks"))
-        return QVariant::fromValue(priv->currentMaskImages);
-    else if (name.endsWith(":mapping"))
+        name = QStringLiteral("radius_logarithmic");
+
+    if (name == QStringLiteral("masks"))
     {
-        QString lookup = name;
-        lookup.chop(8);
-        if (priv->currentSettings.contains(lookup))
-        {
-            auto result = priv->getBrushMapping(lookup);
-            return QVariant::fromValue(result);
-        }
-        else
-        {
-            auto settingId = mypaint_brush_setting_from_cname(name.toUtf8().constData());
-            auto settingInfo = mypaint_brush_setting_info(settingId);
-            if (!settingInfo->constant)
-            {
-                return QVariant::fromValue(BrushValueMapping{});
-            }
-        }
+        priv->currentMaskImages = value.value<QList<MaskBuffer>>();
+        return;
     }
-    else
+    else if (isMapping)
     {
-        MyPaintBrushSetting settingId = mypaint_brush_setting_from_cname(name.toUtf8().constData());
-        if (settingId != (MyPaintBrushSetting)-1)
-            return QVariant::fromValue<float>(mypaint_brush_setting_info(settingId)->def);
+        auto iter = priv->currentSettings.find(name);
+        if (iter != priv->currentSettings.end())
+            iter.value().second = value.value<BrushValueMapping>();
+        else
+            qDebug() << "Can't set mapping for" << name << "because it has no base value";
+        return;
+    }
+    else if (auto settingInfo = getMypaintBrushSettingInfo(name))
+    {
+        float floatValue;
+        if (BOOL_SETTING_NAMES.contains(name))
+            floatValue = value.toBool() ? 1.0f : 0.0f;
+        else
+            floatValue = value.toFloat();
+
+        floatValue = qBound<float>(settingInfo->min, floatValue, settingInfo->max);
+        priv->setBrushValue(name, floatValue);
+        priv->updateRadius();
+        return;
+    }
+
+    BaseTool::setToolSetting(name, value);
+}
+
+QVariant MyPaintTool::getToolSetting(const QString &inName)
+{
+    QString name = inName;
+    bool isBoolean = false;
+    bool isMapping = name.endsWith(MAPPING_SUFFIX);
+
+    if (isMapping)
+        name.chop(MAPPING_SUFFIX.length());
+
+    if (name == QStringLiteral("masks"))
+        return QVariant::fromValue(priv->currentMaskImages);
+    else if (name == QStringLiteral("size"))
+        name = QStringLiteral("radius_logarithmic");
+    else if (BOOL_SETTING_NAMES.contains(name))
+        isBoolean = true;
+
+    auto iter = priv->currentSettings.find(name);
+    if (iter != priv->currentSettings.end())
+    {
+        if (isMapping)
+            return QVariant::fromValue<BrushValueMapping>(iter.value().second);
+        else if (isBoolean)
+            return QVariant::fromValue<bool>(iter.value().first > 0.0f);
+        else
+            return QVariant::fromValue<float>(iter.value().first);
+    }
+    else if (auto settingInfo = getMypaintBrushSettingInfo(name))
+    {
+        if (isMapping)
+            return QVariant::fromValue<BrushValueMapping>({});
+        else if (isBoolean)
+            return QVariant::fromValue<bool>(settingInfo->def > 0.0f);
+        else
+            return QVariant::fromValue<float>(settingInfo->def);
     }
 
     return BaseTool::getToolSetting(name);
