@@ -45,7 +45,7 @@ QString BaseTool::saveExtension()
     return QString();
 }
 
-bool BaseTool::saveTo(QByteArray &)
+QByteArray BaseTool::serialize()
 {
-    return false;
+    return QByteArray();
 }

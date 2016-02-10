@@ -34,7 +34,7 @@ public:
     virtual QList<ToolSettingInfo> listToolSettings();
     virtual QList<ToolSettingInfo> listAdvancedSettings();
     virtual QString saveExtension();
-    virtual bool saveTo(QByteArray &output);
+    virtual QByteArray serialize();
 };
 
 #endif // BASETOOL_H

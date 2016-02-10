@@ -402,7 +402,7 @@ QString MyPaintTool::saveExtension()
     return QStringLiteral("mbi");
 }
 
-bool MyPaintTool::saveTo(QByteArray &output)
+QByteArray MyPaintTool::serialize()
 {
     QVariantMap document;
     document["version"] = 3;
@@ -446,9 +446,7 @@ bool MyPaintTool::saveTo(QByteArray &output)
         document["image_settings"] = imageSettingsMap;
     }
 
-    output = QJsonDocument::fromVariant(QVariant(document)).toJson();
-
-    return true;
+    return QJsonDocument::fromVariant(QVariant(document)).toJson();
 }
 
 float MyPaintTool::getPixelRadius()

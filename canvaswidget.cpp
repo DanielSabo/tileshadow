@@ -2167,8 +2167,8 @@ void CanvasWidget::saveToolSettings()
     if (savePath.isEmpty())
         return;
 
-    QByteArray output;
-    if (d->activeTool->saveTo(output) && output.size() > 0)
+    QByteArray output = d->activeTool->serialize();
+    if (!output.isEmpty())
     {
         QString filename = QFileDialog::getSaveFileName(this, tr("Save As..."),
                                                         savePath + QDir::toNativeSeparators("/") + "untitled." + extension,
