@@ -1,11 +1,13 @@
 #include "gbrfile.h"
 #include <QDataStream>
+#include <QString>
 #include <QDebug>
 
 QImage readGBR(QIODevice *file)
 {
     if (!file->isOpen())
         file->open(QIODevice::ReadOnly);
+    auto startPosition = file->pos();
 
     uint32_t headerLength;
     uint32_t version;
@@ -22,13 +24,13 @@ QImage readGBR(QIODevice *file)
         }
     }
 
-    if ((file->size() - headerLength) != (format * width * height))
+    if ((file->size() - (startPosition + headerLength)) < (format * width * height))
     {
         qWarning() << "Failed to read .gbr file, data too short";
         return {};
     }
 
-    file->seek(headerLength);
+    file->seek(startPosition + headerLength);
 
     QImage image;
 
@@ -52,4 +54,25 @@ QImage readGBR(QIODevice *file)
     for (uint32_t i = 0; i < height; ++i)
         file->read((char *)image.scanLine(i), format * width);
     return image;
+}
+
+QList<QImage> readGIH(QIODevice *file)
+{
+    if (!file->isOpen())
+        file->open(QIODevice::ReadOnly);
+
+    /* Discard the description */
+    file->readLine();
+    QByteArray layout = file->readLine();
+
+    /* If there was an error reading numImages will zero */
+    int numImages = QString::fromUtf8(layout).section(' ', 0, 0).toInt();
+
+    QList<QImage> result;
+    while (numImages--){
+        QImage image = readGBR(file);
+        if (!image.isNull())
+            result.append(image);
+    }
+    return result;
 }

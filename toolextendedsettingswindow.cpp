@@ -450,6 +450,7 @@ void ToolExtendedSettingsWindowPrivate::importMasks()
     for (auto const &readerFormat: QImageReader::supportedImageFormats())
         importWildcards.append(QStringLiteral("*.") + readerFormat);
     importWildcards.append(QStringLiteral("*.gbr"));
+    importWildcards.append(QStringLiteral("*.gih"));
 
     QString formats = QObject::tr("Images") + " (" + importWildcards.join(" ") + ")";
 
@@ -470,6 +471,19 @@ void ToolExtendedSettingsWindowPrivate::importMasks()
             {
                 MaskBuffer mask(image);
                 masks.append(mask);
+            }
+        }
+        else if (filename.endsWith(".gih"))
+        {
+            QFile file(filename);
+            QList<QImage> images = readGIH(&file);
+            for (auto const &image: images)
+            {
+                if (!image.isNull())
+                {
+                    MaskBuffer mask(image);
+                    masks.append(mask);
+                }
             }
         }
         else
