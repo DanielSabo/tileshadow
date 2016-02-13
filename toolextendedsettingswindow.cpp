@@ -1,6 +1,7 @@
 #include "toolextendedsettingswindow.h"
 #include "canvaswidget.h"
 #include "maskbuffer.h"
+#include "gbrfile.h"
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QSlider>
@@ -448,6 +449,7 @@ void ToolExtendedSettingsWindowPrivate::importMasks()
 
     for (auto const &readerFormat: QImageReader::supportedImageFormats())
         importWildcards.append(QStringLiteral("*.") + readerFormat);
+    importWildcards.append(QStringLiteral("*.gbr"));
 
     QString formats = QObject::tr("Images") + " (" + importWildcards.join(" ") + ")";
 
@@ -460,12 +462,25 @@ void ToolExtendedSettingsWindowPrivate::importMasks()
 
     for (auto const &filename: filenames)
     {
-        QImage image(filename);
-        if (!image.isNull())
+        if (filename.endsWith(".gbr"))
         {
-            MaskBuffer mask(image);
-            mask = mask.invert();
-            masks.append(mask);
+            QFile file(filename);
+            QImage image = readGBR(&file);
+            if (!image.isNull())
+            {
+                MaskBuffer mask(image);
+                masks.append(mask);
+            }
+        }
+        else
+        {
+            QImage image(filename);
+            if (!image.isNull())
+            {
+                MaskBuffer mask(image);
+                mask = mask.invert();
+                masks.append(mask);
+            }
         }
     }
 

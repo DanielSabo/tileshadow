@@ -91,7 +91,8 @@ SOURCES += main.cpp\
     toollistview.cpp \
     toolextendedsettingswindow.cpp \
     patternfilltool.cpp \
-    canvasstrokepoint.cpp
+    canvasstrokepoint.cpp \
+    gbrfile.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -135,7 +136,8 @@ HEADERS  += mainwindow.h \
     toolextendedsettingswindow.h \
     layertype.h \
     patternfilltool.h \
-    canvasstrokepoint.h
+    canvasstrokepoint.h \
+    gbrfile.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \
