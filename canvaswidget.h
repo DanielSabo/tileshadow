@@ -50,6 +50,13 @@ public:
         int index;
     };
 
+    struct ToolSaveInfo
+    {
+        QString fileExtension;
+        QString saveDirectory;
+        QByteArray serialzedTool;
+    };
+
     void setToolColor(const QColor &color);
     QColor getToolColor();
     void setActiveTool(const QString &toolName);
@@ -59,7 +66,7 @@ public:
     void setToolSetting(const QString &settingName, const QVariant &value);
     QVariant getToolSetting(const QString &settingName);
     bool getToolSaveable();
-    void saveToolSettings();
+    ToolSaveInfo serializeTool();
     void resetToolSettings();
     QImage previewTool(std::vector<CanvasStrokePoint> const &stroke);
 

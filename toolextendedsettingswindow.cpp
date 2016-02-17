@@ -72,6 +72,7 @@ public:
     void showMappingsFor(ToolSettingInfo const &info);
     void applyMappings();
 
+    void saveToolAs();
     void importMasks();
     void exportMasks();
 
@@ -169,7 +170,7 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
     connect(d->saveButton, &QPushButton::clicked, this, [this](bool) {
         Q_D(ToolExtendedSettingsWindow);
         if (d->canvas)
-            d->canvas->saveToolSettings();
+            d->saveToolAs();
     });
 
     d->setMasksButton = new QPushButton(tr("Import Masks..."));
@@ -438,6 +439,29 @@ void ToolExtendedSettingsWindowPrivate::applyMappings()
 
     if (ok)
         canvas->setToolSetting(inputEditorSettingID + ":mapping", QVariant::fromValue(mappingList));
+}
+
+void ToolExtendedSettingsWindowPrivate::saveToolAs()
+{
+    CanvasWidget::ToolSaveInfo saveInfo = canvas->serializeTool();
+
+    if (saveInfo.fileExtension.isEmpty() || saveInfo.saveDirectory.isEmpty() || saveInfo.serialzedTool.isEmpty())
+        return;
+
+    QString defaultFilename = saveInfo.saveDirectory + QDir::toNativeSeparators("/") +
+                              QObject::tr("untitled") + "." + saveInfo.fileExtension;
+
+    QString filename = QFileDialog::getSaveFileName(nullptr, QObject::tr("Save As..."),
+                                                    defaultFilename,
+                                                    QString("%1 (*.%1)").arg(saveInfo.fileExtension));
+
+    if (filename.isEmpty())
+        return;
+
+    QFile outfile(filename);
+    outfile.open(QIODevice::WriteOnly | QIODevice::Truncate);
+    outfile.write(saveInfo.serialzedTool);
+    outfile.close();
 }
 
 void ToolExtendedSettingsWindowPrivate::importMasks()

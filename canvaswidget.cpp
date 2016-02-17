@@ -18,7 +18,6 @@
 #include <QElapsedTimer>
 #include <QAction>
 #include <QDebug>
-#include <QFileDialog>
 
 static const QGLFormat &getFormatSingleton()
 {
@@ -2152,36 +2151,33 @@ bool CanvasWidget::getToolSaveable()
     return false;
 }
 
-void CanvasWidget::saveToolSettings()
+CanvasWidget::ToolSaveInfo CanvasWidget::serializeTool()
 {
     Q_D(CanvasWidget);
 
     if (!d->activeTool)
-        return;
+        return {};
 
     QString extension = d->activeTool->saveExtension();
     if (extension.isEmpty())
-        return;
+        return {};
 
     QString savePath = ToolFactory::savePathForExtension(extension);
     if (savePath.isEmpty())
-        return;
+        return {};
 
     QByteArray output = d->activeTool->serialize();
     if (!output.isEmpty())
     {
-        QString filename = QFileDialog::getSaveFileName(this, tr("Save As..."),
-                                                        savePath + QDir::toNativeSeparators("/") + "untitled." + extension,
-                                                        QString("%1 (*.%1)").arg(extension));
+        ToolSaveInfo result;
+        result.fileExtension = extension;
+        result.saveDirectory = savePath;
+        result.serialzedTool = output;
 
-        if (filename.isEmpty())
-            return;
-
-        QFile outfile(filename);
-        outfile.open(QIODevice::WriteOnly | QIODevice::Truncate);
-        outfile.write(output);
-        outfile.close();
+        return result;
     }
+
+    return {};
 }
 
 void CanvasWidget::resetToolSettings()
