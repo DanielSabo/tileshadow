@@ -424,7 +424,8 @@ QByteArray MyPaintTool::serialize()
             QVariantList points;
             for (auto &p: mapping.value())
                 points.push_back(QVariantList({p.x(), p.y()}));
-            inputMap[mapping.key()] = points;
+            if (!points.isEmpty())
+                inputMap[mapping.key()] = points;
         }
 
         settingMap["inputs"] = inputMap;
