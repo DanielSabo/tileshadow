@@ -2,6 +2,7 @@
 #include "canvaswidget.h"
 #include "maskbuffer.h"
 #include "gbrfile.h"
+#include "filedialog.h"
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QSlider>
@@ -463,9 +464,9 @@ void ToolExtendedSettingsWindowPrivate::saveToolAs()
     QString defaultFilename = saveInfo.saveDirectory + QDir::toNativeSeparators("/") +
                               QObject::tr("untitled") + "." + saveInfo.fileExtension;
 
-    QString filename = QFileDialog::getSaveFileName(nullptr, QObject::tr("Save As..."),
-                                                    defaultFilename,
-                                                    QString("%1 (*.%1)").arg(saveInfo.fileExtension));
+    QString filename = FileDialog::getSaveFileName(nullptr, QObject::tr("Save As..."),
+                                                   defaultFilename,
+                                                   QString("%1 (*.%1)").arg(saveInfo.fileExtension));
 
     if (filename.isEmpty())
         return;
@@ -498,10 +499,10 @@ void ToolExtendedSettingsWindowPrivate::importMasks()
 
     QString formats = QObject::tr("Images") + " (" + importWildcards.join(" ") + ")";
 
-    QStringList filenames = QFileDialog::getOpenFileNames(nullptr,
-                                                          QObject::tr("Import Masks"),
-                                                          QDir::homePath(),
-                                                          formats);
+    QStringList filenames = FileDialog::getOpenFileNames(nullptr,
+                                                         QObject::tr("Import Masks"),
+                                                         QDir::homePath(),
+                                                         formats);
 
     if (filenames.isEmpty())
         return;
@@ -558,9 +559,9 @@ void ToolExtendedSettingsWindowPrivate::exportMasks()
     if (masks.empty())
         return;
 
-    QString exportPath = QFileDialog::getSaveFileName(nullptr,
-                                                      QObject::tr("Export Masks"),
-                                                      QDir::homePath());
+    QString exportPath = FileDialog::getSaveFileName(nullptr,
+                                                     QObject::tr("Export Masks"),
+                                                     QDir::homePath());
 
     if (exportPath.isEmpty())
         return;

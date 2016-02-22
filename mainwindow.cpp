@@ -25,6 +25,7 @@
 #include "toollistwidget.h"
 #include "layerlistwidget.h"
 #include "deviceselectdialog.h"
+#include "filedialog.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -376,7 +377,7 @@ void MainWindow::actionOpenFile()
 
     QString formats = QStringLiteral("Images (") + importWildcards.join(" ") + ")";
 
-    QString filename = QFileDialog::getOpenFileName(this, "Open", QDir::homePath(), formats);
+    QString filename = FileDialog::getOpenFileName(this, "Open", QDir::homePath(), formats);
 
     openFile(filename);
 }
@@ -413,7 +414,7 @@ void MainWindow::actionOpenAsLayer()
 
     QString formats = QStringLiteral("Images (") + importWildcards.join(" ") + ")";
 
-    QString filename = QFileDialog::getOpenFileName(this, "Open", QDir::homePath(), formats);
+    QString filename = FileDialog::getOpenFileName(this, "Open", QDir::homePath(), formats);
 
     if (!filename.isEmpty())
     {
@@ -437,9 +438,9 @@ bool MainWindow::doSave(QString filename)
         QString saveDirectory = QDir::homePath();
         if (!windowFilePath().isEmpty())
             saveDirectory = QFileInfo(windowFilePath()).dir().path();
-        filename = QFileDialog::getSaveFileName(this, "Save As...",
-                                                saveDirectory + QDir::toNativeSeparators("/untitled.ora"),
-                                                "OpenRaster (*.ora)");
+        filename = FileDialog::getSaveFileName(this, "Save As...",
+                                               saveDirectory + QDir::toNativeSeparators("/untitled.ora"),
+                                               "OpenRaster (*.ora)");
 
         if (filename.isEmpty())
             return false;
@@ -513,9 +514,9 @@ void MainWindow::actionExport()
     else
         return;
 
-    QString filename = QFileDialog::getSaveFileName(this, tr("Export..."),
-                                                    QDir::homePath(),
-                                                    formats);
+    QString filename = FileDialog::getSaveFileName(this, tr("Export..."),
+                                                   QDir::homePath(),
+                                                   formats);
 
     if (filename.isEmpty())
         return;
