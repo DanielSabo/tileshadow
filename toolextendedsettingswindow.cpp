@@ -86,7 +86,7 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
 {
     Q_D(ToolExtendedSettingsWindow);
 
-    QVBoxLayout *layout = new QVBoxLayout();
+    auto layout = new QVBoxLayout();
     layout->setContentsMargins(QMargins());
     layout->setSpacing(0);
     setLayout(layout);
@@ -142,8 +142,8 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
     d->inputEditorBody->layout()->setSpacing(0);
     d->inputEditorSettings = nullptr;
 
-    QWidget *inputEditorButtons = new QWidget();
-    QHBoxLayout *inputEditorButtonsLayout = new QHBoxLayout();
+    auto inputEditorButtons = new QWidget();
+    auto inputEditorButtonsLayout = new QHBoxLayout();
     inputEditorButtonsLayout->setContentsMargins(QMargins());
     inputEditorButtons->setLayout(inputEditorButtonsLayout);
     inputEditorArea->layout()->addWidget(d->inputEditorBody);
@@ -162,8 +162,8 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
         "}"
     ));
 
-    QHBoxLayout *buttonsLayout = new QHBoxLayout();
-    QWidget *buttonsBox = new QWidget();
+    auto buttonsLayout = new QHBoxLayout();
+    auto buttonsBox = new QWidget();
     buttonsBox->setLayout(buttonsLayout);
 
     d->saveButton = new QPushButton(tr("Save As..."));
