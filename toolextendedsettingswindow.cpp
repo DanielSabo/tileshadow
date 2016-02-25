@@ -41,6 +41,7 @@ public:
 
     QString maskSettingName;
 
+    QPushButton *clearMasksButton;
     QPushButton *setMasksButton;
     QPushButton *exportMasksButton;
     QPushButton *saveButton;
@@ -73,6 +74,7 @@ public:
     void applyMappings();
 
     void saveToolAs();
+    void clearMasks();
     void importMasks();
     void exportMasks();
 
@@ -173,6 +175,13 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
             d->saveToolAs();
     });
 
+    d->clearMasksButton = new QPushButton(tr("Clear Masks"));
+    connect(d->clearMasksButton, &QPushButton::clicked, this, [this](bool) {
+        Q_D(ToolExtendedSettingsWindow);
+        if (d->canvas)
+            d->clearMasks();
+    });
+
     d->setMasksButton = new QPushButton(tr("Import Masks..."));
     connect(d->setMasksButton, &QPushButton::clicked, this, [this](bool) {
         Q_D(ToolExtendedSettingsWindow);
@@ -190,6 +199,7 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
     buttonsLayout->addStretch(1);
     buttonsLayout->addWidget(d->setMasksButton);
     buttonsLayout->addWidget(d->exportMasksButton);
+    buttonsLayout->addWidget(d->clearMasksButton);
     buttonsLayout->addWidget(d->saveButton);
 
     layout->addWidget(buttonsBox);
@@ -348,11 +358,13 @@ void ToolExtendedSettingsWindow::updateTool()
         bool hasMasks = !d->canvas->getToolSetting(d->maskSettingName).value<QList<MaskBuffer>>().empty();
         d->exportMasksButton->setEnabled(hasMasks);
         d->setMasksButton->setEnabled(true);
+        d->clearMasksButton->setEnabled(hasMasks);
     }
     else
     {
         d->exportMasksButton->setEnabled(false);
         d->setMasksButton->setEnabled(false);
+        d->clearMasksButton->setEnabled(false);
     }
 
     if (isActiveWindow())
@@ -464,6 +476,14 @@ void ToolExtendedSettingsWindowPrivate::saveToolAs()
     outfile.close();
 }
 
+void ToolExtendedSettingsWindowPrivate::clearMasks()
+{
+    if (maskSettingName.isEmpty())
+        return;
+
+    canvas->setToolSetting(maskSettingName, QVariant::fromValue(QList<MaskBuffer>()));
+}
+
 void ToolExtendedSettingsWindowPrivate::importMasks()
 {
     if (maskSettingName.isEmpty())
@@ -482,6 +502,9 @@ void ToolExtendedSettingsWindowPrivate::importMasks()
                                                           QObject::tr("Import Masks"),
                                                           QDir::homePath(),
                                                           formats);
+
+    if (filenames.isEmpty())
+        return;
 
     QList<MaskBuffer> masks;
 
