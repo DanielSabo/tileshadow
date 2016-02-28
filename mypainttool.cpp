@@ -15,6 +15,28 @@ extern "C" {
 #include "mypaint-brush.h"
 };
 
+namespace {
+bool validateMapping(QList<QPointF> const &mapping)
+{
+    if (mapping.isEmpty())
+        return true;
+    else if (mapping.size() < 2)
+        return false;
+
+    auto iter = mapping.begin();
+    QPointF last = *iter++;
+
+    for (; iter != mapping.end(); iter++)
+    {
+        if (last.x() > iter->x())
+            return false;
+        last = *iter;
+    }
+
+    return true;
+}
+}
+
 using namespace std;
 
 typedef QMap<QString, QList<QPointF>> BrushValueMapping;
@@ -146,7 +168,14 @@ MyPaintTool::MyPaintTool(const QString &path) : priv(new MyPaintToolPrivate())
                         mappingPoints.append(QPointF(x, y));
                     }
 
-                    settings[settingName].second[inputName] = mappingPoints;
+                    if (validateMapping(mappingPoints))
+                    {
+                        settings[settingName].second[inputName] = mappingPoints;
+                    }
+                    else
+                    {
+                        throw QString("Mypaint brush error, invalid mapping:") + settingName + "," + inputName;
+                    }
                 }
             }
         }
@@ -244,9 +273,23 @@ void MyPaintTool::setToolSetting(QString const &inName, QVariant const &value)
     {
         auto iter = priv->currentSettings.find(name);
         if (iter != priv->currentSettings.end())
-            iter.value().second = value.value<BrushValueMapping>();
+        {
+            BrushValueMapping mappingSet = value.value<BrushValueMapping>();
+            for (auto const &mapping: mappingSet)
+            {
+                if (!validateMapping(mapping))
+                {
+                    qDebug() << "Mapping for" << name << "contains invalid values:" << mapping;
+                    return;
+                }
+            }
+
+            iter.value().second = mappingSet;
+        }
         else
+        {
             qDebug() << "Can't set mapping for" << name << "because it has no base value";
+        }
         return;
     }
     else if (auto settingInfo = getMypaintBrushSettingInfo(name))
