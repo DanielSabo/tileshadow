@@ -56,6 +56,8 @@ public:
 
     cl_kernel mypaintDabKernel;
     cl_kernel mypaintDabLockedKernel;
+    cl_kernel mypaintMicroDabKernel;
+    cl_kernel mypaintMicroDabLockedKernel;
     cl_kernel mypaintMaskDabKernel;
     cl_kernel mypaintMaskDabLockedKernel;
     cl_kernel mypaintGetColorKernelPart1;

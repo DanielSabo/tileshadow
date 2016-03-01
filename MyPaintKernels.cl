@@ -11,6 +11,7 @@ float calculate_alpha (float rr, float hardness, float slope1, float slope2);
 float color_query_weight (float xx, float yy, float radius);
 
 float alpha_from_dab(float x, float y, float4 matrix, float hardness, float slope1, float slope2);
+float alpha_from_subpixel_dab(float x, float y, float4 matrix, float hardness, float slope1, float slope2);
 float alpha_from_mask(float x, float y, float4 matrix, image2d_t stamp);
 
 inline float4 apply_normal_mode (float4 pixel, float4 color, float alpha, float color_alpha);
@@ -40,6 +41,54 @@ float alpha_from_dab(float x, float y, float4 matrix, float hardness, float slop
   float yr = x * matrix.s2 + y * matrix.s3;
   float rr  = (yr * yr + xr * xr);
   return calculate_alpha(rr, hardness, slope1, slope2);
+}
+
+float alpha_from_subpixel_dab(float x, float y, float4 matrix, float hardness, float slope1, float slope2)
+{
+  // The corners of the pixel, in the dab's coordiate space
+  float xr0 = (x - 0.5f) * matrix.s0 + (y - 0.5f) * matrix.s1;
+  float yr0 = (x - 0.5f) * matrix.s2 + (y - 0.5f) * matrix.s3;
+  float xr1 = (x + 0.5f) * matrix.s0 + (y + 0.5f) * matrix.s1;
+  float yr1 = (x + 0.5f) * matrix.s2 + (y + 0.5f) * matrix.s3;
+
+  float x_near, y_near;
+
+  // If the signs differ this pixel contains the center of the dab
+  if (signbit(xr0) != signbit(xr1))
+    x_near = 0;
+  else
+    x_near = min(fabs(xr0), fabs(xr1));
+
+  if (signbit(yr0) != signbit(yr1))
+    y_near = 0;
+  else
+    y_near = min(fabs(yr0), fabs(yr1));
+
+  // distance^2 for the point closes to the dab's center
+  float rr_near = x_near * x_near + y_near * y_near;
+
+  if (rr_near > 1.0f)
+  {
+    // This pixel is entirely outside the dab
+    return 0.0f;
+  }
+  else
+  {
+    // distance^2 for a distant point
+    // This point is somewhat arbitrary, it just needs to be reasonably far away from the near point.
+    float x_far = max(fabs(xr0), fabs(xr1));
+    float y_far = max(fabs(yr0), fabs(yr1));
+    float rr_far = x_far * x_far + y_far * y_far;
+
+    // MyPaint's AA blend
+    float visibilityNear = 1.0f - rr_near;
+    float delta = rr_far - rr_near;
+    float delta2 = 1.0f + delta;
+    visibilityNear /= delta2;
+    float rr = 1.0f - visibilityNear;
+
+    return calculate_alpha(rr, hardness, slope1, slope2);
+  }
 }
 
 float alpha_from_mask(float x, float y, float4 matrix, image2d_t stamp)
@@ -217,6 +266,52 @@ __kernel void mypaint_dab_locked(__global float4 *buf,
   int gidy = get_global_id(1);
 
   float alpha = alpha_from_dab(gidx - x, gidy - y, matrix, hardness, slope1, slope2);
+
+  if (alpha > 0.0f)
+    {
+      const int idx = gidx + gidy * TILE_PIXEL_WIDTH + offset;
+      buf[idx] = apply_locked_normal_mode(buf[idx], color, alpha);
+    }
+}
+
+__kernel void mypaint_micro_dab(__global float4 *buf,
+                                         int     offset,
+                                         float   x,
+                                         float   y,
+                                         float   hardness,
+                                         float4  matrix,
+                                         float   slope1,
+                                         float   slope2,
+                                         float   color_alpha, /* Max alpha value */
+                                         float4  color)
+{
+  int gidx = get_global_id(0);
+  int gidy = get_global_id(1);
+
+  float alpha = alpha_from_subpixel_dab(gidx - x, gidy - y, matrix, hardness, slope1, slope2);
+
+  if (alpha > 0.0f)
+    {
+      const int idx = gidx + gidy * TILE_PIXEL_WIDTH + offset;
+      buf[idx] = apply_normal_mode(buf[idx], color, alpha, color_alpha);
+    }
+}
+
+__kernel void mypaint_micro_dab_locked(__global float4 *buf,
+                                                int     offset,
+                                                float   x,
+                                                float   y,
+                                                float   hardness,
+                                                float4  matrix,
+                                                float   slope1,
+                                                float   slope2,
+                                                float   color_alpha, /* Max alpha value (ignored) */
+                                                float4  color)
+{
+  int gidx = get_global_id(0);
+  int gidy = get_global_id(1);
+
+  float alpha = alpha_from_subpixel_dab(gidx - x, gidy - y, matrix, hardness, slope1, slope2);
 
   if (alpha > 0.0f)
     {

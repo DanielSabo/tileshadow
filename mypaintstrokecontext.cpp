@@ -377,7 +377,7 @@ static int drawDabFunction (MyPaintSurface *base_surface,
                             float lock_alpha,
                             float colorize)
 {
-    if (radius < 1.0f)
+    if (radius < 0.1f)
         return 0;
 
     if (hardness < 0.0f)
@@ -404,6 +404,9 @@ static int drawDabFunction (MyPaintSurface *base_surface,
 
     if (priv->masks.empty())
     {
+        if (hardness <= 0.0f)
+            return 0;
+
         QMatrix transform;
         transform.scale(1.0f, aspect_ratio);
         transform.scale(1.0f / radius, 1.0f / radius);
@@ -412,10 +415,20 @@ static int drawDabFunction (MyPaintSurface *base_surface,
         boundRect.setRect(-1.0f, -1.0f, 2.0f, 2.0f);
         boundRect = transform.inverted().mapRect(boundRect).adjusted(-2.0, -2.0, 4.0, 4.0);
 
-        if (lock_alpha > 0.0f)
-            kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabLockedKernel;
+        if (radius < 1.0f)
+        {
+            if (lock_alpha > 0.0f)
+                kernel = SharedOpenCL::getSharedOpenCL()->mypaintMicroDabLockedKernel;
+            else
+                kernel = SharedOpenCL::getSharedOpenCL()->mypaintMicroDabKernel;
+        }
         else
-            kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabKernel;
+        {
+            if (lock_alpha > 0.0f)
+                kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabLockedKernel;
+            else
+                kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabKernel;
+        }
 
         cl_float4 color = {color_r, color_g, color_b, opaque};
         cl_float4 transformMatrix;
