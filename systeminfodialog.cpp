@@ -1,5 +1,6 @@
 #include "systeminfodialog.h"
 #include "ui_systeminfodialog.h"
+#include "opencldeviceinfo.h"
 
 #include <QOpenGLFunctions_3_2_Core>
 #ifdef __APPLE__

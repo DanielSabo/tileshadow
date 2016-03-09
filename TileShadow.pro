@@ -56,6 +56,7 @@ SOURCES += main.cpp\
     systeminfodialog.cpp \
     canvaswidget.cpp \
     canvaswidget-opencl.cpp \
+    opencldeviceinfo.cpp \
     glhelper.cpp \
     mypaintstrokecontext.cpp \
     canvascontext.cpp \
@@ -99,6 +100,7 @@ HEADERS  += mainwindow.h \
     systeminfodialog.h \
     canvaswidget.h \
     canvaswidget-opencl.h \
+    opencldeviceinfo.h \
     glhelper.h \
     mypaintstrokecontext.h \
     canvascontext.h \

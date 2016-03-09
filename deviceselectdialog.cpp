@@ -1,5 +1,6 @@
 #include "deviceselectdialog.h"
 #include "canvaswidget-opencl.h"
+#include "opencldeviceinfo.h"
 #include <QDebug>
 #include <QSettings>
 #include <QLabel>
