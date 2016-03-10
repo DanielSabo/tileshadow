@@ -68,7 +68,12 @@ public:
     GLuint backgroundGLTile;
     GLTileMap glTiles;
 
+    TileSet dirtyTiles;
+    bool dirtyBackground;
+
+    QPoint viewOrigin;
     QSize viewSize;
+    float viewScale;
 
     void resizeFramebuffer(int w, int h);
     void shiftFramebuffer(int xOffset, int yOffset);
@@ -80,6 +85,9 @@ public:
     void ensureTiles(const TileMap &tiles);
     void renderTileMap(TileMap &tiles);
 
+    void renderView(QPoint newOrigin, QSize newSize, float newScale, bool fullRedraw);
+    void drawToolCursor(QPoint cursorPos, float cusrorRadius);
+    void drawColorDots(QColor dotPreviewColor);
 private:
     void renderTile(int x, int y, CanvasTile *tile);
 };

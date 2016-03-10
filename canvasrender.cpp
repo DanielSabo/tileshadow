@@ -2,8 +2,9 @@
 #include "canvascontext.h"
 #include "canvastile.h"
 #include "glhelper.h"
-
+#include <qmath.h>
 #include <QColor>
+#include <QRegion>
 #include <QDebug>
 
 #ifdef __APPLE__
@@ -63,7 +64,9 @@ static void uploadVertexData2f(QOpenGLFunctions_3_2_Core *glFuncs,
 
 CanvasRender::CanvasRender() :
     glFuncs(new QOpenGLFunctions_3_2_Core()),
-    backgroundGLTile(0)
+    backgroundGLTile(0),
+    dirtyBackground(true),
+    viewScale(0.0f)
 {
     if (!glFuncs->initializeOpenGLFunctions())
     {
@@ -220,10 +223,9 @@ void CanvasRender::shiftFramebuffer(int xOffset, int yOffset)
 
 void CanvasRender::clearTiles()
 {
-    GLTileMap::iterator iter;
-    for (iter = glTiles.begin(); iter != glTiles.end(); ++iter)
+    for (auto &iter: glTiles)
     {
-        auto &ref = iter->second;
+        auto &ref = iter.second;
 
         if (ref.clBuf)
         {
@@ -233,6 +235,8 @@ void CanvasRender::clearTiles()
 
         if (ref.glBuf)
             glFuncs->glDeleteBuffers(1, &ref.glBuf);
+
+        dirtyTiles.insert(iter.first);
     }
     glTiles.clear();
 }
@@ -256,6 +260,8 @@ void CanvasRender::updateBackgroundTile(CanvasContext *ctx)
         dstData[i] = srcData[i] * 0xFF;
 
     glFuncs->glUnmapBuffer(GL_TEXTURE_BUFFER);
+
+    dirtyBackground = true;
 }
 
 GLuint CanvasRender::getGLBuf(int x, int y)
@@ -382,6 +388,18 @@ void CanvasRender::ensureTiles(TileMap const &tiles)
         glFinish();
 }
 
+static void insertRectTiles(TileSet &tileSet, QRect pixelRect)
+{
+    int x0 = tile_indice(pixelRect.left(), TILE_PIXEL_WIDTH);
+    int x1 = tile_indice(pixelRect.right(), TILE_PIXEL_WIDTH);
+    int y0 = tile_indice(pixelRect.top(), TILE_PIXEL_HEIGHT);
+    int y1 = tile_indice(pixelRect.bottom(), TILE_PIXEL_HEIGHT);
+
+    for (int y = y0; y <= y1; ++y)
+        for (int x = x0; x <= x1; ++x)
+            tileSet.insert({x, y});
+}
+
 void CanvasRender::renderTileMap(TileMap &tiles)
 {
     if (tiles.empty())
@@ -390,10 +408,178 @@ void CanvasRender::renderTileMap(TileMap &tiles)
     ensureTiles(tiles);
 
     for (auto &iter: tiles)
+    {
         renderTile(iter.first.x(), iter.first.y(), iter.second.get());
+        dirtyTiles.insert(iter.first);
+    }
 
     tiles.clear();
 
     if (SharedOpenCL::getSharedOpenCL()->gl_sharing)
         clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
+}
+
+void CanvasRender::renderView(QPoint newOrigin, QSize newSize, float newScale, bool fullRedraw)
+{
+    if (viewScale != newScale)
+        fullRedraw = true;
+    viewScale = newScale;
+
+    if (viewSize != newSize)
+    {
+        //FIXME: This should also deal with the device pixel ratio for high dpi displays
+        // Note: resizeFramebuffer() unbinds the framebuffer
+        resizeFramebuffer(newSize.width(), newSize.height());
+        fullRedraw = true;
+    }
+    else if (viewOrigin != newOrigin && !fullRedraw)
+    {
+        // Note: shiftFramebuffer() unbinds the framebuffer
+        shiftFramebuffer(newOrigin.x() - viewOrigin.x(),
+                         newOrigin.y() - viewOrigin.y());
+
+        QRegion dirtyRegion = QRegion{QRect{newOrigin, viewSize}};
+        dirtyRegion -= QRect{viewOrigin, viewSize};
+        for (QRect &dirtyRect: dirtyRegion.rects())
+        {
+            int pad = viewScale > 1.0f ? std::ceil(viewScale) : 0;
+            int x = std::floor(dirtyRect.x() / viewScale);
+            int y = std::floor(dirtyRect.y() / viewScale);
+            int w = std::ceil((dirtyRect.width() + pad) / viewScale);
+            int h = std::ceil((dirtyRect.height() + pad) / viewScale);
+
+            insertRectTiles(dirtyTiles, {x, y, w, h});
+        }
+    }
+
+    viewSize = newSize;
+    viewOrigin = newOrigin;
+
+    glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, backbufferFramebuffer);
+    glFuncs->glViewport(0, 0, viewSize.width(), viewSize.height());
+
+    int widgetWidth  = viewSize.width();
+    int widgetHeight = viewSize.height();
+
+    int originTileX = tile_indice(viewOrigin.x() / viewScale, TILE_PIXEL_WIDTH);
+    int originTileY = tile_indice(viewOrigin.y() / viewScale, TILE_PIXEL_HEIGHT);
+
+    float worldTileWidth = (2.0f / widgetWidth) * viewScale * TILE_PIXEL_WIDTH;
+    float worldOriginX = -viewOrigin.x() * (2.0f / widgetWidth) - 1.0f;
+
+    float worldTileHeight = (2.0f / widgetHeight) * viewScale * TILE_PIXEL_HEIGHT;
+    float worldOriginY = viewOrigin.y() * (2.0f / widgetHeight) - worldTileHeight + 1.0f;
+
+    int tileCountX = ceil(widgetWidth / (TILE_PIXEL_WIDTH * viewScale)) + 1;
+    int tileCountY = ceil(widgetHeight / (TILE_PIXEL_HEIGHT * viewScale)) + 1;
+
+    int zoomFactor = viewScale >= 1.0f ? 1 : 1 / viewScale;
+
+    glFuncs->glUseProgram(tileShader.program);
+
+    glFuncs->glActiveTexture(GL_TEXTURE0);
+    glFuncs->glUniform1i(tileShader.tileImage, 0);
+    glFuncs->glUniform2f(tileShader.tileSize, worldTileWidth, worldTileHeight);
+    glFuncs->glUniform2f(tileShader.tilePixels, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT);
+    glFuncs->glUniform1i(tileShader.binSize, zoomFactor);
+    glFuncs->glBindVertexArray(tileShader.vertexArray);
+
+    auto drawOneTile = [&](int ix, int iy) {
+        float offsetX = ix * worldTileWidth + worldOriginX;
+        float offsetY = worldOriginY - iy * worldTileHeight;
+
+        GLuint tileBuffer = getGLBuf(ix, iy);
+        glFuncs->glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA8, tileBuffer);
+        glFuncs->glUniform2f(tileShader.tileOrigin, offsetX, offsetY);
+        glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+    };
+
+    if (fullRedraw || dirtyBackground)
+    {
+        for (int ix = originTileX; ix < tileCountX + originTileX; ++ix)
+            for (int iy = originTileY; iy < tileCountY + originTileY; ++iy)
+                drawOneTile(ix, iy);
+    }
+    else
+    {
+        for (QPoint const &iter: dirtyTiles)
+            drawOneTile(iter.x(), iter.y());
+    }
+
+    glFuncs->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, GL_NONE);
+    glFuncs->glBlitFramebuffer(0, 0, viewSize.width(), viewSize.height(),
+                               0, 0, viewSize.width(), viewSize.height(),
+                               GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
+
+    dirtyBackground = false;
+    dirtyTiles.clear();
+}
+
+void CanvasRender::drawToolCursor(QPoint cursorPos, float cusrorRadius)
+{
+    if (cusrorRadius < 1.0f)
+        return;
+
+    float widgetHeight = viewSize.height();
+    float widgetWidth  = viewSize.width();
+
+    glFuncs->glEnable(GL_BLEND);
+    glFuncs->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glFuncs->glUseProgram(cursorShader.program);
+    glFuncs->glUniform4f(cursorShader.dimensions,
+                         (float(cursorPos.x()) / widgetWidth * 2.0f) - 1.0f,
+                         1.0f - (float(cursorPos.y()) / widgetHeight * 2.0f),
+                         cusrorRadius / widgetWidth, cusrorRadius / widgetHeight);
+    glFuncs->glUniform1f(cursorShader.pixelRadius, cusrorRadius / 2.0f);
+    glFuncs->glBindVertexArray(cursorShader.vertexArray);
+    glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    glFuncs->glDisable(GL_BLEND);
+}
+
+void CanvasRender::drawColorDots(QColor dotPreviewColor)
+{
+    if (!dotPreviewColor.isValid())
+        return;
+
+    float dotRadius = 10.5f;
+
+    glFuncs->glEnable(GL_BLEND);
+    glFuncs->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glFuncs->glUseProgram(colorDotShader.program);
+    glFuncs->glUniform4f(colorDotShader.previewColor,
+                         dotPreviewColor.redF(),
+                         dotPreviewColor.greenF(),
+                         dotPreviewColor.blueF(),
+                         dotPreviewColor.alphaF());
+    glFuncs->glUniform1f(colorDotShader.pixelRadius, dotRadius);
+    glFuncs->glBindVertexArray(colorDotShader.vertexArray);
+
+    float dotHeight = dotRadius * 2.0f / viewSize.height();
+    float dotWidth  = dotRadius * 2.0f / viewSize.width();
+
+    float xShift = dotWidth * 6.0f;
+    float yShift = dotHeight * 6.0f;
+
+    glFuncs->glUniform4f(colorDotShader.dimensions,
+                         0.0f, 0.0f, dotWidth, dotHeight);
+    glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+    glFuncs->glUniform4f(colorDotShader.dimensions,
+                         -xShift, 0.0f, dotWidth, dotHeight);
+    glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+    glFuncs->glUniform4f(colorDotShader.dimensions,
+                         xShift, 0.0f, dotWidth, dotHeight);
+    glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+    glFuncs->glUniform4f(colorDotShader.dimensions,
+                         0.0f, -yShift, dotWidth, dotHeight);
+    glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+    glFuncs->glUniform4f(colorDotShader.dimensions,
+                         0.0f, yShift, dotWidth, dotHeight);
+    glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    glFuncs->glDisable(GL_BLEND);
 }

@@ -126,7 +126,6 @@ public:
 
 protected:
     void initializeGL();
-    void resizeGL(int w, int h);
     void paintGL();
 
     void paintEvent(QPaintEvent *event);

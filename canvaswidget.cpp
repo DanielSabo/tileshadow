@@ -80,8 +80,6 @@ public:
     int nextFrameDelay;
     QTimer frameTickTrigger;
     QElapsedTimer lastFrameTimer;
-    bool fullRedraw;
-    QPoint lastRenderedOrigin;
     RenderMode::Mode renderMode;
     QTimer layerFlashTimeout;
     QColor dotPreviewColor;
@@ -101,8 +99,6 @@ CanvasWidgetPrivate::CanvasWidgetPrivate()
     keyModifiers = 0;
     lastTabletEvent = {0, };
     strokeEventTimestamp = 0;
-    fullRedraw = true;
-    lastRenderedOrigin = QPoint(0, 0);
     currentLayerEditable = false;
     currentLayerMoveable = false;
     renderMode = RenderMode::Normal;
@@ -217,7 +213,6 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
         shiftAction->setShortcut(key);
         connect(shiftAction, &QAction::triggered, [this, d, shift](){
             canvasOrigin += shift;
-            d->fullRedraw = true;
             update();
         });
         addAction(shiftAction);
@@ -252,14 +247,6 @@ void CanvasWidget::initializeGL()
     newDrawing();
 }
 
-void CanvasWidget::resizeGL(int w, int h)
-{
-    Q_D(CanvasWidget);
-
-    render->resizeFramebuffer(w, h);
-    d->fullRedraw = true;
-}
-
 void CanvasWidget::paintEvent(QPaintEvent *)
 {
     Q_D(CanvasWidget);
@@ -292,31 +279,15 @@ void CanvasWidget::paintEvent(QPaintEvent *)
     }
 }
 
-static void insertRectTiles(TileSet &tileSet, QRect pixelRect)
-{
-    int x0 = tile_indice(pixelRect.left(), TILE_PIXEL_WIDTH);
-    int x1 = tile_indice(pixelRect.right(), TILE_PIXEL_WIDTH);
-    int y0 = tile_indice(pixelRect.top(), TILE_PIXEL_HEIGHT);
-    int y1 = tile_indice(pixelRect.bottom(), TILE_PIXEL_HEIGHT);
-
-    for (int y = y0; y <= y1; ++y)
-        for (int x = x0; x <= x1; ++x)
-        {
-            tileSet.insert({x, y});
-        }
-}
-
 void CanvasWidget::paintGL()
 {
     Q_D(CanvasWidget);
-    QOpenGLFunctions_3_2_Core *glFuncs = render->glFuncs;
 
     frameRate.addEvents(1);
     // Emit updateStats() outside of the paintEvent
     QMetaObject::invokeMethod(this, "updateStats", Qt::QueuedConnection);
 
     TileMap renderTiles;
-    TileSet tilesToDraw;
 
     if (d->renderMode == RenderMode::FlashLayer)
     {
@@ -326,7 +297,6 @@ void CanvasWidget::paintGL()
             TileSet flashSet = ctx->flashStack->getTileSet();
             for (auto iter: flashSet)
                 renderTiles[iter] = ctx->flashStack->getTileMaybe(iter.x(), iter.y());
-            tilesToDraw = ctx->layers.getTileSet();
             ctx->flashStack.reset();
         }
     }
@@ -344,161 +314,22 @@ void CanvasWidget::paintGL()
                 renderTiles[iter] = ctx->layers.getTileMaybe(iter.x(), iter.y());
             ctx->dirtyTiles.clear();
         }
-
-        //FIXME: Bounds check tiles to view
-        if (!d->fullRedraw)
-            for (auto iter = renderTiles.cbegin(); iter != renderTiles.cend(); ++iter)
-                tilesToDraw.insert(iter->first);
     }
 
     render->renderTileMap(renderTiles);
 
-    if (d->lastRenderedOrigin != canvasOrigin)
-    {
-        // Note: shiftFramebuffer() unbinds the framebuffer
-        render->shiftFramebuffer(canvasOrigin.x() - d->lastRenderedOrigin.x(),
-                                 canvasOrigin.y() - d->lastRenderedOrigin.y());
-
-        QRegion dirtyRegion = QRegion{QRect{canvasOrigin, render->viewSize}};
-        dirtyRegion -= QRect{d->lastRenderedOrigin, render->viewSize};
-        for (QRect &dirtyRect: dirtyRegion.rects())
-        {
-            int pad = viewScale > 1.0f ? std::ceil(viewScale) : 0;
-            int x = std::floor(dirtyRect.x() / viewScale);
-            int y = std::floor(dirtyRect.y() / viewScale);
-            int w = std::ceil((dirtyRect.width() + pad) / viewScale);
-            int h = std::ceil((dirtyRect.height() + pad) / viewScale);
-
-            insertRectTiles(tilesToDraw, {x, y, w, h});
-        }
-
-        d->lastRenderedOrigin = canvasOrigin;
-    }
-
-    glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, render->backbufferFramebuffer);
-    glViewport(0, 0, render->viewSize.width(), render->viewSize.height());
-
-    int widgetWidth  = render->viewSize.width();
-    int widgetHeight = render->viewSize.height();
-
-    int originTileX = tile_indice(canvasOrigin.x() / viewScale, TILE_PIXEL_WIDTH);
-    int originTileY = tile_indice(canvasOrigin.y() / viewScale, TILE_PIXEL_HEIGHT);
-
-    float worldTileWidth = (2.0f / widgetWidth) * viewScale * TILE_PIXEL_WIDTH;
-    float worldOriginX = -canvasOrigin.x() * (2.0f / widgetWidth) - 1.0f;
-
-    float worldTileHeight = (2.0f / widgetHeight) * viewScale * TILE_PIXEL_HEIGHT;
-    float worldOriginY = canvasOrigin.y() * (2.0f / widgetHeight) - worldTileHeight + 1.0f;
-
-    int tileCountX = ceil(widgetWidth / (TILE_PIXEL_WIDTH * viewScale)) + 1;
-    int tileCountY = ceil(widgetHeight / (TILE_PIXEL_HEIGHT * viewScale)) + 1;
-
-//    glFuncs->glClearColor(0.2, 0.2, 0.4, 1.0);
-//    glFuncs->glClear(GL_COLOR_BUFFER_BIT);
-
-    int zoomFactor = viewScale >= 1.0f ? 1 : 1 / viewScale;
-
-    auto const &tileShader = render->tileShader;
-
-    glFuncs->glUseProgram(tileShader.program);
-
-    glFuncs->glActiveTexture(GL_TEXTURE0);
-    glFuncs->glUniform1i(tileShader.tileImage, 0);
-    glFuncs->glUniform2f(tileShader.tileSize, worldTileWidth, worldTileHeight);
-    glFuncs->glUniform2f(tileShader.tilePixels, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT);
-    glFuncs->glUniform1i(tileShader.binSize, zoomFactor);
-    glFuncs->glBindVertexArray(tileShader.vertexArray);
-
-    auto drawOneTile = [&](int ix, int iy) {
-        float offsetX = ix * worldTileWidth + worldOriginX;
-        float offsetY = worldOriginY - iy * worldTileHeight;
-
-        GLuint tileBuffer = render->getGLBuf(ix, iy);
-        glFuncs->glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA8, tileBuffer);
-        glFuncs->glUniform2f(tileShader.tileOrigin, offsetX, offsetY);
-        glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-    };
-
-    if (d->fullRedraw)
-    {
-        d->fullRedraw = false;
-        for (int ix = originTileX; ix < tileCountX + originTileX; ++ix)
-            for (int iy = originTileY; iy < tileCountY + originTileY; ++iy)
-                drawOneTile(ix, iy);
-    }
-    else
-    {
-        for (QPoint const &iter: tilesToDraw)
-            drawOneTile(iter.x(), iter.y());
-    }
-
-    glFuncs->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, GL_NONE);
-    glFuncs->glBlitFramebuffer(0, 0, render->viewSize.width(), render->viewSize.height(),
-                               0, 0, render->viewSize.width(), render->viewSize.height(),
-                               GL_COLOR_BUFFER_BIT, GL_NEAREST);
-    glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
+    render->renderView(canvasOrigin, size(), viewScale, false);
 
     if (d->activeTool && d->currentLayerEditable && showToolCursor)
     {
-        float toolSize = d->activeTool->getPixelRadius() * 2.0f * viewScale;
-        if (toolSize < 6.0f)
-            toolSize = 6.0f;
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         QPoint cursorPos = mapFromGlobal(QCursor::pos());
-        glFuncs->glUseProgram(render->cursorShader.program);
-        glFuncs->glUniform4f(render->cursorShader.dimensions,
-                             (float(cursorPos.x()) / widgetWidth * 2.0f) - 1.0f,
-                             1.0f - (float(cursorPos.y()) / widgetHeight * 2.0f),
-                             toolSize / widgetWidth, toolSize / widgetHeight);
-        glFuncs->glUniform1f(render->cursorShader.pixelRadius, toolSize / 2.0f);
-        glFuncs->glBindVertexArray(render->cursorShader.vertexArray);
-        glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-        glDisable(GL_BLEND);
+        float toolSize = std::max(d->activeTool->getPixelRadius() * 2.0f * viewScale, 6.0f);
+
+        render->drawToolCursor(cursorPos, toolSize);
     }
 
     if (d->dotPreviewColor.isValid())
-    {
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        float dotRadius = 10.5f;
-        glFuncs->glUseProgram(render->colorDotShader.program);
-        glFuncs->glUniform4f(render->colorDotShader.previewColor,
-                             d->dotPreviewColor.redF(),
-                             d->dotPreviewColor.greenF(),
-                             d->dotPreviewColor.blueF(),
-                             d->dotPreviewColor.alphaF());
-        glFuncs->glUniform1f(render->colorDotShader.pixelRadius, dotRadius);
-        glFuncs->glBindVertexArray(render->colorDotShader.vertexArray);
-
-        float dotHeight = dotRadius * 2.0f / widgetHeight;
-        float dotWidth  = dotRadius * 2.0f / widgetWidth;
-
-        float xShift = dotWidth * 6.0f;
-        float yShift = dotHeight * 6.0f;
-
-        glFuncs->glUniform4f(render->colorDotShader.dimensions,
-                             0.0f, 0.0f, dotWidth, dotHeight);
-        glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-        glFuncs->glUniform4f(render->colorDotShader.dimensions,
-                             -xShift, 0.0f, dotWidth, dotHeight);
-        glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-        glFuncs->glUniform4f(render->colorDotShader.dimensions,
-                             xShift, 0.0f, dotWidth, dotHeight);
-        glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-        glFuncs->glUniform4f(render->colorDotShader.dimensions,
-                             0.0f, -yShift, dotWidth, dotHeight);
-        glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-        glFuncs->glUniform4f(render->colorDotShader.dimensions,
-                             0.0f, yShift, dotWidth, dotHeight);
-        glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-        glDisable(GL_BLEND);
-    }
+        render->drawColorDots(d->dotPreviewColor);
 }
 
 void CanvasWidget::startStroke(QPointF pos, float pressure)
@@ -735,8 +566,6 @@ float CanvasWidget::getScale()
 
 void CanvasWidget::setScale(float newScale)
 {
-    Q_D(CanvasWidget);
-
     newScale = qBound(0.25f, newScale, 4.0f);
 
     if (newScale == viewScale)
@@ -751,7 +580,6 @@ void CanvasWidget::setScale(float newScale)
     canvasOrigin = (canvasOrigin + centerPoint) * (newScale / viewScale) - centerPoint;
     viewScale = newScale;
 
-    d->fullRedraw = true;
     update();
 }
 
@@ -1436,8 +1264,6 @@ void CanvasWidget::hideColorPreview()
 
 void CanvasWidget::setBackgroundColor(const QColor &color)
 {
-    Q_D(CanvasWidget);
-
     if (action != CanvasAction::None)
         return;
 
@@ -1451,9 +1277,7 @@ void CanvasWidget::setBackgroundColor(const QColor &color)
         ctx->layers.backgroundTileCL->fill(color.redF(), color.greenF(), color.blueF(), 1.0f);
 
         render->updateBackgroundTile(ctx);
-        render->clearTiles();
         ctx->dirtyTiles = ctx->layers.getTileSet();
-        d->fullRedraw = true;
         modified = true;
         emit canvasModified();
         update();
@@ -1474,8 +1298,6 @@ void CanvasWidget::lineDrawMode()
 
 void CanvasWidget::undo()
 {
-    Q_D(CanvasWidget);
-
     CanvasContext *ctx = getContext();
 
     if (ctx->undoHistory.empty())
@@ -1497,9 +1319,7 @@ void CanvasWidget::undo()
     if (changedBackground)
     {
         render->updateBackgroundTile(ctx);
-        render->clearTiles();
         ctx->dirtyTiles = ctx->layers.getTileSet();
-        d->fullRedraw = true;
     }
     else if(!changedTiles.empty())
     {
@@ -1515,8 +1335,6 @@ void CanvasWidget::undo()
 
 void CanvasWidget::redo()
 {
-    Q_D(CanvasWidget);
-
     CanvasContext *ctx = getContext();
 
     if (ctx->redoHistory.empty())
@@ -1537,9 +1355,7 @@ void CanvasWidget::redo()
     if (changedBackground)
     {
         render->updateBackgroundTile(ctx);
-        render->clearTiles();
         ctx->dirtyTiles = ctx->layers.getTileSet();
-        d->fullRedraw = true;
     }
     else if(!changedTiles.empty())
     {
@@ -1564,7 +1380,6 @@ void CanvasWidget::endLayerFlash()
         CanvasContext *ctx = getContext();
         ctx->flashStack.reset();
         ctx->dirtyTiles = ctx->layers.getTileSet();
-        render->clearTiles();
         d->renderMode = RenderMode::Normal;
         update();
     }
@@ -2142,8 +1957,6 @@ QColor CanvasWidget::getToolColor()
 
 void CanvasWidget::newDrawing()
 {
-    Q_D(CanvasWidget);
-
     CanvasContext *ctx = getContext();
 
     ctx->clearUndoHistory();
@@ -2154,7 +1967,6 @@ void CanvasWidget::newDrawing()
     ctx->layers.layers.append(new CanvasLayer(QString().sprintf("Layer %02d", ++lastNewLayerNumber)));
     setActiveLayer(0); // Sync up the undo layer
     canvasOrigin = QPoint(0, 0);
-    d->fullRedraw = true;
     update();
     modified = false;
     emit updateLayers();
@@ -2176,8 +1988,6 @@ namespace {
 
 void CanvasWidget::openORA(QString path)
 {
-    Q_D(CanvasWidget);
-
     QRegExp layerNameReg("Layer (\\d+)");
     CanvasContext *ctx = getContext();
 
@@ -2190,7 +2000,6 @@ void CanvasWidget::openORA(QString path)
     canvasOrigin = QPoint(0, 0);
     ctx->dirtyTiles = ctx->layers.getTileSet();
     render->updateBackgroundTile(context);
-    d->fullRedraw = true;
     update();
     modified = false;
     emit updateLayers();
@@ -2198,8 +2007,6 @@ void CanvasWidget::openORA(QString path)
 
 void CanvasWidget::openImage(QImage image)
 {
-    Q_D(CanvasWidget);
-
     CanvasContext *ctx = getContext();
 
     ctx->clearUndoHistory();
@@ -2221,7 +2028,6 @@ void CanvasWidget::openImage(QImage image)
     setActiveLayer(0); // Sync up the undo layer
     canvasOrigin = QPoint(0, 0);
     ctx->dirtyTiles = ctx->layers.getTileSet();
-    d->fullRedraw = true;
     update();
     modified = false;
     emit updateLayers();
