@@ -1171,33 +1171,53 @@ void CanvasWidget::duplicateLayer(int layerIndex)
 
 void CanvasWidget::updateLayerTranslate(int x,  int y)
 {
-    CanvasContext *ctx = getContext();
+    Q_D(CanvasWidget);
 
-    CanvasLayer *currentLayer = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
-    if (!ctx->currentLayerCopy)
-    {
-        ctx->currentLayerCopy.reset(new CanvasLayer());
-        for (auto const &idx: currentLayer->getTileSet())
+    if (!d->motionCoalesceToken)
+        d->motionCoalesceToken.reset(new QAtomicInt(1));
+    else
+        d->motionCoalesceToken->ref();
+
+    auto coalesceToken = d->motionCoalesceToken;
+
+    auto msg = [x, y, coalesceToken](CanvasContext *ctx) {
+        if (coalesceToken && coalesceToken->deref() == true)
+            return;
+
+        CanvasLayer *currentLayer = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
+        if (!ctx->currentLayerCopy)
         {
-            auto tile = renderList(currentLayer->children, idx.x(), idx.y());
-            if (tile)
-                (*ctx->currentLayerCopy->tiles)[idx] = std::move(tile);
+            // If the current layer is a group generate a cached rendering of it
+            ctx->currentLayerCopy.reset(new CanvasLayer());
+            for (auto const &idx: currentLayer->getTileSet())
+            {
+                auto tile = renderList(currentLayer->children, idx.x(), idx.y());
+                if (tile)
+                    (*ctx->currentLayerCopy->tiles)[idx] = std::move(tile);
+            }
         }
-    }
-    std::unique_ptr<CanvasLayer> newLayer = ctx->currentLayerCopy->translated(x, y);
+        std::unique_ptr<CanvasLayer> newLayer = ctx->currentLayerCopy->translated(x, y);
 
-    TileSet layerTiles = currentLayer->getTileSet();
-    TileSet newLayerTiles = newLayer->getTileSet();
-    layerTiles.insert(newLayerTiles.begin(), newLayerTiles.end());
+        TileSet layerTiles = currentLayer->getTileSet();
+        TileSet newLayerTiles = newLayer->getTileSet();
+        layerTiles.insert(newLayerTiles.begin(), newLayerTiles.end());
 
-    currentLayer->takeTiles(newLayer.get());
-    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+        currentLayer->takeTiles(newLayer.get());
+        ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+    };
 
-    update();
+    d->eventThread.enqueueCommand(msg);
 }
 
 void CanvasWidget::translateCurrentLayer(int x,  int y)
 {
+    Q_D(CanvasWidget);
+
+    // Ref'ing the token will discard any pending updateLayerTranslate() events
+    if (d->motionCoalesceToken)
+        d->motionCoalesceToken->ref();
+    d->motionCoalesceToken.reset();
+
     CanvasContext *ctx = getContext();
 
     auto parentInfo = parentFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
