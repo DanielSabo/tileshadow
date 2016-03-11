@@ -29,7 +29,6 @@ class BaseTool;
 class CanvasLayer;
 class CanvasContext;
 class CanvasRender;
-class CanvasUndoEvent;
 class CanvasWidgetPrivate;
 class CanvasWidget : public QGLWidget
 {
