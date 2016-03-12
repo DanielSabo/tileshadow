@@ -55,6 +55,7 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     systeminfodialog.cpp \
     canvaswidget.cpp \
+    canvasindex.cpp \
     canvaswidget-opencl.cpp \
     opencldeviceinfo.cpp \
     glhelper.cpp \
@@ -99,6 +100,7 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
     canvaswidget.h \
+    canvasindex.h \
     canvaswidget-opencl.h \
     opencldeviceinfo.h \
     glhelper.h \
