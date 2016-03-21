@@ -105,6 +105,7 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
     rightVertical->setSpacing(3);
     rightVertical->setContentsMargins(QMargins());
     rightBody->setLayout(rightVertical);
+    rightBody->setFixedWidth(600);
 
     d->scroll = new QScrollArea();
     d->scroll->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
@@ -128,13 +129,45 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
     previewScroll->setWidgetResizable(true);
     previewScroll->setWidget(d->previewWidget);
 
+    auto previewVerticalLayout = new QVBoxLayout();
+    auto previewButtonArea = new QHBoxLayout();
+    previewVerticalLayout->addWidget(previewScroll);
+    previewVerticalLayout->addLayout(previewButtonArea);
+    previewVerticalLayout->setStretch(0, 1);
+    auto previewDefaultStrokeButton = new QPushButton(tr("Reset Stroke"));
+    auto previewCopyStrokeButton = new QPushButton(tr("Copy Last Stroke"));
+    previewButtonArea->addStretch(1);
+    previewButtonArea->addWidget(previewDefaultStrokeButton);
+    previewButtonArea->addWidget(previewCopyStrokeButton);
+
+    connect(previewDefaultStrokeButton, &QPushButton::clicked, this, [d](bool) {
+        if (d->canvas)
+        {
+            d->loadPreviewStroke(":/preview_strokes/default.json");
+            d->updatePreview();
+        }
+    });
+
+    connect(previewCopyStrokeButton, &QPushButton::clicked, this, [d](bool) {
+        if (d->canvas)
+        {
+            auto lastStroke = d->canvas->getLastStrokeData();
+            if (!lastStroke.empty())
+            {
+                d->previewStrokeData = lastStroke;
+                d->updatePreview();
+            }
+        }
+    });
+
     auto inputEditorArea = new QWidget();
-    inputEditorArea->setLayout(new QVBoxLayout());
+    inputEditorArea->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    auto inputEditorAreaLayout = new QVBoxLayout();
+    inputEditorArea->setLayout(inputEditorAreaLayout);
     inputEditorArea->layout()->setContentsMargins(QMargins());
     inputEditorArea->layout()->setSpacing(0);
-    inputEditorArea->setFixedWidth(600);
 
-    rightVertical->addWidget(previewScroll);
+    rightVertical->addLayout(previewVerticalLayout);
     rightVertical->addWidget(inputEditorArea);
     rightVertical->setStretch(0, 1);
     rightVertical->setStretch(1, 1);
@@ -149,8 +182,9 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
     auto inputEditorButtonsLayout = new QHBoxLayout();
     inputEditorButtonsLayout->setContentsMargins(QMargins());
     inputEditorButtons->setLayout(inputEditorButtonsLayout);
-    inputEditorArea->layout()->addWidget(d->inputEditorBody);
-    inputEditorArea->layout()->addWidget(inputEditorButtons);
+    inputEditorAreaLayout->addStretch(1);
+    inputEditorAreaLayout->addWidget(d->inputEditorBody);
+    inputEditorAreaLayout->addWidget(inputEditorButtons);
 
     d->inputEditorApplyButton = new QPushButton(tr("Apply"));
     connect(d->inputEditorApplyButton, &QPushButton::clicked, this, [d](bool) {
