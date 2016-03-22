@@ -26,7 +26,9 @@ LayerListWidget::LayerListWidget(CanvasWidget *canvas, QWidget *parent) :
     ui->layerModeComboBox->addItem(tr("Color"), QVariant(BlendMode::Color));
     ui->layerModeComboBox->addItem(tr("Luminosity"), QVariant(BlendMode::Luminosity));
     ui->layerModeComboBox->addItem(tr("Erase"), QVariant(BlendMode::DestinationOut));
+    ui->layerModeComboBox->addItem(tr("Mask"), QVariant(BlendMode::DestinationIn));
     ui->layerModeComboBox->addItem(tr("Source Atop"), QVariant(BlendMode::SourceAtop));
+    ui->layerModeComboBox->addItem(tr("Destination Atop"), QVariant(BlendMode::DestinationAtop));
 
     connect(ui->addLayerButton,  SIGNAL(clicked()), this, SLOT(layerListAdd()));
     connect(ui->delLayerButton,  SIGNAL(clicked()), this, SLOT(layerListRemove()));

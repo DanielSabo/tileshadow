@@ -36,10 +36,14 @@ static QString blendModeToOraOp(BlendMode::Mode mode)
         return QStringLiteral("svg:color");
     if (mode == BlendMode::Luminosity)
         return QStringLiteral("svg:luminosity");
+    if (mode == BlendMode::DestinationIn)
+        return QStringLiteral("svg:dst-in");
     if (mode == BlendMode::DestinationOut)
         return QStringLiteral("svg:dst-out");
     if (mode == BlendMode::SourceAtop)
         return QStringLiteral("svg:src-atop");
+    if (mode == BlendMode::DestinationAtop)
+        return QStringLiteral("svg:dst-atop");
     return QStringLiteral("svg:src-over");
 }
 
@@ -63,10 +67,14 @@ static BlendMode::Mode oraOpToMode(QString opName)
         return BlendMode::Color;
     if (opName == "svg:luminosity")
         return BlendMode::Luminosity;
+    if (opName == "svg:dst-in")
+        return BlendMode::DestinationIn;
     if (opName == "svg:dst-out")
         return BlendMode::DestinationOut;
     if (opName == "svg:src-atop")
         return BlendMode::SourceAtop;
+    if (opName == "svg:dst-atop")
+        return BlendMode::DestinationAtop;
     return BlendMode::Over;
 }
 

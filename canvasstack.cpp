@@ -28,9 +28,13 @@ BlendMode::Mode filterEraseModes(BlendMode::Mode mode, bool filterErase)
 {
     if (filterErase)
     {
+        if (mode == BlendMode::DestinationIn)
+            return BlendMode::Over;
         if (mode == BlendMode::DestinationOut)
             return BlendMode::Over;
         if (mode == BlendMode::SourceAtop)
+            return BlendMode::Over;
+        if (mode == BlendMode::DestinationAtop)
             return BlendMode::Over;
     }
     return mode;
@@ -75,6 +79,14 @@ std::unique_ptr<CanvasTile> renderList(QList<CanvasLayer *> const &children, int
             }
             BlendMode::Mode mode = filterEraseModes(layer->mode, background);
             auxTile->blendOnto(result.get(), mode, layer->opacity);
+        }
+        else
+        {
+            // !background here is standing in for filterEraseModes
+            if (!background &&
+                layer->visible &&
+                BlendMode::isMasking(layer->mode))
+                result.reset();
         }
     }
 

@@ -168,7 +168,26 @@ std::unique_ptr<CanvasLayer> CanvasLayer::translated(int x, int y) const
 
 std::unique_ptr<CanvasLayer> CanvasLayer::mergeDown(const CanvasLayer *target) const
 {
-    std::unique_ptr<CanvasLayer> result = target->deepCopy();
+    if (type != LayerType::Layer || target->type != LayerType::Layer)
+        return std::unique_ptr<CanvasLayer>(new CanvasLayer());
+
+    std::unique_ptr<CanvasLayer> result;
+    if (BlendMode::isMasking(mode))
+    {
+        result = target->shellCopy();
+
+        // For masking modes clip the result tiles to this layer's tiles
+        for (auto &iter: *tiles)
+        {
+            CanvasTile *dst = target->getTileMaybe(iter.first.x(), iter.first.y());
+            if (dst)
+                result->tiles->emplace(iter.first, dst->copy());
+        }
+    }
+    else
+    {
+        result = target->deepCopy();
+    }
 
     for (auto &iter: *tiles)
     {

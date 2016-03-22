@@ -13,9 +13,15 @@ namespace BlendMode
         Saturation,
         Color,
         Luminosity,
+        DestinationIn,
         DestinationOut,
-        SourceAtop
+        SourceAtop,
+        DestinationAtop
     } Mode;
+
+    static inline bool isMasking(Mode mode) {
+        return (mode == DestinationIn || mode == DestinationAtop);
+    }
 }
 
 #endif // BLENDMODES_H
