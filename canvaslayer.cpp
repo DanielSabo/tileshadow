@@ -34,7 +34,7 @@ CanvasLayer::~CanvasLayer()
         delete children.takeLast();
 }
 
-std::unique_ptr<CanvasLayer> CanvasLayer::deepCopy() const
+std::unique_ptr<CanvasLayer> CanvasLayer::shellCopy() const
 {
     std::unique_ptr<CanvasLayer> result(new CanvasLayer());
     result->name = name;
@@ -43,6 +43,13 @@ std::unique_ptr<CanvasLayer> CanvasLayer::deepCopy() const
     result->mode = mode;
     result->opacity = opacity;
     result->type = type;
+
+    return result;
+}
+
+std::unique_ptr<CanvasLayer> CanvasLayer::deepCopy() const
+{
+    std::unique_ptr<CanvasLayer> result = shellCopy();
 
     for (TileMap::iterator iter = tiles->begin(); iter != tiles->end(); ++iter)
     {
@@ -110,13 +117,7 @@ static void subrectCopy(cl_mem src, int srcX, int srcY, cl_mem dst, int dstX, in
 
 std::unique_ptr<CanvasLayer> CanvasLayer::translated(int x, int y) const
 {
-    std::unique_ptr<CanvasLayer> result(new CanvasLayer());
-    result->name = name;
-    result->visible = visible;
-    result->editable = editable;
-    result->mode = mode;
-    result->opacity = opacity;
-    result->type = type;
+    std::unique_ptr<CanvasLayer> result = shellCopy();
 
     if (type == LayerType::Group)
         for (auto const &child: children)

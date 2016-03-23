@@ -42,6 +42,9 @@ public:
     TileSet takeTiles(CanvasLayer *source);
     void prune();
     void swapOut();
+
+private:
+    std::unique_ptr<CanvasLayer> shellCopy() const;
 };
 
 #endif // CANVASLAYER_H
