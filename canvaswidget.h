@@ -1,6 +1,7 @@
 #ifndef CANVASWIDGET_H
 #define CANVASWIDGET_H
 
+#include <memory>
 #include <QGLWidget>
 #include <QInputEvent>
 #include <QImage>
@@ -165,7 +166,7 @@ private:
     void updateLayerTranslate(int x, int y);
     void translateCurrentLayer(int x, int y);
 
-    void insertLayerAbove(int layerIndex, CanvasLayer *newLayer);
+    void insertLayerAbove(int layerIndex, std::unique_ptr<CanvasLayer> newLayer);
     void resetCurrentLayer(CanvasContext *ctx, int index);
 
     CanvasContext *getContext();

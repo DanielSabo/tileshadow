@@ -612,7 +612,8 @@ void CanvasWidget::setActiveLayer(int layerIndex)
 
 void CanvasWidget::addLayerAbove(int layerIndex)
 {
-    insertLayerAbove(layerIndex, new CanvasLayer(QString().sprintf("Layer %02d", ++lastNewLayerNumber)));
+    CanvasLayer *layer = new CanvasLayer(QString().sprintf("Layer %02d", ++lastNewLayerNumber));
+    insertLayerAbove(layerIndex, std::unique_ptr<CanvasLayer>(layer));
 }
 
 void CanvasWidget::addLayerAbove(int layerIndex, QImage image, QString name)
@@ -626,17 +627,17 @@ void CanvasWidget::addLayerAbove(int layerIndex, QImage image, QString name)
         name = QString().sprintf("Layer %02d", ++lastNewLayerNumber);
     imported->name = name;
 
-    insertLayerAbove(layerIndex, imported.release());
+    insertLayerAbove(layerIndex, std::move(imported));
 }
 
 void CanvasWidget::addGroupAbove(int layerIndex)
 {
     CanvasLayer *layer = new CanvasLayer(QStringLiteral("Group"));
     layer->type = LayerType::Group;
-    insertLayerAbove(layerIndex, layer);
+    insertLayerAbove(layerIndex, std::unique_ptr<CanvasLayer>(layer));
 }
 
-void CanvasWidget::insertLayerAbove(int layerIndex, CanvasLayer *newLayer)
+void CanvasWidget::insertLayerAbove(int layerIndex, std::unique_ptr<CanvasLayer> newLayer)
 {
     if (action != CanvasAction::None)
         return;
@@ -650,9 +651,10 @@ void CanvasWidget::insertLayerAbove(int layerIndex, CanvasLayer *newLayer)
 
     ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
-    parentInfo.container->insert(parentInfo.index + 1, newLayer);
-    resetCurrentLayer(ctx, absoluteIndexOfLayer(&ctx->layers, newLayer));
-    TileSet layerTiles = newLayer->getTileSet();
+    CanvasLayer *insertedLayer = newLayer.release();
+    parentInfo.container->insert(parentInfo.index + 1, insertedLayer);
+    resetCurrentLayer(ctx, absoluteIndexOfLayer(&ctx->layers, insertedLayer));
+    TileSet layerTiles = insertedLayer->getTileSet();
     ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
 
     update();
@@ -871,7 +873,7 @@ void CanvasWidget::duplicateLayer(int layerIndex)
     {
         std::unique_ptr<CanvasLayer> newLayer = oldLayer->deepCopy();
         newLayer->name = oldLayer->name + " Copy";
-        insertLayerAbove(layerIndex, newLayer.release());
+        insertLayerAbove(layerIndex, std::move(newLayer));
     }
 }
 
