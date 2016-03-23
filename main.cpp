@@ -43,7 +43,9 @@ int main(int argc, char *argv[])
     }
     else
     {
-        if ((!appSettings.contains("OpenCL/Device")) ||
+        bool deviceValid = false;
+        appSettings.value("OpenCL/Device").toString().toInt(&deviceValid);
+        if ((!deviceValid) ||
             (a.queryKeyboardModifiers() & Qt::ShiftModifier))
         {
             DeviceSelectDialog().exec();

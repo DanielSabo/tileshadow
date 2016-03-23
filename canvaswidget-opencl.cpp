@@ -319,7 +319,16 @@ SharedOpenCL::SharedOpenCL()
 
     cl_command_queue_properties command_queue_flags = 0;
 
-    cl_device_type selectedDeviceType = QSettings().value("OpenCL/Device", QVariant::fromValue<int>(0)).toInt();
+    cl_device_type selectedDeviceType = CL_DEVICE_TYPE_CPU;
+
+    QSettings appSettings;
+    if (appSettings.contains("OpenCL/Device"))
+    {
+        bool ok = false;
+        selectedDeviceType = appSettings.value("OpenCL/Device").toString().toInt(&ok);
+        if (!ok)
+            selectedDeviceType = CL_DEVICE_TYPE_CPU;
+    }
 
     if (selectedDeviceType == 0)
     {
