@@ -681,8 +681,7 @@ void CanvasWidget::insertLayerAbove(int layerIndex, std::unique_ptr<CanvasLayer>
     parentInfo.container->insert(parentInfo.index + 1, insertedLayer);
     resetCurrentLayer(ctx, absoluteIndexOfLayer(&ctx->layers, insertedLayer));
 
-    TileSet layerTiles = dirtyTilesForLayer(&ctx->layers, ctx->currentLayer);
-    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+    tileSetInsert(ctx->dirtyTiles, dirtyTilesForLayer(&ctx->layers, ctx->currentLayer));
 
     update();
     modified = true;
@@ -707,8 +706,7 @@ void CanvasWidget::removeLayer(int layerIndex)
     ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
     /* Before we delete the layer, dirty all tiles it intersects */
-    TileSet layerTiles = dirtyTilesForLayer(&ctx->layers, layerIndex);
-    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+    tileSetInsert(ctx->dirtyTiles, dirtyTilesForLayer(&ctx->layers, layerIndex));
 
     parentInfo.element->swapOut();
 
@@ -741,8 +739,7 @@ void CanvasWidget::moveLayerUp(int layerIndex)
     if (!currentLayer)
         return; // Nothing to do
 
-    TileSet layerTiles = dirtyTilesForLayer(&ctx->layers, layerIndex);
-    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+    tileSetInsert(ctx->dirtyTiles, dirtyTilesForLayer(&ctx->layers, layerIndex));
 
     // 2. In non-absolute terms, what is the object above it?
     int aboveIndex = parentInfo.index + 1;
@@ -774,8 +771,7 @@ void CanvasWidget::moveLayerUp(int layerIndex)
     ctx->addUndoEvent(undoEvent.release());
     resetCurrentLayer(ctx, absoluteIndexOfLayer(&ctx->layers, currentLayer));
 
-    layerTiles = dirtyTilesForLayer(&ctx->layers, ctx->currentLayer);
-    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+    tileSetInsert(ctx->dirtyTiles, dirtyTilesForLayer(&ctx->layers, ctx->currentLayer));
 
     update();
     modified = true;
@@ -798,8 +794,7 @@ void CanvasWidget::moveLayerDown(int layerIndex)
     if (!currentLayer)
         return; // Nothing to do
 
-    TileSet layerTiles = dirtyTilesForLayer(&ctx->layers, layerIndex);
-    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+    tileSetInsert(ctx->dirtyTiles, dirtyTilesForLayer(&ctx->layers, layerIndex));
 
     // 2. In non-absolute terms, what is the object below it?
     int belowIndex = parentInfo.index - 1;
@@ -831,8 +826,7 @@ void CanvasWidget::moveLayerDown(int layerIndex)
     ctx->addUndoEvent(undoEvent.release());
     resetCurrentLayer(ctx, absoluteIndexOfLayer(&ctx->layers, currentLayer));
 
-    layerTiles = dirtyTilesForLayer(&ctx->layers, ctx->currentLayer);
-    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+    tileSetInsert(ctx->dirtyTiles, dirtyTilesForLayer(&ctx->layers, ctx->currentLayer));
 
     update();
     modified = true;
@@ -877,8 +871,7 @@ void CanvasWidget::mergeLayerDown(int layerIndex)
     if (above->type != LayerType::Layer || below->type != LayerType::Layer)
         return;
 
-    TileSet layerTiles = dirtyTilesForLayer(&ctx->layers, ctx->currentLayer);
-    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+    tileSetInsert(ctx->dirtyTiles, dirtyTilesForLayer(&ctx->layers, ctx->currentLayer));
 
     ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
@@ -890,8 +883,7 @@ void CanvasWidget::mergeLayerDown(int layerIndex)
 
     resetCurrentLayer(ctx, absoluteIndexOfLayer(&ctx->layers, merged));
 
-    layerTiles = dirtyTilesForLayer(&ctx->layers, ctx->currentLayer);
-    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+    tileSetInsert(ctx->dirtyTiles, dirtyTilesForLayer(&ctx->layers, ctx->currentLayer));
 
     update();
     modified = true;
@@ -942,12 +934,10 @@ void CanvasWidget::updateLayerTranslate(int x,  int y)
         }
         std::unique_ptr<CanvasLayer> newLayer = ctx->currentLayerCopy->translated(x, y);
 
-        TileSet layerTiles = currentLayer->getTileSet();
-        TileSet newLayerTiles = newLayer->getTileSet();
-        layerTiles.insert(newLayerTiles.begin(), newLayerTiles.end());
+        tileSetInsert(ctx->dirtyTiles, currentLayer->getTileSet());
+        tileSetInsert(ctx->dirtyTiles, newLayer->getTileSet());
 
         currentLayer->takeTiles(newLayer.get());
-        ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
     };
 
     d->eventThread.enqueueCommand(msg);
@@ -1080,11 +1070,15 @@ void CanvasWidget::setLayerVisible(int layerIndex, bool visible)
     d->updateEditable(ctx);
 
     TileSet layerTiles = dirtyTilesForLayer(&ctx->layers, layerIndex);
-    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+
+    if (!layerTiles.empty())
+    {
+        tileSetInsert(ctx->dirtyTiles, layerTiles);
+        emit update();
+    }
 
     modified = true;
     emit updateLayers();
-    emit update();
 }
 
 bool CanvasWidget::getLayerVisible(int layerIndex)
@@ -1159,12 +1153,7 @@ void CanvasWidget::setLayerTransientOpacity(int layerIndex, float opacity)
 
         layerObj->opacity = opacity;
 
-        TileSet layerTiles = layerObj->getTileSet();
-
-        if(!layerTiles.empty())
-        {
-            ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
-        }
+        tileSetInsert(ctx->dirtyTiles, layerObj->getTileSet());
     };
 
     d->eventThread.enqueueCommand(msg);
@@ -1210,19 +1199,20 @@ void CanvasWidget::setLayerMode(int layerIndex, BlendMode::Mode mode)
     ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
     TileSet layerTiles = dirtyTilesForLayer(&ctx->layers, layerIndex);
-    ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
 
     layerObj->mode = mode;
 
     if (BlendMode::isMasking(layerObj->mode))
+        tileSetInsert(layerTiles, dirtyTilesForLayer(&ctx->layers, layerIndex));
+
+    if (!layerTiles.empty())
     {
-        layerTiles = dirtyTilesForLayer(&ctx->layers, layerIndex);
-        ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+        tileSetInsert(ctx->dirtyTiles, layerTiles);
+        emit update();
     }
 
     modified = true;
     emit updateLayers();
-    emit update();
 }
 
 BlendMode::Mode CanvasWidget::getLayerMode(int layerIndex)

@@ -18,4 +18,9 @@ typedef std::map<QPoint, std::unique_ptr<CanvasTile>, _tilePointCompare> TileMap
 
 QRect tileSetBounds(TileSet const &objTiles);
 
+static inline void tileSetInsert(TileSet &dst, TileSet const &src) {
+    dst.insert(src.begin(), src.end());
+}
+
+
 #endif // TILESET_H
