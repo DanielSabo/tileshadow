@@ -196,8 +196,7 @@ MyPaintTool::MyPaintTool(const QString &path) : priv(new MyPaintToolPrivate())
                     mask.loadFromData(decoded);
                     if (mask.isNull())
                         throw QString("MBI brush error, failed to decode mask");
-                    mask.invertPixels();
-                    masks.push_back(MaskBuffer(mask));
+                    masks.push_back(MaskBuffer(mask).invert());
                 }
                 else
                     throw QString("MBI brush error, empty mask");
