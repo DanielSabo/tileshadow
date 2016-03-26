@@ -12,8 +12,7 @@
 class ToolListPopupPrivate
 {
 public:
-    QScrollArea *scrollArea;
-    ToolListView *scrollContents;
+    ToolListView *toolListView;
 };
 
 ToolListPopup::ToolListPopup(QWidget *parent) :
@@ -24,18 +23,13 @@ ToolListPopup::ToolListPopup(QWidget *parent) :
 
     QVBoxLayout *layout = new QVBoxLayout();
     layout->setSpacing(3);
-    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setContentsMargins(1, 1, 1, 1);
     setLayout(layout);
 
-    d->scrollArea = new QScrollArea(this);
-    layout->addWidget(d->scrollArea);
+    d->toolListView = new ToolListView(this);
+    layout->addWidget(d->toolListView);
 
-    d->scrollContents = new ToolListView(this);
-
-    d->scrollArea->setWidget(d->scrollContents);
-    d->scrollArea->setWidgetResizable(true);
-
-    connect(d->scrollContents, &ToolListView::selectionChanged, this, [this](QString const &toolPath) {
+    connect(d->toolListView, &ToolListView::selectionChanged, this, [this](QString const &toolPath) {
         hide();
         toolSelected(toolPath);
     });
@@ -44,12 +38,7 @@ ToolListPopup::ToolListPopup(QWidget *parent) :
 void ToolListPopup::setToolList(const ToolList &list)
 {
     Q_D(ToolListPopup);
-    d->scrollContents->setToolList(list);
-
-    int sbWidth = d->scrollArea->verticalScrollBar()->style()->pixelMetric(QStyle::PM_ScrollBarExtent, 0, d->scrollArea->verticalScrollBar());
-    int frameWidth = d->scrollArea->style()->pixelMetric(QStyle::PM_DefaultFrameWidth, 0, d->scrollArea);
-    int contentWidth = d->scrollArea->sizeHint().width();
-    d->scrollArea->setMinimumWidth(contentWidth + sbWidth + frameWidth * 2);
+    d->toolListView->setToolList(list);
 }
 
 void ToolListPopup::reposition(QRect const &globalBounds, QPoint const &globalOrigin)
@@ -57,7 +46,7 @@ void ToolListPopup::reposition(QRect const &globalBounds, QPoint const &globalOr
     Q_D(ToolListPopup);
     show();
 
-    int desiredHeight = d->scrollArea->frameWidth() * 2 + d->scrollContents->sizeHint().height();
+    int desiredHeight = d->toolListView->sizeHint().height();
     int h = qMin(desiredHeight, globalBounds.height());
 
     if (h > globalBounds.height())
@@ -81,5 +70,5 @@ void ToolListPopup::reposition(QRect const &globalBounds, QPoint const &globalOr
 void ToolListPopup::setActiveTool(QString const &toolPath)
 {
     Q_D(ToolListPopup);
-    d->scrollContents->setActiveTool(toolPath);
+    d->toolListView->setActiveTool(toolPath);
 }

@@ -2,10 +2,11 @@
 #define TOOLLISTVIEW_H
 
 #include <QWidget>
+#include <QAbstractScrollArea>
 #include "toolfactory.h"
 
 class ToolListViewPrivate;
-class ToolListView : public QWidget
+class ToolListView : public QAbstractScrollArea
 {
     Q_OBJECT
 public:
@@ -14,8 +15,9 @@ public:
     void setToolList(ToolList const &list);
     void setActiveTool(const QString &toolPath);
 
-    QSize sizeHint() const;
+    QSize viewportSizeHint() const;
     void paintEvent(QPaintEvent *event);
+    void resizeEvent(QResizeEvent *event);
     void mousePressEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
 

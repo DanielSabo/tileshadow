@@ -3,6 +3,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QApplication>
+#include <QScrollBar>
 
 class ToolListViewPrivate
 {
@@ -16,7 +17,7 @@ public:
 };
 
 ToolListView::ToolListView(QWidget *parent)
-    : QWidget(parent),
+    : QAbstractScrollArea(parent),
       d_ptr(new ToolListViewPrivate)
 {
     Q_D(ToolListView);
@@ -29,14 +30,17 @@ ToolListView::ToolListView(QWidget *parent)
     setBackgroundRole(QPalette::Base);
     setAutoFillBackground(true);
 
-    d->hPad = 2;
+    d->hPad = 4;
     d->vPad = 2;
     d->rowSize = QSize(100, fontMetrics().height() + d->vPad * 2);
 
-    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
+    setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 }
 
-QSize ToolListView::sizeHint() const
+QSize ToolListView::viewportSizeHint() const
 {
     Q_D(const ToolListView);
 
@@ -44,22 +48,23 @@ QSize ToolListView::sizeHint() const
                  d->rowSize.height() * qMax<int>(1, d->tools.size()));
 }
 
-
 void ToolListView::paintEvent(QPaintEvent *event)
 {
     Q_D(ToolListView);
 
-    QPainter painter(this);
+    QPainter painter(viewport());
 
     QSize widgetRowSize(width(), d->rowSize.height());
     painter.setPen(palette().color(QPalette::Normal, QPalette::Text));
+
+    const int scrollOffset = verticalScrollBar()->value();
 
     for (int i = 0; i < d->tools.size(); ++i)
     {
         QString const &toolPath = d->tools.at(i).first;
         QString const &toolName = d->tools.at(i).second;
 
-        QPoint rowOrigin = QPoint(0, d->rowSize.height() * i);
+        QPoint rowOrigin = QPoint(0, d->rowSize.height() * i - scrollOffset);
         QRect contentRect = QRect(rowOrigin, widgetRowSize);
         QRect textRect = QRect(rowOrigin, widgetRowSize) - QMargins(d->hPad, d->vPad, d->hPad, d->vPad);
 
@@ -96,9 +101,18 @@ void ToolListView::mouseReleaseEvent(QMouseEvent *event)
     if (event->button() != Qt::LeftButton)
         return;
 
-    int clickedRow = event->y() / d->rowSize.height();
+    int clickedRow = (event->y() + verticalScrollBar()->value()) / d->rowSize.height();
     if (clickedRow >= 0 && clickedRow < d->tools.size())
         selectionChanged(d->tools.at(clickedRow).first);
+}
+
+void ToolListView::resizeEvent(QResizeEvent *event)
+{
+    Q_D(ToolListView);
+    verticalScrollBar()->setSingleStep(d->rowSize.height());
+    verticalScrollBar()->setPageStep(height());
+    verticalScrollBar()->setSizeIncrement(1, 1);
+    verticalScrollBar()->setRange(0, qMax(0, viewportSizeHint().height() - viewport()->height()));
 }
 
 void ToolListView::setToolList(const ToolList &list)
