@@ -10,7 +10,8 @@
 #include "gradienttool.h"
 #include <QDebug>
 
-static void asciiTitleCase(QString &instr)
+namespace {
+void asciiTitleCase(QString &instr)
 {
     bool lastspace = true;
     for (int i = 0; i < instr.size(); i++)
@@ -29,7 +30,7 @@ static void asciiTitleCase(QString &instr)
     }
 }
 
-static QStringList findBrushFiles(QDir const &path)
+QStringList findBrushFiles(QDir const &path)
 {
     QFileInfoList infoList = path.entryInfoList({"*.myb", "*.mbi"}, QDir::AllDirs | QDir::NoDotAndDotDot | QDir::Files);
     QStringList result;
@@ -52,43 +53,41 @@ static QStringList findBrushFiles(QDir const &path)
     return result;
 }
 
-namespace {
-    struct SortKey
+struct SortKey
+{
+    QString filename;
+    QString dirname;
+    QString displayName;
+
+    SortKey(QString path)
     {
-        QString filename;
-        QString dirname;
-        QString displayName;
+        path.chop(4);
+        path.replace(QChar('_'), " ");
+        QStringList splitName = path.split("/");
+        filename = splitName.takeLast();
+        dirname = splitName.join(" - ");
+        if (!dirname.isEmpty())
+            displayName = dirname + " - " + filename;
+        else
+            displayName = filename;
+        asciiTitleCase(displayName);
+    }
 
-        SortKey(QString path)
-        {
-            path.chop(4);
-            path.replace(QChar('_'), " ");
-            QStringList splitName = path.split("/");
-            filename = splitName.takeLast();
-            dirname = splitName.join(" - ");
-            if (!dirname.isEmpty())
-                displayName = dirname + " - " + filename;
-            else
-                displayName = filename;
-            asciiTitleCase(displayName);
-        }
-
-        bool operator<(const SortKey &b) const
-        {
-            int cmp = QString::compare(dirname, b.dirname, Qt::CaseInsensitive);
-            if (cmp < 0)
-                return true;
-            else if (cmp > 0)
-                return false;
-
-            if (QString::compare(filename, b.filename, Qt::CaseInsensitive) < 0)
-                return true;
+    bool operator<(const SortKey &b) const
+    {
+        int cmp = QString::compare(dirname, b.dirname, Qt::CaseInsensitive);
+        if (cmp < 0)
+            return true;
+        else if (cmp > 0)
             return false;
-        }
-    };
-}
 
-static void addFilesInPath(std::map<SortKey, QString> &index, QString const &path)
+        if (QString::compare(filename, b.filename, Qt::CaseInsensitive) < 0)
+            return true;
+        return false;
+    }
+};
+
+void addFilesInPath(std::map<SortKey, QString> &index, QString const &path)
 {
     const int prefixLength = path.length();
 
@@ -98,6 +97,7 @@ static void addFilesInPath(std::map<SortKey, QString> &index, QString const &pat
         name.remove(0, prefixLength);
         index[name] = brushFile;
     }
+}
 }
 
 QString ToolFactory::getUserToolsPath()
