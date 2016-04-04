@@ -4,6 +4,7 @@
 #include <QSettings>
 #include <QMessageBox>
 #include <QDebug>
+#include "toolfactory.h"
 #include "nativeeventfilter.h"
 #include "deviceselectdialog.h"
 #include "batchprocessor.h"
@@ -28,6 +29,8 @@ int main(int argc, char *argv[])
     QSettings appSettings;
     //FIXME: Remove this old setting
     appSettings.remove("EnableGLSharing");
+
+    ToolFactory::initializeUserPaths();
 
     QCommandLineParser parser;
     QCommandLineOption batchFile("batch", "Command file to execute", "batchfile");

@@ -100,6 +100,13 @@ void addFilesInPath(std::map<SortKey, QString> &index, QString const &path)
 }
 }
 
+void ToolFactory::initializeUserPaths()
+{
+    QDir prefix{QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)};
+    prefix.mkpath(QStringLiteral("mypaint-tools"));
+    prefix.mkpath(QStringLiteral("patterns"));
+}
+
 QString ToolFactory::getUserToolsPath()
 {
     return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/mypaint-tools/");
