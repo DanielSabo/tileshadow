@@ -16,20 +16,26 @@ bool _tilePointCompare::operator ()(const QPoint &a, const QPoint &b) const
 
 QRect tileSetBounds(TileSet const &objTiles)
 {
-    QRect tileBounds;
-    TileSet::iterator iter;
+    TileSet::iterator iter = objTiles.begin();
+    if (iter != objTiles.end())
+    {
+        int x0, x1, y0, y1;
+        x0 = x1 = iter->x();
+        y0 = y1 = iter->y();
 
-    if (objTiles.empty())
-        tileBounds = QRect(0, 0, 0, 0);
+        while (++iter != objTiles.end())
+        {
+            if (x0 > iter->x()) { x0 = iter->x(); }
+            else if (x1 < iter->x()) { x1 = iter->x(); }
+
+            if (y0 > iter->y()) { y0 = iter->y(); }
+            else if (y1 < iter->y()) { y1 = iter->y(); }
+        }
+
+        return QRect(QPoint(x0, y0), QPoint(x1, y1));
+    }
     else
     {
-        tileBounds = QRect(objTiles.begin()->x(), objTiles.begin()->y(), 1, 1);
+        return QRect(0, 0, 0, 0);
     }
-
-    for(iter = objTiles.begin(); iter != objTiles.end(); iter++)
-    {
-        tileBounds = tileBounds.united(QRect(iter->x(), iter->y(), 1, 1));
-    }
-
-    return tileBounds;
 }
