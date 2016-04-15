@@ -48,6 +48,7 @@ public:
     QPushButton *saveButton;
 
     std::vector<CanvasStrokePoint> previewStrokeData;
+    QPoint previewStrokeCenter;
     QString activeToolpath;
     bool freezeUpdates;
 
@@ -80,6 +81,7 @@ public:
     void exportMasks();
 
     void loadPreviewStroke(QString const &path);
+    void setPreviewStrokeData(std::vector<CanvasStrokePoint> &&data);
     void updatePreview();
 };
 
@@ -154,7 +156,7 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
             auto lastStroke = d->canvas->getLastStrokeData();
             if (!lastStroke.empty())
             {
-                d->previewStrokeData = lastStroke;
+                d->setPreviewStrokeData(std::move(lastStroke));
                 d->updatePreview();
             }
         }
@@ -624,12 +626,42 @@ void ToolExtendedSettingsWindowPrivate::exportMasks()
 
 void ToolExtendedSettingsWindowPrivate::loadPreviewStroke(const QString &path)
 {
-    previewStrokeData = CanvasStrokePoint::pointsFromFile(path);
+    setPreviewStrokeData(CanvasStrokePoint::pointsFromFile(path));
+}
+
+void ToolExtendedSettingsWindowPrivate::setPreviewStrokeData(std::vector<CanvasStrokePoint> &&data)
+{
+    previewStrokeData = data;
+
+    QRect previewStrokeBounds{};
+    auto iter = previewStrokeData.begin();
+    if (iter != previewStrokeData.end())
+    {
+        int x0, x1, y0, y1;
+        x0 = x1 = iter->x;
+        y0 = y1 = iter->y;
+        while (++iter != previewStrokeData.end())
+        {
+            if (x0 > iter->x)
+                x0 = iter->x;
+            else if (x1 < iter->x)
+                x1 = iter->x;
+
+            if (y0 > iter->y)
+                y0 = iter->y;
+            else if (y1 < iter->y)
+                y1 = iter->y;
+        }
+        previewStrokeBounds = {QPoint(x0, y0), QPoint(x1, y1)};
+    }
+
+    previewStrokeCenter = previewStrokeBounds.center();
 }
 
 void ToolExtendedSettingsWindowPrivate::updatePreview()
 {
     QImage preview = canvas->previewTool(previewStrokeData);
+    preview.setOffset(preview.rect().center() - previewStrokeCenter - preview.offset());
     previewWidget->setImage(preview, Qt::white);
     needsPreview = false;
 }
@@ -662,6 +694,7 @@ void PreviewWidget::paintEvent(QPaintEvent *event)
         widgetArea.width() / 2 - imageArea.width() / 2,
         widgetArea.height() / 2 - imageArea.height() / 2,
     };
+    origin += image.offset();
     painter.fillRect(event->rect(), background);
     painter.drawImage(origin, image);
 }

@@ -1963,7 +1963,12 @@ QImage CanvasWidget::previewTool(std::vector<CanvasStrokePoint> const &stroke)
         }
     }
 
-    return layerToImage(targetLayer.get());
+    QPoint offset = tileSetBounds(targetLayer->getTileSet()).topLeft();
+    offset = {offset.x() * -TILE_PIXEL_WIDTH, offset.y() * -TILE_PIXEL_HEIGHT};
+    QImage result = layerToImage(targetLayer.get());
+    result.setOffset(offset);
+
+    return result;
 }
 
 void CanvasWidget::setToolColor(const QColor &color)
