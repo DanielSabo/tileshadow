@@ -633,29 +633,27 @@ void ToolExtendedSettingsWindowPrivate::setPreviewStrokeData(std::vector<CanvasS
 {
     previewStrokeData = data;
 
-    QRect previewStrokeBounds{};
     auto iter = previewStrokeData.begin();
     if (iter != previewStrokeData.end())
     {
         int x0, x1, y0, y1;
         x0 = x1 = iter->x;
         y0 = y1 = iter->y;
+
         while (++iter != previewStrokeData.end())
         {
-            if (x0 > iter->x)
-                x0 = iter->x;
-            else if (x1 < iter->x)
-                x1 = iter->x;
+            if (x0 > iter->x) { x0 = iter->x; }
+            else if (x1 < iter->x) { x1 = iter->x; }
 
-            if (y0 > iter->y)
-                y0 = iter->y;
-            else if (y1 < iter->y)
-                y1 = iter->y;
+            if (y0 > iter->y) { y0 = iter->y; }
+            else if (y1 < iter->y) { y1 = iter->y; }
         }
-        previewStrokeBounds = {QPoint(x0, y0), QPoint(x1, y1)};
+        previewStrokeCenter = {(x0 + x1) / 2, (y0 + y1) / 2};
     }
-
-    previewStrokeCenter = previewStrokeBounds.center();
+    else
+    {
+        previewStrokeCenter = {0, 0};
+    }
 }
 
 void ToolExtendedSettingsWindowPrivate::updatePreview()
