@@ -232,6 +232,7 @@ static void getColorFunction (MyPaintSurface *base_surface,
 {
     CanvasMyPaintSurface *surface = static_cast<CanvasMyPaintSurface *>(base_surface);
     CanvasLayer *layer = surface->strokeContext->layer;
+    std::unique_ptr<CanvasTile> emptyTile;
 
     if (radius < 1.0f)
         radius = 1.0f;
@@ -289,7 +290,19 @@ static void getColorFunction (MyPaintSurface *base_surface,
             size_t global_work_size[1] = CL_DIM1(height);
             size_t local_work_size[1] = CL_DIM1(1);
 
-            cl_mem data = layer->clOpenTileAt(ix, iy);
+            CanvasTile *srcTile = layer->getTileMaybe(ix, iy);
+            if (!srcTile)
+            {
+                if (!emptyTile)
+                {
+                    emptyTile.reset(new CanvasTile());
+                    emptyTile->fill(0.0f, 0.0f, 0.0f, 0.0f);
+                }
+
+                srcTile = emptyTile.get();
+            }
+
+            cl_mem data = srcTile->unmapHost();
 
             err = clSetKernelArg<cl_mem>(kernel1, 0, data);
             err = clSetKernelArg<cl_float>(kernel1, 1, tileX);
@@ -451,6 +464,10 @@ static int drawDabFunction (MyPaintSurface *base_surface,
         err = clSetKernelArg<cl_float4>(kernel, 7, color);
     }
 
+    bool skipEmptyTiles = false;
+    if (lock_alpha > 0.0f || color_a <= 0.0f)
+        skipEmptyTiles = true;
+
     int firstPixelX = boundRect.x() + x;
     int firstPixelY = boundRect.y() + y;
     int lastPixelX = firstPixelX + boundRect.width();
@@ -472,6 +489,14 @@ static int drawDabFunction (MyPaintSurface *base_surface,
 
         for (int ix = ix_start; ix <= ix_end; ++ix)
         {
+            cl_mem data;
+            if (!skipEmptyTiles)
+                data = layer->getTile(ix, iy)->unmapHost();
+            else if (CanvasTile *tile = layer->getTileMaybe(ix, iy))
+                data = tile->unmapHost();
+            else
+                continue;
+
             const int tileOriginX = ix * TILE_PIXEL_WIDTH;
             const int offsetX = std::max(firstPixelX - tileOriginX, 0);
             const int extraX = std::max(tileOriginX + TILE_PIXEL_WIDTH - lastPixelX - 1, 0);
@@ -487,7 +512,6 @@ static int drawDabFunction (MyPaintSurface *base_surface,
             size_t local_work_size[2] = CL_DIM2(width, 1);
 
             priv->modTiles.insert(QPoint(ix, iy));
-            cl_mem data = layer->clOpenTileAt(ix, iy);
 
             err = clSetKernelArg<cl_mem>(kernel, 0, data);
             err = clSetKernelArg<cl_int>(kernel, 1, offset);
