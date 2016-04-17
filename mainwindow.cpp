@@ -716,7 +716,7 @@ void MainWindow::runCircleBenchmark()
         {
             localRuns = 0;
             //qDebug() << newAverage << lastAverage;
-            if (fabs(newAverage - lastAverage) < newAverage * 0.0025)
+            if (fabs(newAverage - lastAverage) <= newAverage * 0.0025)
                 break;
         }
 
