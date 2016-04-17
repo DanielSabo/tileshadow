@@ -108,6 +108,31 @@ __kernel void mypaint_color_query_part1(__global float4 *buf,
   accum[(gidy + accum_offset) * 2 + 1] = (float4)(total_weight);
 }
 
+__kernel void mypaint_color_query_empty_part1(         float   x,
+                                                       float   y,
+                                                       int     width,
+                                                       int     accum_offset,
+                                              __global float4 *accum,
+                                                       float   radius)
+{
+  int gidy = get_global_id(0);
+
+  float4 total_accum  = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
+  float  total_weight = 0.0f;
+
+  for (int ix = 0; ix < width; ++ix)
+    {
+      float xx = (ix - x);
+      float yy = (gidy - y);
+
+      total_weight += color_query_weight(xx, yy, radius);
+    }
+
+  accum[(gidy + accum_offset) * 2] = total_accum;
+  accum[(gidy + accum_offset) * 2 + 1] = (float4)(total_weight);
+}
+
+
 __kernel void mypaint_color_query_part2(__global float4 *accum,
                                                  int     count)
 {

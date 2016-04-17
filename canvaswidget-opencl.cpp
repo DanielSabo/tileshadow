@@ -420,6 +420,7 @@ SharedOpenCL::SharedOpenCL()
         mypaintMaskDabKernel = buildOrWarn(myPaintKernelsProg, "mypaint_mask_dab");
         mypaintMaskDabLockedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_mask_dab_locked");
         mypaintGetColorKernelPart1 = buildOrWarn(myPaintKernelsProg, "mypaint_color_query_part1");
+        mypaintGetColorKernelEmptyPart1 = buildOrWarn(myPaintKernelsProg, "mypaint_color_query_empty_part1");
         mypaintGetColorKernelPart2 = buildOrWarn(myPaintKernelsProg, "mypaint_color_query_part2");
 
         clReleaseProgram (myPaintKernelsProg);

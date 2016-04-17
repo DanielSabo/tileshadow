@@ -59,6 +59,7 @@ public:
     cl_kernel mypaintMaskDabKernel;
     cl_kernel mypaintMaskDabLockedKernel;
     cl_kernel mypaintGetColorKernelPart1;
+    cl_kernel mypaintGetColorKernelEmptyPart1;
     cl_kernel mypaintGetColorKernelPart2;
 
     cl_kernel paintKernel_fillFloats;

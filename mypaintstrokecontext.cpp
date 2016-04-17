@@ -232,7 +232,6 @@ static void getColorFunction (MyPaintSurface *base_surface,
 {
     CanvasMyPaintSurface *surface = static_cast<CanvasMyPaintSurface *>(base_surface);
     CanvasLayer *layer = surface->strokeContext->layer;
-    std::unique_ptr<CanvasTile> emptyTile;
 
     if (radius < 1.0f)
         radius = 1.0f;
@@ -251,6 +250,7 @@ static void getColorFunction (MyPaintSurface *base_surface,
     int iy_end   = tile_indice(lastPixelY, TILE_PIXEL_HEIGHT);
 
     cl_kernel kernel1 = SharedOpenCL::getSharedOpenCL()->mypaintGetColorKernelPart1;
+    cl_kernel empty_kernel1 = SharedOpenCL::getSharedOpenCL()->mypaintGetColorKernelEmptyPart1;
     cl_kernel kernel2 = SharedOpenCL::getSharedOpenCL()->mypaintGetColorKernelPart2;
 
     cl_mem colorAccumulatorMem;
@@ -265,6 +265,9 @@ static void getColorFunction (MyPaintSurface *base_surface,
     /* Part 1 */
     err = clSetKernelArg<cl_mem>(kernel1, 6, colorAccumulatorMem);
     err = clSetKernelArg<cl_float>(kernel1, 7, radius);
+
+    err = clSetKernelArg<cl_mem>(empty_kernel1, 4, colorAccumulatorMem);
+    err = clSetKernelArg<cl_float>(empty_kernel1, 5, radius);
 
     cl_int row_count = 0;
 
@@ -291,30 +294,36 @@ static void getColorFunction (MyPaintSurface *base_surface,
             size_t local_work_size[1] = CL_DIM1(1);
 
             CanvasTile *srcTile = layer->getTileMaybe(ix, iy);
-            if (!srcTile)
+
+            if (srcTile)
             {
-                if (!emptyTile)
-                {
-                    emptyTile.reset(new CanvasTile());
-                    emptyTile->fill(0.0f, 0.0f, 0.0f, 0.0f);
-                }
+                cl_mem data = srcTile->unmapHost();
 
-                srcTile = emptyTile.get();
+                err = clSetKernelArg<cl_mem>(kernel1, 0, data);
+                err = clSetKernelArg<cl_float>(kernel1, 1, tileX);
+                err = clSetKernelArg<cl_float>(kernel1, 2, tileY);
+                err = clSetKernelArg<cl_int>(kernel1, 3, offset);
+                err = clSetKernelArg<cl_int>(kernel1, 4, width);
+                err = clSetKernelArg<cl_int>(kernel1, 5, row_count);
+                err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
+                                             kernel1, 1,
+                                             nullptr, global_work_size, local_work_size,
+                                             0, nullptr, nullptr);
+                check_cl_error(err);
             }
+            else
+            {
+                err = clSetKernelArg<cl_float>(empty_kernel1, 0, tileX);
+                err = clSetKernelArg<cl_float>(empty_kernel1, 1, tileY);
+                err = clSetKernelArg<cl_int>(empty_kernel1, 2, width);
+                err = clSetKernelArg<cl_int>(empty_kernel1, 3, row_count);
+                err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
+                                             empty_kernel1, 1,
+                                             nullptr, global_work_size, local_work_size,
+                                             0, nullptr, nullptr);
+                check_cl_error(err);
 
-            cl_mem data = srcTile->unmapHost();
-
-            err = clSetKernelArg<cl_mem>(kernel1, 0, data);
-            err = clSetKernelArg<cl_float>(kernel1, 1, tileX);
-            err = clSetKernelArg<cl_float>(kernel1, 2, tileY);
-            err = clSetKernelArg<cl_int>(kernel1, 3, offset);
-            err = clSetKernelArg<cl_int>(kernel1, 4, width);
-            err = clSetKernelArg<cl_int>(kernel1, 5, row_count);
-            err = clEnqueueNDRangeKernel(SharedOpenCL::getSharedOpenCL()->cmdQueue,
-                                         kernel1, 1,
-                                         nullptr, global_work_size, local_work_size,
-                                         0, nullptr, nullptr);
-            check_cl_error(err);
+            }
 
             row_count += height;
         }
