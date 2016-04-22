@@ -74,6 +74,7 @@ public:
     QPoint viewOrigin;
     QSize viewSize;
     float viewScale;
+    int viewPixelRatio;
 
     void resizeFramebuffer(int w, int h);
     void shiftFramebuffer(int xOffset, int yOffset);

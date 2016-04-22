@@ -12,6 +12,7 @@
 #include <list>
 #include <qmath.h>
 #include <QApplication>
+#include <QWindow>
 #include <QProgressDialog>
 #include <QRegExp>
 #include <QMouseEvent>
@@ -266,6 +267,9 @@ void CanvasWidget::initializeGL()
     SharedOpenCL::getSharedOpenCL();
 
     render->updateBackgroundTile(context);
+
+    if (window() && window()->windowHandle())
+        render->viewPixelRatio = window()->windowHandle()->devicePixelRatio();
 
     d->eventThread.ctx = context;
     d->eventThread.start();

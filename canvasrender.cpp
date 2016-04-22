@@ -66,7 +66,8 @@ CanvasRender::CanvasRender() :
     glFuncs(new QOpenGLFunctions_3_2_Core()),
     backgroundGLTile(0),
     dirtyBackground(true),
-    viewScale(0.0f)
+    viewScale(0.0f),
+    viewPixelRatio(1)
 {
     if (!glFuncs->initializeOpenGLFunctions())
     {
@@ -508,8 +509,12 @@ void CanvasRender::renderView(QPoint newOrigin, QSize newSize, float newScale, b
     }
 
     glFuncs->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, GL_NONE);
+     /* FIXME: This should track the viewport size to make sure the scaled ratio is set
+      * for drawToolCursor() and drawColorDots() as well. */
+    if (viewPixelRatio != 1)
+        glFuncs->glViewport(0, 0, viewSize.width() * viewPixelRatio, viewSize.height() * viewPixelRatio);
     glFuncs->glBlitFramebuffer(0, 0, viewSize.width(), viewSize.height(),
-                               0, 0, viewSize.width(), viewSize.height(),
+                               0, 0, viewSize.width() * viewPixelRatio, viewSize.height() * viewPixelRatio,
                                GL_COLOR_BUFFER_BIT, GL_NEAREST);
     glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
 
