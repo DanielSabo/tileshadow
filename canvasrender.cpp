@@ -517,9 +517,9 @@ void CanvasRender::renderView(QPoint newOrigin, QSize newSize, float newScale, b
     dirtyTiles.clear();
 }
 
-void CanvasRender::drawToolCursor(QPoint cursorPos, float cusrorRadius)
+void CanvasRender::drawToolCursor(QPoint cursorPos, float cursorRadius)
 {
-    if (cusrorRadius < 1.0f)
+    if (cursorRadius < 1.0f)
         return;
 
     float widgetHeight = viewSize.height();
@@ -531,8 +531,8 @@ void CanvasRender::drawToolCursor(QPoint cursorPos, float cusrorRadius)
     glFuncs->glUniform4f(cursorShader.dimensions,
                          (float(cursorPos.x()) / widgetWidth * 2.0f) - 1.0f,
                          1.0f - (float(cursorPos.y()) / widgetHeight * 2.0f),
-                         cusrorRadius / widgetWidth, cusrorRadius / widgetHeight);
-    glFuncs->glUniform1f(cursorShader.pixelRadius, cusrorRadius / 2.0f);
+                         cursorRadius / widgetWidth, cursorRadius / widgetHeight);
+    glFuncs->glUniform1f(cursorShader.pixelRadius, cursorRadius / 2.0f);
     glFuncs->glBindVertexArray(cursorShader.vertexArray);
     glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glFuncs->glDisable(GL_BLEND);
