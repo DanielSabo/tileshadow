@@ -2,6 +2,8 @@
 #include "canvasstack.h"
 #include "canvastile.h"
 #include <QDebug>
+#include <QMatrix>
+#include <QPolygonF>
 #include <utility>
 
 CanvasLayer::CanvasLayer(QString name)
@@ -160,6 +162,74 @@ std::unique_ptr<CanvasLayer> CanvasLayer::translated(int x, int y) const
                         TILE_PIXEL_HEIGHT - subShiftY,
                         result->clOpenTileAt(dstOrigin.x() + 1, dstOrigin.y() + 1),
                         0, 0);
+        }
+    }
+
+    return result;
+}
+
+std::unique_ptr<CanvasLayer> CanvasLayer::applyMatrix(const QMatrix &matrix) const
+{
+    std::unique_ptr<CanvasLayer> result = shellCopy();
+
+    if (type != LayerType::Layer)
+    {
+        qCritical() << "Can't apply matrix to non-Layer layer type:" << type;
+    }
+    else
+    {
+        QMatrix inversion = matrix.inverted();
+
+        auto opencl = SharedOpenCL::getSharedOpenCL();
+        cl_kernel kernel = opencl->matrixApply;
+        const size_t workSize[2] = CL_DIM2(TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT);
+        cl_float4 rotationMatrixArg;
+        rotationMatrixArg.s[0] = inversion.m11();
+        rotationMatrixArg.s[1] = inversion.m21();
+        rotationMatrixArg.s[2] = inversion.m12();
+        rotationMatrixArg.s[3] = inversion.m22();
+        clSetKernelArg<cl_float4>(kernel, 2, rotationMatrixArg);
+
+        for (auto const &srcIter: *tiles)
+        {
+            QPolygonF srcPoly = QPolygonF(QRectF(srcIter.first.x() * TILE_PIXEL_WIDTH - 0.5,
+                                                 srcIter.first.y() * TILE_PIXEL_HEIGHT - 0.5,
+                                                 TILE_PIXEL_WIDTH + 1, TILE_PIXEL_HEIGHT + 1));
+            QPolygonF outputPoly = matrix.map(srcPoly);
+            QRect outputBBox = outputPoly.boundingRect().toAlignedRect();
+            outputBBox = boundingTiles(outputBBox);
+
+            int x_post = -srcIter.first.x() * TILE_PIXEL_WIDTH;
+            int y_post = -srcIter.first.y() * TILE_PIXEL_HEIGHT;
+
+            clSetKernelArg<cl_mem>(kernel, 0, srcIter.second->unmapHost());
+
+            for (int tileY = outputBBox.top(); tileY <= outputBBox.bottom(); ++tileY)
+            {
+                QPolygonF rowPoly = QPolygonF(QRectF(outputBBox.left() * TILE_PIXEL_WIDTH,
+                                                     tileY * TILE_PIXEL_HEIGHT,
+                                                     outputBBox.width() * TILE_PIXEL_WIDTH,
+                                                     TILE_PIXEL_HEIGHT));
+                rowPoly = rowPoly.intersected(outputPoly);
+                QRect rowBBox = rowPoly.boundingRect().toAlignedRect();
+                rowBBox = boundingTiles(rowBBox);
+
+                for (int tileX = rowBBox.left(); tileX <= rowBBox.right(); ++tileX)
+                {
+                    int x_pre = tileX * TILE_PIXEL_WIDTH;
+                    int y_pre = tileY * TILE_PIXEL_HEIGHT;
+
+                    float x_comp = x_pre * inversion.m11() + y_pre * inversion.m21() + x_post + float(inversion.dx());
+                    float y_comp = x_pre * inversion.m12() + y_pre * inversion.m22() + y_post + float(inversion.dy());
+
+                    clSetKernelArg<cl_float2>(kernel, 3, {x_comp, y_comp});
+                    clSetKernelArg<cl_mem>(kernel, 1, result->clOpenTileAt(tileX, tileY));
+                    clEnqueueNDRangeKernel(opencl->cmdQueue,
+                                           kernel, 2,
+                                           nullptr, workSize, nullptr,
+                                           0, nullptr, nullptr);
+                }
+            }
         }
     }
 

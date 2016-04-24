@@ -75,6 +75,98 @@ __kernel void gradientApply(__global const float4 *src,
   dst[idx] = outColor;
 }
 
+float2 sampleAxis(int base, float coord, int upper_bound);
+
+float2 sampleAxis(int base, float coord, int upper_bound)
+{
+  float w0, w1;
+  if (base < -1)
+  {
+    w0 = w1 = 0.0f;
+  }
+  else if (base < 0)
+  {
+    w1 = coord - base;
+    w0 = 0.0f;
+  }
+  else if (base >= upper_bound)
+  {
+    w0 = w1 = 0.0f;
+  }
+  else if (base >= upper_bound - 1)
+  {
+    w1 = 0.0f;
+    w0 = 1.0f - (coord - base);
+  }
+  else
+  {
+    w1 = coord - base;
+    w0 = 1.0f - w1;
+  }
+
+  return (float2)(w0, w1);
+}
+
+__kernel void matrixApply(__global const float4 *src,
+                          __global       float4 *dst,
+                                         float4  matrix,
+                                         float2  offset)
+{
+  int gidx = get_global_id(0);
+  int gidy = get_global_id(1);
+  int idx = gidx + gidy * TILE_PIXEL_WIDTH;
+  float2 coord = (float2)(gidx, gidy);
+
+  coord = (float2)(dot(coord, matrix.s01) + offset.x,
+                   dot(coord, matrix.s23) + offset.y);
+
+  int2 lower = (int2)(floor(coord.x), floor(coord.y));
+  int2 upper = lower + (int2)(1, 1);
+
+  float2 xweights = sampleAxis(lower.x, coord.x, TILE_PIXEL_WIDTH);
+  float2 yweights = sampleAxis(lower.y, coord.y, TILE_PIXEL_HEIGHT);
+
+  float4 result = dst[idx];
+  result.s012 *= result.s3;
+
+  if (xweights.s0 != 0.0f)
+  {
+    if (yweights.s0 != 0.0f)
+      {
+        float4 sample = src[lower.x + lower.y * TILE_PIXEL_WIDTH];
+        sample.s012 *= sample.s3;
+        result += sample * xweights.s0 * yweights.s0;
+      }
+    if (yweights.s1 != 0.0f)
+      {
+        float4 sample = src[lower.x + upper.y * TILE_PIXEL_WIDTH];
+        sample.s012 *= sample.s3;
+        result += sample * xweights.s0 * yweights.s1;
+      }
+  }
+
+  if (xweights.s1 != 0.0f)
+  {
+    if (yweights.s0 != 0.0f)
+      {
+        float4 sample = src[upper.x + lower.y * TILE_PIXEL_WIDTH];
+        sample.s012 *= sample.s3;
+        result += sample * xweights.s1 * yweights.s0;
+      }
+    if (yweights.s1 != 0.0f)
+      {
+        float4 sample = src[upper.x + upper.y * TILE_PIXEL_WIDTH];
+        sample.s012 *= sample.s3;
+        result += sample * xweights.s1 * yweights.s1;
+      }
+  }
+
+  if (result.s3 > 0.0)
+    result.s012 = result.s012 / result.s3;
+
+  dst[idx] = result;
+}
+
 __kernel void fill(__global float4 *buf,
                             float4  color)
 {
@@ -482,7 +574,6 @@ __kernel void tileSVGDstAtop(__global float4 *out,
     out_pixel.s3 = alpha;
 
     out[get_global_id(0)] = out_pixel;
-
 }
 
 __kernel void tileColorMask(__global float4 *out,

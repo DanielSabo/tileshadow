@@ -8,6 +8,7 @@
 #include "layertype.h"
 #include "tileset.h"
 
+class QMatrix;
 class CanvasTile;
 
 class CanvasLayer
@@ -39,6 +40,7 @@ public:
 
     std::unique_ptr<CanvasLayer> deepCopy() const;
     std::unique_ptr<CanvasLayer> translated(int x, int y) const;
+    std::unique_ptr<CanvasLayer> applyMatrix(QMatrix const &matrix) const;
     std::unique_ptr<CanvasLayer> mergeDown(CanvasLayer const *target) const;
     std::unique_ptr<CanvasLayer> flattened() const;
     TileSet takeTiles(CanvasLayer *source);

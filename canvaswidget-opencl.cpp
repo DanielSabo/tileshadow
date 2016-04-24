@@ -509,6 +509,7 @@ SharedOpenCL::SharedOpenCL()
     /* Compile base kernels */
     QString kernelDefs = QStringLiteral("-cl-denorms-are-zero -cl-no-signed-zeros");
             kernelDefs += QString(" -DTILE_PIXEL_WIDTH=%1").arg((size_t)TILE_PIXEL_WIDTH);
+            kernelDefs += QString(" -DTILE_PIXEL_HEIGHT=%1").arg((size_t)TILE_PIXEL_HEIGHT);
 
     cl_program baseKernelProg = compileFile(this, ":/BaseKernels.cl", kernelDefs);
     if (baseKernelProg)
@@ -518,6 +519,7 @@ SharedOpenCL::SharedOpenCL()
         floatToU8 = buildOrWarn(baseKernelProg, "floatToU8");
         gradientApply = buildOrWarn(baseKernelProg, "gradientApply");
         colorMask = buildOrWarn(baseKernelProg, "tileColorMask");
+        matrixApply = buildOrWarn(baseKernelProg, "matrixApply");
         blendKernel_over = buildOrWarn(baseKernelProg, "tileSVGOver");
         blendKernel_multiply = buildOrWarn(baseKernelProg, "tileSVGMultipy");
         blendKernel_colorDodge = buildOrWarn(baseKernelProg, "tileSVGMColorDodge");

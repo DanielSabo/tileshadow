@@ -37,6 +37,7 @@ public:
     cl_kernel floatToU8;
     cl_kernel gradientApply;
     cl_kernel colorMask;
+    cl_kernel matrixApply;
 
     cl_kernel blendKernel_over;
     cl_kernel blendKernel_multiply;
