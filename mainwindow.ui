@@ -87,7 +87,7 @@
      <x>0</x>
      <y>0</y>
      <width>561</width>
-     <height>34</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -138,6 +138,9 @@
     <addaction name="actionNew_Group"/>
     <addaction name="actionMerge_Layer"/>
     <addaction name="actionDuplicate_Layer"/>
+    <addaction name="actionRotate_Layer"/>
+    <addaction name="actionScale_Layer"/>
+    <addaction name="separator"/>
     <addaction name="actionSet_Background_Color"/>
     <addaction name="separator"/>
     <addaction name="actionToggle_Quickmask"/>
@@ -366,6 +369,14 @@
     <string>Shift+D</string>
    </property>
   </action>
+  <action name="actionRotate_Layer">
+   <property name="text">
+    <string>Rotate Layer</string>
+   </property>
+   <property name="shortcut">
+    <string>R</string>
+   </property>
+  </action>
   <action name="actionToggle_Quickmask">
    <property name="text">
     <string>Toggle &amp;Quickmask</string>
@@ -455,6 +466,14 @@
   <action name="actionResource_Paths">
    <property name="text">
     <string>&amp;Resource Paths...</string>
+   </property>
+  </action>
+  <action name="actionScale_Layer">
+   <property name="text">
+    <string>Scale/Flip Layer</string>
+   </property>
+   <property name="shortcut">
+    <string>T</string>
    </property>
   </action>
  </widget>

@@ -60,6 +60,17 @@ namespace RectHandle {
     } typedef Handle;
 }
 
+enum class TransformToolMode
+{
+    None,
+    MoveOrigin,
+    Scale,
+    ScaleVertical,
+    ScaleHorizontal,
+    Rotate,
+    Translate
+};
+
 struct SavedTabletEvent
 {
     bool valid;
@@ -139,6 +150,18 @@ public:
     std::shared_ptr<QAtomicInt> motionCoalesceToken;
 
     struct {
+        QPoint origin;
+        QPoint translation;
+        float transientAngle;
+        QPointF transientScale;
+        float dragAngle;
+        QPoint dragOrigin;
+        TransformToolMode mode;
+        QPointF scale;
+    } transformLayer;
+    const int transformWidgetSize = 64;
+
+    struct {
         QRect originalActive;
         QRect originalInactive;
         QPoint a;
@@ -146,6 +169,8 @@ public:
     } frameGrab;
 
     RectHandle::Handle frameRectHandle(QPoint pos);
+    TransformToolMode transformToolHandle(QPointF pos, CanvasAction::Action action, float viewScale);
+    QMatrix calculateTransformLayerMatrix();
     CanvasAction::Action actionForMouseEvent(int button, Qt::KeyboardModifiers modifiers);
     void updateEditable(CanvasContext *ctx);
     std::shared_ptr<BaseTool> loadToolMaybe(QString const &toolName);
@@ -186,6 +211,59 @@ RectHandle::Handle CanvasWidgetPrivate::frameRectHandle(QPoint pos)
     if (result == RectHandle::None)
         return RectHandle::Center;
     return result;
+}
+
+TransformToolMode CanvasWidgetPrivate::transformToolHandle(QPointF pos, CanvasAction::Action action, float viewScale)
+{
+    QVector2D dragVector = QVector2D(pos - transformLayer.origin - transformLayer.translation) * viewScale;
+
+    if (dragVector.length() < transformWidgetSize)
+    {
+        if (transformLayer.transientAngle == 0.0f &&
+            transformLayer.scale == QPointF(1.0f, 1.0f))
+        {
+            return TransformToolMode::MoveOrigin;
+        }
+        else
+        {
+            return TransformToolMode::Translate;
+        }
+    }
+    else if (action == CanvasAction::RotateLayer)
+    {
+        return TransformToolMode::Rotate;
+    }
+    else if (action == CanvasAction::ScaleLayer)
+    {
+        float absX = fabsf(dragVector.x());
+        float absY = fabsf(dragVector.y());
+
+        if (absX < transformWidgetSize || absY < transformWidgetSize)
+        {
+            if (absX > absY)
+                return TransformToolMode::ScaleHorizontal;
+            else
+                return TransformToolMode::ScaleVertical;
+        }
+        else
+        {
+            return TransformToolMode::Scale;
+        }
+    }
+
+    return TransformToolMode::None;
+}
+
+QMatrix CanvasWidgetPrivate::calculateTransformLayerMatrix()
+{
+    QMatrix matrix;
+    matrix.translate(transformLayer.translation.x(), transformLayer.translation.y());
+    matrix.translate(transformLayer.origin.x(), transformLayer.origin.y());
+    matrix.rotate(transformLayer.transientAngle);
+    matrix.scale(transformLayer.scale.x(), transformLayer.scale.y());
+    matrix.translate(-transformLayer.origin.x(), -transformLayer.origin.y());
+
+    return matrix;
 }
 
 CanvasAction::Action CanvasWidgetPrivate::actionForMouseEvent(int button, Qt::KeyboardModifiers modifiers)
@@ -287,6 +365,11 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
     colorPickCursor = QCursor(QPixmap(cursorString.arg("eyedropper")));
     moveViewCursor = QCursor(QPixmap(cursorString.arg("move-view")));
     moveLayerCursor = QCursor(QPixmap(cursorString.arg("move-layer")));
+    transformMoveOrigin =  QCursor(QPixmap(cursorString.arg("move-origin")));
+    transformRotateCursor = QCursor(QPixmap(cursorString.arg("rotate-layer")));
+    transformScaleAllCursor = QCursor(QPixmap(cursorString.arg("scale-layer-all")));
+    transformScaleXCursor = QCursor(QPixmap(cursorString.arg("scale-layer-horizontal")));
+    transformScaleYCursor = QCursor(QPixmap(cursorString.arg("scale-layer-vertical")));
 
     connect(this, &CanvasWidget::updateLayers, this, &CanvasWidget::canvasModified);
 
@@ -322,10 +405,13 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
 
     QAction *abortAction = new QAction(this);
     abortAction->setShortcut(Qt::Key_Escape);
-    connect(abortAction, &QAction::triggered, [this](){
-        cancelCanvasAction();
-    });
+    connect(abortAction, &QAction::triggered, this, &CanvasWidget::cancelCanvasAction);
     addAction(abortAction);
+
+    QAction *acceptAction = new QAction(this);
+    acceptAction->setShortcut(Qt::Key_Return);
+    connect(acceptAction, &QAction::triggered, this, &CanvasWidget::acceptCanvasAction);
+    addAction(acceptAction);
 }
 
 CanvasWidget::~CanvasWidget()
@@ -423,7 +509,29 @@ void CanvasWidget::paintGL()
 
     render->renderView(canvasOrigin, size(), viewScale, d->canvasFrame, false);
 
-    if (d->activeTool && d->currentLayerEditable && d->showToolCursor && underMouse())
+    if (action == CanvasAction::RotateLayer ||
+        action == CanvasAction::ScaleLayer)
+    {
+        QPoint center = (d->transformLayer.origin + d->transformLayer.translation) * viewScale - canvasOrigin;
+        int radius = d->transformWidgetSize;
+        render->drawToolCursor(center, radius * 2 + 3);
+        render->drawToolCursor(center, 10);
+
+        if (action == CanvasAction::RotateLayer)
+        {
+            float angleRad = (d->transformLayer.transientAngle * M_PI) / 180.0f;
+            QPoint handleOffset = QPoint(cosf(angleRad) * radius, sinf(angleRad) * radius);
+
+            render->drawToolCursor(handleOffset + center, 10);
+            handleOffset = {-handleOffset.y(), handleOffset.x()};
+            render->drawToolCursor(handleOffset + center, 10);
+            handleOffset = {-handleOffset.y(), handleOffset.x()};
+            render->drawToolCursor(handleOffset + center, 10);
+            handleOffset = {-handleOffset.y(), handleOffset.x()};
+            render->drawToolCursor(handleOffset + center, 10);
+        }
+    }
+    else if (d->activeTool && d->currentLayerEditable && d->showToolCursor && underMouse())
     {
         QPoint cursorPos = mapFromGlobal(QCursor::pos());
         float toolSize = std::max(d->activeTool->getPixelRadius() * 2.0f * viewScale, 6.0f);
@@ -686,6 +794,52 @@ void CanvasWidget::endLine()
     };
 
     d->eventThread.enqueueCommand(msg);
+}
+
+void CanvasWidget::toggleTransformMode(CanvasAction::Action const mode)
+{
+    Q_D(CanvasWidget);
+
+    if (mode != CanvasAction::RotateLayer &&
+        mode != CanvasAction::ScaleLayer)
+    {
+        qWarning() << "Invalid transform mode";
+        return;
+    }
+
+    if (action == mode)
+    {
+        commitTransformMode();
+    }
+    else if (action != CanvasAction::None)
+        return;
+    else if (!d->currentLayerEditable && !d->quickmaskActive)
+        return;
+    else
+    {
+        action = mode;
+        actionButton = Qt::NoButton;
+        QPoint viewCenter = {width() / 2, height() / 2};
+        d->transformLayer.origin = (viewCenter + canvasOrigin) / viewScale;
+        d->transformLayer.scale = {1.0f, 1.0f};
+        d->transformLayer.translation = {0, 0};
+        d->transformLayer.transientAngle = 0.0f;
+    }
+
+    updateCursor();
+    update();
+}
+
+void CanvasWidget::commitTransformMode()
+{
+    Q_D(CanvasWidget);
+
+    action = CanvasAction::None;
+    actionButton = Qt::NoButton;
+
+    QMatrix matrix = d->calculateTransformLayerMatrix();
+    if (!matrix.isIdentity())
+        transformCurrentLayer(matrix);
 }
 
 float CanvasWidget::getScale()
@@ -1233,6 +1387,81 @@ void CanvasWidget::translateCurrentLayer(int x,  int y)
     modified = true;
 }
 
+
+void CanvasWidget::updateLayerTransform(QMatrix matrix)
+{
+    Q_D(CanvasWidget);
+
+    if (!d->motionCoalesceToken)
+        d->motionCoalesceToken.reset(new QAtomicInt(1));
+    else
+        d->motionCoalesceToken->ref();
+
+    auto coalesceToken = d->motionCoalesceToken;
+
+    auto msg = [matrix, coalesceToken](CanvasContext *ctx) {
+        if (coalesceToken && coalesceToken->deref() == true)
+            return;
+
+        CanvasLayer *targetLayer, *undoLayer;
+        getPaintingTargets(ctx, targetLayer, undoLayer);
+
+        if (!undoLayer)
+            return;
+
+        std::unique_ptr<CanvasLayer> newLayer = undoLayer->applyMatrix(matrix);
+
+        tileSetInsert(ctx->dirtyTiles, targetLayer->getTileSet());
+        tileSetInsert(ctx->dirtyTiles, newLayer->getTileSet());
+
+        targetLayer->takeTiles(newLayer.get());
+    };
+
+    d->eventThread.enqueueCommand(msg);
+}
+
+void CanvasWidget::transformCurrentLayer(QMatrix const &matrix)
+{
+    Q_D(CanvasWidget);
+
+    // Ref'ing the token will discard any pending updateLayerTranslate() events
+    if (d->motionCoalesceToken)
+        d->motionCoalesceToken->ref();
+    d->motionCoalesceToken.reset();
+
+    CanvasContext *ctx = getContext();
+
+    CanvasLayer *targetLayer, *undoLayer;
+    getPaintingTargets(ctx, targetLayer, undoLayer);
+
+    if (!undoLayer)
+        return;
+
+    std::unique_ptr<CanvasLayer> newLayer = undoLayer->applyMatrix(matrix);
+    newLayer->prune();
+
+    CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
+    undoEvent->targetTileMap = targetLayer->tiles;
+    undoEvent->currentLayer = ctx->currentLayer;
+
+    /* Add the layers currently visible tiles (which may differ from the undo tiles) to the dirty list */
+    tileSetInsert(ctx->dirtyTiles, targetLayer->getTileSet());
+    /* Add the newly translated tiles */
+    TileSet layerTiles = newLayer->getTileSet();
+    tileSetInsert(ctx->dirtyTiles, layerTiles);
+
+    /* The undo tiles are the original layer + new layer */
+    tileSetInsert(layerTiles, ctx->currentLayerCopy->getTileSet());
+
+    targetLayer->takeTiles(newLayer.get());
+
+    transferUndoEventTiles(undoEvent, layerTiles, undoLayer, targetLayer);
+    ctx->addUndoEvent(undoEvent);
+
+    update();
+    modified = true;
+}
+
 void CanvasWidget::resetCurrentLayer(CanvasContext *ctx, int index)
 {
     Q_D(CanvasWidget);
@@ -1748,6 +1977,16 @@ void CanvasWidget::lineDrawMode()
     updateCursor();
 }
 
+void CanvasWidget::rotateMode()
+{
+    toggleTransformMode(CanvasAction::RotateLayer);
+}
+
+void CanvasWidget::scaleMode()
+{
+    toggleTransformMode(CanvasAction::ScaleLayer);
+}
+
 void CanvasWidget::undo()
 {
     Q_D(CanvasWidget);
@@ -2063,6 +2302,48 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
             }
         }
     }
+    else if (action == CanvasAction::RotateLayer ||
+             action == CanvasAction::ScaleLayer)
+    {
+        if (event->button() == Qt::LeftButton)
+        {
+            actionButton = event->button();
+            d->transformLayer.mode = d->transformToolHandle(pos, action, viewScale);
+
+            if (d->transformLayer.mode == TransformToolMode::MoveOrigin)
+            {
+                d->transformLayer.origin = pos.toPoint();
+            }
+            else if (d->transformLayer.mode == TransformToolMode::Translate)
+            {
+                d->transformLayer.dragOrigin = pos.toPoint();
+            }
+            else if (d->transformLayer.mode == TransformToolMode::Rotate)
+            {
+                QVector2D dragVector = QVector2D(pos - d->transformLayer.origin - d->transformLayer.translation) * viewScale;
+                d->transformLayer.dragAngle = d->transformLayer.transientAngle - atan2(dragVector.y(), dragVector.x()) * 180.0f / M_PI;
+            }
+            else if (d->transformLayer.mode == TransformToolMode::ScaleVertical ||
+                     d->transformLayer.mode == TransformToolMode::ScaleHorizontal ||
+                     d->transformLayer.mode == TransformToolMode::Scale)
+            {
+                QVector2D dragVector = QVector2D(pos - d->transformLayer.origin - d->transformLayer.translation) * viewScale;
+                d->transformLayer.dragOrigin = dragVector.toPoint();
+                d->transformLayer.transientScale = d->transformLayer.scale;
+            }
+            else
+            {
+                d->transformLayer.mode = TransformToolMode::None;
+            }
+        }
+        else if (event->button() == Qt::RightButton)
+        {
+            actionButton = event->button();
+            actionOrigin = event->pos();
+        }
+
+        update();
+    }
 
     event->accept();
 }
@@ -2100,6 +2381,11 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
             translateCurrentLayer(offset.x(), offset.y());
         }
         else if (action == CanvasAction::EditFrame)
+        {
+            actionButton = Qt::NoButton;
+        }
+        else if (action == CanvasAction::RotateLayer ||
+                 action == CanvasAction::ScaleLayer)
         {
             actionButton = Qt::NoButton;
         }
@@ -2201,6 +2487,98 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
             canvasOrigin -= dPos;
         }
     }
+    else if (action == CanvasAction::RotateLayer ||
+             action == CanvasAction::ScaleLayer)
+    {
+        if (actionButton == Qt::LeftButton)
+        {
+            QPointF pos = (event->localPos() + canvasOrigin) / viewScale;
+
+            if (d->transformLayer.mode == TransformToolMode::MoveOrigin)
+            {
+                d->transformLayer.origin = pos.toPoint();
+            }
+            else if (d->transformLayer.mode == TransformToolMode::Translate)
+            {
+                QPoint p = pos.toPoint();
+                d->transformLayer.translation += p - d->transformLayer.dragOrigin;
+                d->transformLayer.dragOrigin = p;
+            }
+            else if (d->transformLayer.mode == TransformToolMode::Rotate)
+            {
+                QVector2D dragVector = QVector2D(pos - d->transformLayer.origin - d->transformLayer.translation) * viewScale;
+                d->transformLayer.transientAngle = atan2(dragVector.y(), dragVector.x()) * 180.0f / M_PI;
+                d->transformLayer.transientAngle += d->transformLayer.dragAngle;
+                if (event->modifiers() & Qt::ShiftModifier)
+                    d->transformLayer.transientAngle = roundf(d->transformLayer.transientAngle / 45.0f) * 45.0f;
+            }
+            else if (d->transformLayer.mode == TransformToolMode::Scale ||
+                     d->transformLayer.mode == TransformToolMode::ScaleHorizontal ||
+                     d->transformLayer.mode == TransformToolMode::ScaleVertical)
+            {
+                QVector2D dragVector = QVector2D(pos - d->transformLayer.origin - d->transformLayer.translation) * viewScale;
+                QVector2D scaleVector = (dragVector / QVector2D(d->transformLayer.dragOrigin));
+
+                if (scaleVector.x() < 1.0f / 128 && scaleVector.x() > -1.0f / 128)
+                    scaleVector.setX(copysignf(1.0f / 128, scaleVector.x()));
+                if (scaleVector.y() < 1.0f / 128 && scaleVector.y() > -1.0f / 128)
+                    scaleVector.setY(copysignf(1.0f / 128, scaleVector.y()));
+
+                // Holding the ctrl key locks the X & Y scales to the same ratio
+                // Holding the shift key locks the scales to whole numbers
+                if (d->transformLayer.mode == TransformToolMode::ScaleVertical)
+                {
+                    if (event->modifiers() & Qt::ControlModifier)
+                        scaleVector.setX(scaleVector.y());
+                    else
+                        scaleVector.setX(1.0f);
+                }
+                else if (d->transformLayer.mode == TransformToolMode::ScaleHorizontal)
+                {
+                    if (event->modifiers() & Qt::ControlModifier)
+                        scaleVector.setY(scaleVector.x());
+                    else
+                        scaleVector.setY(1.0f);
+                }
+                else if (event->modifiers() & Qt::ControlModifier)
+                {
+                    float absX = fabs(scaleVector.x());
+                    float absY = fabs(scaleVector.y());
+                    if (absX > absY)
+                        scaleVector = {absX * (scaleVector.x() / absX), absX * (scaleVector.y() / absY)};
+                    else
+                        scaleVector = {absY * (scaleVector.x() / absX), absY * (scaleVector.y() / absY)};
+                }
+
+                if (event->modifiers() & Qt::ShiftModifier)
+                {
+                    float absX = fabs(scaleVector.x());
+                    float absY = fabs(scaleVector.y());
+
+                    scaleVector.setX(absX > 1.0f ? round(scaleVector.x()) : copysignf(1.0f, scaleVector.x()));
+                    scaleVector.setY(absY > 1.0f ? round(scaleVector.y()) : copysignf(1.0f, scaleVector.y()));
+                }
+
+                d->transformLayer.scale.rx() = d->transformLayer.transientScale.x() * scaleVector.x();
+                d->transformLayer.scale.ry() = d->transformLayer.transientScale.y() * scaleVector.y();
+            }
+
+            if (d->transformLayer.mode != TransformToolMode::MoveOrigin)
+                updateLayerTransform(d->calculateTransformLayerMatrix());
+        }
+        else if (actionButton == Qt::RightButton)
+        {
+            QPoint dPos = event->pos() - actionOrigin;
+            actionOrigin = event->pos();
+            canvasOrigin -= dPos;
+        }
+        else if (actionButton == Qt::NoButton)
+        {
+            QPointF pos = (event->localPos() + canvasOrigin) / viewScale;
+            d->transformLayer.mode = d->transformToolHandle(pos, action, viewScale);
+            updateCursor();
+        }
+    }
 
     event->accept();
 
@@ -2249,6 +2627,24 @@ void CanvasWidget::wheelEvent(QWheelEvent *event)
     update();
 }
 
+void CanvasWidget::acceptCanvasAction()
+{
+    if (action == CanvasAction::RotateLayer ||
+        action == CanvasAction::ScaleLayer)
+    {
+        commitTransformMode();
+    }
+    else
+    {
+        return;
+    }
+
+    action = CanvasAction::None;
+    actionButton = Qt::NoButton;
+    updateCursor();
+    update();
+}
+
 void CanvasWidget::cancelCanvasAction()
 {
     Q_D(CanvasWidget);
@@ -2279,7 +2675,9 @@ void CanvasWidget::cancelCanvasAction()
     {
         // No-op
     }
-    else if (action == CanvasAction::MoveLayer)
+    else if (action == CanvasAction::MoveLayer  ||
+             action == CanvasAction::ScaleLayer ||
+             action == CanvasAction::RotateLayer)
     {
         CanvasContext *ctx = getContext();
         CanvasLayer *targetLayer, *undoLayer;
@@ -2416,6 +2814,24 @@ void CanvasWidget::updateCursor()
             CURSOR_WIDGET->setCursor(Qt::SizeAllCursor);
         else
             CURSOR_WIDGET->setCursor(Qt::ArrowCursor);
+    }
+    else if (cursorAction == CanvasAction::RotateLayer ||
+             cursorAction == CanvasAction::ScaleLayer)
+    {
+        if (d->transformLayer.mode == TransformToolMode::MoveOrigin)
+            CURSOR_WIDGET->setCursor(transformMoveOrigin);
+        else if (d->transformLayer.mode == TransformToolMode::Rotate)
+            CURSOR_WIDGET->setCursor(transformRotateCursor);
+        else if (d->transformLayer.mode == TransformToolMode::Translate)
+            CURSOR_WIDGET->setCursor(moveLayerCursor);
+        else if (d->transformLayer.mode == TransformToolMode::Scale)
+            CURSOR_WIDGET->setCursor(transformScaleAllCursor);
+        else if (d->transformLayer.mode == TransformToolMode::ScaleVertical)
+            CURSOR_WIDGET->setCursor(transformScaleYCursor);
+        else if (d->transformLayer.mode == TransformToolMode::ScaleHorizontal)
+            CURSOR_WIDGET->setCursor(transformScaleXCursor);
+        else
+            CURSOR_WIDGET->setCursor(Qt::OpenHandCursor);
     }
     else
     {

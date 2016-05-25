@@ -25,7 +25,9 @@ namespace CanvasAction
         MoveView,
         MoveLayer,
         DrawLine,
-        EditFrame
+        EditFrame,
+        RotateLayer,
+        ScaleLayer
     } Action;
 }
 
@@ -126,6 +128,8 @@ public:
 
     void setBackgroundColor(QColor const &color);
     void lineDrawMode();
+    void rotateMode();
+    void scaleMode();
 
     void newDrawing();
     void openORA(QString path);
@@ -174,15 +178,21 @@ private:
     void lineTo(QPointF start, QPointF end);
     void endLine();
 
+    void toggleTransformMode(CanvasAction::Action const mode);
+    void commitTransformMode();
+
     void quickmaskApply(bool copyTo, bool eraseFrom);
 
     void pickColorAt(QPoint pos, bool merged = false);
     void updateLayerTranslate(int x, int y);
     void translateCurrentLayer(int x, int y);
+    void updateLayerTransform(QMatrix matrix);
+    void transformCurrentLayer(QMatrix const &matrix);
 
     void insertLayerAbove(int layerIndex, std::unique_ptr<CanvasLayer> newLayer);
     void resetCurrentLayer(CanvasContext *ctx, int index);
 
+    void acceptCanvasAction();
     void cancelCanvasAction();
 
     CanvasContext *getContext();
@@ -191,6 +201,11 @@ private:
     QCursor colorPickCursor;
     QCursor moveViewCursor;
     QCursor moveLayerCursor;
+    QCursor transformMoveOrigin;
+    QCursor transformRotateCursor;
+    QCursor transformScaleAllCursor;
+    QCursor transformScaleXCursor;
+    QCursor transformScaleYCursor;
 
 signals:
     void updateStats();

@@ -83,6 +83,8 @@ public slots:
     void actionQuickmaskCut();
     void actionQuickmaskCopy();
     void actionQuickmaskErase();
+    void actionRotateLayer();
+    void actionScaleLayer();
     void canvasStats();
     void showStatusBar(bool visible);
     void updateTool();

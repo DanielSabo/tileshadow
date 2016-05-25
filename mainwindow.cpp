@@ -120,6 +120,8 @@ void MainWindow::connectActions()
     connect(ui->actionNew_Group, &QAction::triggered, this, &MainWindow::actionNewGroup);
     connect(ui->actionMerge_Layer, &QAction::triggered, this, &MainWindow::actionMergeLayerDown);
     connect(ui->actionDuplicate_Layer, &QAction::triggered, this, &MainWindow::actionDuplicateLayer);
+    connect(ui->actionRotate_Layer, &QAction::triggered, this, &MainWindow::actionRotateLayer);
+    connect(ui->actionScale_Layer, &QAction::triggered, this, &MainWindow::actionScaleLayer);
     connect(ui->actionSet_Background_Color, &QAction::triggered, this, &MainWindow::actionSetBackgroundColor);
     connect(ui->actionToggle_Quickmask, &QAction::triggered, this, &MainWindow::actionToggleQuickmask);
     connect(ui->actionQuickmask_Cut, &QAction::triggered, this, &MainWindow::actionQuickmaskCut);
@@ -714,6 +716,16 @@ void MainWindow::actionQuickmaskCopy()
 void MainWindow::actionQuickmaskErase()
 {
     canvas->quickmaskErase();
+}
+
+void MainWindow::actionRotateLayer()
+{
+    canvas->rotateMode();
+}
+
+void MainWindow::actionScaleLayer()
+{
+    canvas->scaleMode();
 }
 
 void MainWindow::actionZoomIn()
