@@ -1,8 +1,22 @@
 #include "filedialog.h"
 #include <memory>
 #include <QSettings>
+#include <QMimeDatabase>
+#include <QFileIconProvider>
+#include <QFileInfo>
 
 namespace {
+#ifdef Q_OS_LINUX
+// Workaround for KDE Bug 358926
+class IconProvider : public QFileIconProvider
+{
+    QIcon icon(const QFileInfo &info) const {
+        auto mimeType = QMimeDatabase().mimeTypeForFile(info);
+        return QIcon::fromTheme(mimeType.iconName());
+    }
+};
+#endif
+
 QStringList showFileDialog(QWidget                 *parent,
                            const QString           &caption,
                            const QString           &dir,
@@ -17,6 +31,8 @@ QStringList showFileDialog(QWidget                 *parent,
 #ifdef Q_OS_LINUX
     // Disable native file dialogs due to KDE Bug 357684
     dialog->setOptions(options | QFileDialog::DontUseNativeDialog);
+    IconProvider iconProvider;
+    dialog->setIconProvider(&iconProvider);
 
     QSettings settings;
     QByteArray geometry = settings.value("FileDialog/geometry").toByteArray();
