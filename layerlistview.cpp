@@ -324,31 +324,36 @@ void LayerListView::mouseReleaseEvent(QMouseEvent *event)
     int clickedRow = qMax(qMin(event->y() / d->rowSize.height(), d->things.size() - 1), 0);
     int clickedColumn = d->clickedColumn(event->x());
 
-    if (d->nameEditor->isVisible() &&
-        (clickedRow != d->selectedThing || clickedColumn != NameColumn))
+    if (d->nameEditor->isVisible())
     {
-        d->things[d->selectedThing].name = d->nameEditor->text();
-        d->nameEditor->hide();
-        emit edited(d->things[d->selectedThing].absoluteIndex, NameColumn,
-                    QVariant::fromValue<QString>(d->things[d->selectedThing].name));
-        recalulateSize();
+        if (clickedRow != d->selectedThing || clickedColumn != NameColumn)
+        {
+            d->things[d->selectedThing].name = d->nameEditor->text();
+            d->nameEditor->hide();
+            emit edited(d->things[d->selectedThing].absoluteIndex, NameColumn,
+                        QVariant::fromValue<QString>(d->things[d->selectedThing].name));
+            recalulateSize();
+        }
     }
-    else if (clickedColumn == VisibleColumn)
+    else
     {
-        d->things[clickedRow].visible = !d->things[clickedRow].visible;
-        emit edited(d->things[clickedRow].absoluteIndex, VisibleColumn,
-                    QVariant::fromValue<bool>(d->things[clickedRow].visible));
-    }
-    else if (clickedColumn == EditableColumn)
-    {
-        d->things[clickedRow].editable = !d->things[clickedRow].editable;
-        emit edited(d->things[clickedRow].absoluteIndex, EditableColumn,
-                    QVariant::fromValue<bool>(d->things[clickedRow].editable));
-    }
-    else if (clickedColumn == NameColumn)
-    {
-        d->selectedThing = clickedRow;
-        emit selectionChanged(d->things[d->selectedThing].absoluteIndex);
+        if (clickedColumn == VisibleColumn)
+        {
+            d->things[clickedRow].visible = !d->things[clickedRow].visible;
+            emit edited(d->things[clickedRow].absoluteIndex, VisibleColumn,
+                        QVariant::fromValue<bool>(d->things[clickedRow].visible));
+        }
+        else if (clickedColumn == EditableColumn)
+        {
+            d->things[clickedRow].editable = !d->things[clickedRow].editable;
+            emit edited(d->things[clickedRow].absoluteIndex, EditableColumn,
+                        QVariant::fromValue<bool>(d->things[clickedRow].editable));
+        }
+        else if (clickedColumn == NameColumn)
+        {
+            d->selectedThing = clickedRow;
+            emit selectionChanged(d->things[d->selectedThing].absoluteIndex);
+        }
     }
 
     d->hasFocus = false;
