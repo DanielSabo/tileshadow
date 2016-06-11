@@ -67,8 +67,11 @@
         <file>CursorCircle.vert</file>
         <file>ColorDot.frag</file>
         <file>cursors/eyedropper.png</file>
+        <file>cursors/eyedropper@2x.png</file>
         <file>cursors/move-view.png</file>
+        <file>cursors/move-view@2x.png</file>
         <file>cursors/move-layer.png</file>
+        <file>cursors/move-layer@2x.png</file>
         <file>preview_strokes/default.json</file>
     </qresource>
 </RCC>

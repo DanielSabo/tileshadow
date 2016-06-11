@@ -214,9 +214,13 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
 
     QApplication::instance()->installEventFilter(this);
 
-    colorPickCursor = QCursor(QPixmap(":/cursors/eyedropper.png"));
-    moveViewCursor = QCursor(QPixmap(":/cursors/move-view.png"));
-    moveLayerCursor = QCursor(QPixmap(":/cursors/move-layer.png"));
+    QString cursorString = (qApp->devicePixelRatio() > 1.0) ?
+                QStringLiteral(":/cursors/%1@2x.png") :
+                QStringLiteral(":/cursors/%1.png");
+
+    colorPickCursor = QCursor(QPixmap(cursorString.arg("eyedropper")));
+    moveViewCursor = QCursor(QPixmap(cursorString.arg("move-view")));
+    moveLayerCursor = QCursor(QPixmap(cursorString.arg("move-layer")));
 
     connect(this, &CanvasWidget::updateLayers, this, &CanvasWidget::canvasModified);
 
