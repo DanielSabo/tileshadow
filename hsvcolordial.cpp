@@ -31,6 +31,22 @@ public:
     QImage renderedDial;
 };
 
+namespace {
+struct ColorDialMetrics {
+    ColorDialMetrics(int width, int height) {
+        size = (qMin(width, height) / 2) * 2;
+        offsetX = size < width ? (width - size) / 2 : 0;
+        outerRadius = size / 2 - size * .03;
+        innerRadius = outerRadius - size * .1;
+    }
+
+    int size;
+    int offsetX;
+    float outerRadius;
+    float innerRadius;
+};
+}
+
 HSVColorDial::HSVColorDial(QWidget *parent) :
     QWidget(parent),
     d_ptr(new HSVColorDialPrivate)
@@ -115,35 +131,32 @@ void HSVColorDial::paintEvent(QPaintEvent *event)
 {
     Q_D(HSVColorDial);
 
-    const int dialSize = (qMin(width(), height()) / 2) * 2;
-    const int dialOffsetX = dialSize < width() ? (width() - dialSize) / 2 : 0;
-    const float outerRadius = dialSize / 2 - dialSize * .03;
-    const float innerRadius = outerRadius - dialSize * .1;
+    const auto metrics = ColorDialMetrics(width(), height());
 
 //    QRgb widgetBackgroundPixel = QWidget::palette().color(QWidget::backgroundRole()).rgba();
     QRgb widgetBackgroundPixel = qRgba(0, 0, 0, 0);
 
     if (d->renderedDial.isNull())
     {
-        d->renderedDial = QImage(dialSize, dialSize, QImage::Format_ARGB32);
+        d->renderedDial = QImage(metrics.size, metrics.size, QImage::Format_ARGB32);
 
-        for (int row = 0; row < dialSize; row++)
+        for (int row = 0; row < metrics.size; row++)
         {
             QRgb *pixel = (QRgb *)d->renderedDial.scanLine(row);
-            for (int col = 0; col < dialSize; col++)
+            for (int col = 0; col < metrics.size; col++)
             {
-                float dx = col - dialSize / 2.0f;
-                float dy = row - dialSize / 2.0f;
+                float dx = col - metrics.size / 2.0f;
+                float dy = row - metrics.size / 2.0f;
 
                 float r = sqrtf(dx*dx + dy*dy);
-                if (r <= outerRadius && r >= innerRadius)
+                if (r <= metrics.outerRadius && r >= metrics.innerRadius)
                 {
                     float alpha;
 
-                    if (outerRadius - 1 < r)
-                        alpha = outerRadius - r;
-                    else if (innerRadius + 1 > r)
-                        alpha = r - innerRadius;
+                    if (metrics.outerRadius - 1 < r)
+                        alpha = metrics.outerRadius - r;
+                    else if (metrics.innerRadius + 1 > r)
+                        alpha = r - metrics.innerRadius;
                     else
                         alpha = 1.0f;
 
@@ -160,8 +173,8 @@ void HSVColorDial::paintEvent(QPaintEvent *event)
 
     if (d->renderedInnerBox.isNull())
     {
-        QPoint center = QPoint(dialSize / 2, dialSize / 2);
-        float boxInnerRadius = innerRadius - 2;
+        QPoint center = QPoint(metrics.size / 2, metrics.size / 2);
+        float boxInnerRadius = metrics.innerRadius - 2;
         QPoint p1 = QPoint(cos(3.0 / 4.0 * M_PI) * boxInnerRadius, sin(-1.0 / 4.0 * M_PI) * boxInnerRadius) + center;
         QPoint p2 = QPoint(cos(-1.0 / 4.0 * M_PI) * boxInnerRadius, sin(3.0 / 4.0 * M_PI) * boxInnerRadius) + center;
         d->boxRect = QRect(p1.x(), p1.y(), abs(p2.x() - p1.x()), abs(p2.y() - p1.y()));
@@ -185,13 +198,13 @@ void HSVColorDial::paintEvent(QPaintEvent *event)
     }
 
     QPainter painter(this);
-    painter.drawImage(QPoint(dialOffsetX,0), d->renderedDial);
-    painter.drawImage(d->boxRect.topLeft() + QPoint(dialOffsetX, 0), d->renderedInnerBox);
+    painter.drawImage(QPoint(metrics.offsetX,0), d->renderedDial);
+    painter.drawImage(d->boxRect.topLeft() + QPoint(metrics.offsetX, 0), d->renderedInnerBox);
 
     { /* Selected hue */
-        QPointF center = QPointF(dialSize / 2 + dialOffsetX, dialSize / 2) + QPointF(0.5f, 0.5f);
-        QPointF p1 = QPointF(cos(d->h * -2.0 * M_PI) * (innerRadius + 2), sin(d->h * -2.0 * M_PI) * (innerRadius + 2)) + center;
-        QPointF p2 = QPointF(cos(d->h * -2.0 * M_PI) * (outerRadius - 2), sin(d->h * -2.0 * M_PI) * (outerRadius - 2)) + center;
+        QPointF center = QPointF(metrics.size / 2 + metrics.offsetX, metrics.size / 2) + QPointF(0.5f, 0.5f);
+        QPointF p1 = QPointF(cos(d->h * -2.0 * M_PI) * (metrics.innerRadius + 2), sin(d->h * -2.0 * M_PI) * (metrics.innerRadius + 2)) + center;
+        QPointF p2 = QPointF(cos(d->h * -2.0 * M_PI) * (metrics.outerRadius - 2), sin(d->h * -2.0 * M_PI) * (metrics.outerRadius - 2)) + center;
 
         QPen pen(QColor::fromRgb(0xFF, 0xFF, 0xFF));
         pen.setWidth(2);
@@ -205,7 +218,7 @@ void HSVColorDial::paintEvent(QPaintEvent *event)
         const int SELECT_CIRCLE_RADIUS = 3;
 
         QPoint selectedPoint = QPoint(round(xFactor * d->boxRect.width()), round(yFactor * d->boxRect.height())) + d->boxRect.topLeft();
-        QRect selectedBox = QRect(selectedPoint.x() - SELECT_CIRCLE_RADIUS - 1 + dialOffsetX,
+        QRect selectedBox = QRect(selectedPoint.x() - SELECT_CIRCLE_RADIUS - 1 + metrics.offsetX,
                                   selectedPoint.y() - SELECT_CIRCLE_RADIUS - 1,
                                   SELECT_CIRCLE_RADIUS * 2 + 1,
                                   SELECT_CIRCLE_RADIUS * 2 + 1);
@@ -227,10 +240,9 @@ void HSVColorDial::mouseMoveEvent(QMouseEvent *event)
 {
     Q_D(HSVColorDial);
 
-    const int dialSize = (qMin(width(), height()) / 2) * 2;
-    const int dialOffsetX = dialSize < width() ? (width() - dialSize) / 2 : 0;
-    float dx = event->x() - dialOffsetX - dialSize / 2.0f;
-    float dy = event->y() - dialSize / 2.0f;
+    const auto metrics = ColorDialMetrics(width(), height());
+    float dx = event->x() - metrics.offsetX - metrics.size / 2.0f;
+    float dy = event->y() - metrics.size / 2.0f;
 
     if (d->inDialDrag)
     {
@@ -244,7 +256,7 @@ void HSVColorDial::mouseMoveEvent(QMouseEvent *event)
     }
     else if(d->inBoxDrag)
     {
-        float s = event->x() - dialOffsetX - d->boxRect.x();
+        float s = event->x() - metrics.offsetX - d->boxRect.x();
         s = 1.0f - qBound(0.0f, s, float(d->boxRect.width())) / d->boxRect.width();
         s = powf(s, BOX_VALUE_FACTOR);
         float v = event->y() - d->boxRect.y();
@@ -264,16 +276,12 @@ void HSVColorDial::mousePressEvent(QMouseEvent *event)
 {
     Q_D(HSVColorDial);
 
-    const int dialSize = (qMin(width(), height()) / 2) * 2;
-    const int dialOffsetX = dialSize < width() ? (width() - dialSize) / 2 : 0;
-    const float outerRadius = dialSize / 2 - dialSize * .03;
-    const float innerRadius = outerRadius - dialSize * .1;
-
-    float dx = event->x() - dialOffsetX - dialSize / 2.0f;
-    float dy = event->y() - dialSize / 2.0f;
+    const auto metrics = ColorDialMetrics(width(), height());
+    float dx = event->x() - metrics.offsetX - metrics.size / 2.0f;
+    float dy = event->y() - metrics.size / 2.0f;
 
     float r = sqrtf(dx*dx + dy*dy);
-    if (r <= outerRadius && r >= innerRadius)
+    if (r <= metrics.outerRadius && r >= metrics.innerRadius)
     {
         float h = hueFromXY(dx, dy);
         d->h = h;
@@ -287,7 +295,7 @@ void HSVColorDial::mousePressEvent(QMouseEvent *event)
     }
     else if (d->boxRect.contains(event->pos()))
     {
-        float s = event->x() - dialOffsetX - d->boxRect.x();
+        float s = event->x() - metrics.offsetX - d->boxRect.x();
         s = 1.0f - qBound(0.0f, s, float(d->boxRect.width())) / d->boxRect.width();
         s = powf(s, BOX_VALUE_FACTOR);
         float v = event->y() - d->boxRect.y();
@@ -309,11 +317,9 @@ void HSVColorDial::mouseReleaseEvent(QMouseEvent *event)
 {
     Q_D(HSVColorDial);
 
-    const int dialSize = (qMin(width(), height()) / 2) * 2;
-    const int dialOffsetX = dialSize < width() ? (width() - dialSize) / 2 : 0;
-
-    float dx = event->x() - dialOffsetX - dialSize / 2.0f;
-    float dy = event->y() - dialSize / 2.0f;
+    const auto metrics = ColorDialMetrics(width(), height());
+    float dx = event->x() - metrics.offsetX - metrics.size / 2.0f;
+    float dy = event->y() - metrics.size / 2.0f;
 
     if (d->inDialDrag)
     {
