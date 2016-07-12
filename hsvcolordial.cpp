@@ -173,11 +173,10 @@ void HSVColorDial::paintEvent(QPaintEvent *event)
 
     if (d->renderedInnerBox.isNull())
     {
-        QPoint center = QPoint(metrics.size / 2, metrics.size / 2);
-        float boxInnerRadius = metrics.innerRadius - 2;
-        QPoint p1 = QPoint(cos(3.0 / 4.0 * M_PI) * boxInnerRadius, sin(-1.0 / 4.0 * M_PI) * boxInnerRadius) + center;
-        QPoint p2 = QPoint(cos(-1.0 / 4.0 * M_PI) * boxInnerRadius, sin(3.0 / 4.0 * M_PI) * boxInnerRadius) + center;
-        d->boxRect = QRect(p1.x(), p1.y(), abs(p2.x() - p1.x()), abs(p2.y() - p1.y()));
+        int boxInnerRadius = (metrics.innerRadius - 2) * 0.7071;
+        int boxOrigin = metrics.size / 2 - boxInnerRadius;
+        int boxSize = boxInnerRadius * 2;
+        d->boxRect = QRect(boxOrigin, boxOrigin, boxSize, boxSize);
 
         d->renderedInnerBox = QImage(d->boxRect.size(), QImage::Format_ARGB32);
 
@@ -203,8 +202,9 @@ void HSVColorDial::paintEvent(QPaintEvent *event)
 
     { /* Selected hue */
         QPointF center = QPointF(metrics.size / 2 + metrics.offsetX, metrics.size / 2) + QPointF(0.5f, 0.5f);
-        QPointF p1 = QPointF(cos(d->h * -2.0 * M_PI) * (metrics.innerRadius + 2), sin(d->h * -2.0 * M_PI) * (metrics.innerRadius + 2)) + center;
-        QPointF p2 = QPointF(cos(d->h * -2.0 * M_PI) * (metrics.outerRadius - 2), sin(d->h * -2.0 * M_PI) * (metrics.outerRadius - 2)) + center;
+        QPointF vector = QPointF(cos(d->h * -2.0 * M_PI), sin(d->h * -2.0 * M_PI));
+        QPointF p1 = vector * (metrics.innerRadius + 2) + center;
+        QPointF p2 = vector * (metrics.outerRadius - 2) + center;
 
         QPen pen(QColor::fromRgb(0xFF, 0xFF, 0xFF));
         pen.setWidth(2);
