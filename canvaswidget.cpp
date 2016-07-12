@@ -1628,7 +1628,7 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
         QPointF pos = (event->localPos() + canvasOrigin) / viewScale;
         ulong newTimestamp = event->timestamp();
 
-        strokeTo(pos, 0.5f, float(newTimestamp) - d->strokeEventTimestamp);
+        strokeTo(pos, 0.5f, float(newTimestamp - d->strokeEventTimestamp));
 
         d->strokeEventTimestamp = newTimestamp;
     }
@@ -1682,7 +1682,7 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
              action == CanvasAction::TabletStroke)
     {
         ulong newTimestamp = event->timestamp();
-        strokeTo(point, event->pressure(), float(newTimestamp) - d->strokeEventTimestamp);
+        strokeTo(point, event->pressure(), float(newTimestamp - d->strokeEventTimestamp));
         d->strokeEventTimestamp = newTimestamp;
         event->accept();
     }
