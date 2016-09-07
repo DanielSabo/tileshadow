@@ -20,6 +20,7 @@ namespace CanvasAction
         MouseStroke,
         TabletStroke,
         ColorPick,
+        ColorPickMerged,
         MoveView,
         MoveLayer,
         DrawLine
@@ -162,7 +163,7 @@ private:
     void lineTo(QPointF start, QPointF end);
     void endLine();
 
-    void pickColorAt(QPoint pos);
+    void pickColorAt(QPoint pos, bool merged = false);
     void updateLayerTranslate(int x, int y);
     void translateCurrentLayer(int x, int y);
 

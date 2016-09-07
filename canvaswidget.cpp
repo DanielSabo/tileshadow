@@ -158,6 +158,8 @@ CanvasAction::Action CanvasWidgetPrivate::actionForMouseEvent(int button, Qt::Ke
             return primaryAction;
         else if (modifiers == Qt::ControlModifier)
             return CanvasAction::ColorPick;
+        else if (modifiers == (Qt::ControlModifier | Qt::ShiftModifier))
+            return CanvasAction::ColorPickMerged;
     }
     else if (button == 2)
     {
@@ -1452,13 +1454,23 @@ std::vector<CanvasStrokePoint> CanvasWidget::getLastStrokeData()
     return result;
 }
 
-void CanvasWidget::pickColorAt(QPoint pos)
+void CanvasWidget::pickColorAt(QPoint pos, bool merged)
 {
+    std::unique_ptr<CanvasTile> mergedTile;
     CanvasContext *ctx = getContext();
 
     int ix = tile_indice(pos.x(), TILE_PIXEL_WIDTH);
     int iy = tile_indice(pos.y(), TILE_PIXEL_HEIGHT);
-    CanvasTile *tile = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer)->getTileMaybe(ix, iy);
+    CanvasTile *tile = nullptr;
+    if (merged)
+    {
+        mergedTile = ctx->layers.getTileMaybe(ix, iy);
+        tile = mergedTile.get();
+    }
+    else
+    {
+        tile = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer)->getTileMaybe(ix, iy);
+    }
 
     if (tile)
     {
@@ -1536,6 +1548,11 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
         if (action == CanvasAction::ColorPick)
         {
             pickColorAt(pos.toPoint());
+            action = CanvasAction::None;
+        }
+        if (action == CanvasAction::ColorPickMerged)
+        {
+            pickColorAt(pos.toPoint(), true);
             action = CanvasAction::None;
         }
         else if (action == CanvasAction::MouseStroke)
@@ -1766,7 +1783,8 @@ void CanvasWidget::updateCursor()
     {
        CURSOR_WIDGET->setCursor(Qt::BlankCursor);
     }
-    else if (cursorAction == CanvasAction::ColorPick)
+    else if (cursorAction == CanvasAction::ColorPick ||
+             cursorAction == CanvasAction::ColorPickMerged )
     {
         CURSOR_WIDGET->setCursor(colorPickCursor);
     }
