@@ -4,6 +4,7 @@
         <file>CanvasShader.frag</file>
         <file>BaseKernels.cl</file>
         <file>MyPaintKernels.cl</file>
+        <file>MyPaintKernels-template.cl</file>
         <file>PaintKernels.cl</file>
         <file>PatternKernels.cl</file>
         <file>mypaint-tools/core/fixed.myb</file>

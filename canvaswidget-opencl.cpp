@@ -119,26 +119,130 @@ SharedOpenCL *SharedOpenCL::getSharedOpenCLMaybe()
     return singleton;
 }
 
-static cl_program compileFile (SharedOpenCL *cl, const QString &path, const QString &options = "")
+static QByteArray checkedFileRead(const QString &path)
 {
-    QByteArray options_bytes = options.toUtf8();
-    cl_int err = CL_SUCCESS;
     QFile file(path);
 
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
     {
-        qWarning() << "CL Program compile failed, couldn't open " << path;
-        return 0;
+        qWarning() << "Couldn't open " << path;
+        return {};
     }
 
     QByteArray source = file.readAll();
     if (source.isNull())
     {
-        qWarning() << "CL Program compile failed, couldn't read " << path;
-        return 0;
+        qWarning() << "Couldn't read " << path;
+        return {};
     }
 
-    cout << "Compiling " << qPrintable(path) << endl;
+    return source;
+}
+
+static QByteArray kernelFromTemplate(const QString &path)
+{
+    QByteArray source = checkedFileRead(path);
+    if (source.isNull())
+    {
+        qWarning() << "Kernel template compile failed " << path;
+        return {};
+    }
+    source.replace("\r\n", "\n");
+
+    const QByteArray PRAGMA_TEMPLATE = QByteArray("#pragma template");
+    const QByteArray PRAGMA_TEMPLATE_BODY = QByteArray("#pragma template_body");
+
+    // Split at the template boundary
+    int idx = source.indexOf(PRAGMA_TEMPLATE_BODY);
+    if (idx == -1)
+    {
+        qWarning() << "Kernel template compile failed, no body, " << path;
+        return {};
+    }
+    QByteArray sourceHeader = source.left(idx);
+    QByteArray sourceBody = source.mid(idx + PRAGMA_TEMPLATE_BODY.size() + 1);
+    idx = 0;
+
+    QMap<QByteArray, QMap<QByteArray, QByteArray>> substitutionMap;
+    QList<QByteArray> substitutionOrder;
+
+    while (true)
+    {
+        idx = sourceHeader.indexOf(PRAGMA_TEMPLATE, idx);
+        if (idx == -1)
+            break;
+        int idxNewline = sourceHeader.indexOf("\n", idx);
+        idx += PRAGMA_TEMPLATE.size();
+        auto prag_args = sourceHeader.mid(idx, idxNewline - idx).split(' ');
+        prag_args.removeAll(QByteArray(""));
+
+        if (prag_args.size() == 1)
+            prag_args.push_back(QByteArray(""));
+
+        if (prag_args.size() == 2)
+        {
+            int endIdx = sourceHeader.indexOf(PRAGMA_TEMPLATE, idxNewline + 1);
+            QByteArray subValue = sourceHeader.mid(idxNewline + 1, endIdx - (idxNewline + 1));
+            substitutionMap[prag_args[0]][prag_args[1]] = subValue;
+            if (!prag_args[0].endsWith("_ARGS") && !substitutionOrder.contains(prag_args[0]))
+                substitutionOrder.push_back(prag_args[0]);
+        }
+        idx = idxNewline;
+    }
+
+    auto doSub = [&](QByteArray target, QByteArray const subName, QByteArray const subInstance) -> QByteArray
+    {
+        target.replace(QByteArray("#pragma template ") + subName + "\n",
+                       substitutionMap[subName][subInstance]);
+
+        return target;
+    };
+
+    QList<QByteArray> processedKernels;
+    QList<QByteArray> inputKernels;
+    inputKernels.push_back(sourceBody);
+    while (!substitutionOrder.empty())
+    {
+        QByteArray subName = substitutionOrder.takeFirst();
+        for (auto const &subInstance: substitutionMap[subName].keys())
+        {
+            for (auto const &inKernel: inputKernels)
+            {
+                QByteArray subResult = doSub(inKernel, subName, subInstance);
+                QByteArray argsName = subName + "_ARGS";
+
+                if (!subInstance.isEmpty())
+                    subResult.replace("FUNCTION_SUFFIX", QByteArray("_") + subInstance + "FUNCTION_SUFFIX");
+
+                if (substitutionMap.contains(argsName))
+                {
+                    if (substitutionMap[argsName].contains(subInstance))
+                        subResult = doSub(subResult, argsName, subInstance);
+                    else
+                        qWarning() << "Missing argument substitution:" << argsName << "has no instance for" << subInstance;
+                }
+
+                processedKernels.push_back(subResult);
+            }
+        }
+
+        std::swap(inputKernels, processedKernels);
+        processedKernels.clear();
+    }
+
+    for (auto &inKernel: inputKernels)
+        inKernel.replace("FUNCTION_SUFFIX", "");
+
+    QByteArray result = inputKernels.join();
+//    qDebug() << qPrintable(result);
+
+    return result;
+}
+
+static cl_program compileBytes(SharedOpenCL *cl, const QByteArray &source, const QString &options = "")
+{
+    QByteArray options_bytes = options.toUtf8();
+    cl_int err = CL_SUCCESS;
 
     const char *source_str = source.data();
     size_t source_len = source.size();
@@ -178,6 +282,35 @@ static cl_program compileFile (SharedOpenCL *cl, const QString &path, const QStr
     }
 
     return prog;
+}
+
+static cl_program compileFile(SharedOpenCL *cl, const QString &path, const QString &options = "")
+{
+    QByteArray source = checkedFileRead(path);
+    if (source.isNull())
+    {
+        qWarning() << "CL Program compile failed " << path;
+        return {};
+    }
+
+    cout << "Compiling " << qPrintable(path) << endl;
+
+    return compileBytes(cl, source, options);
+}
+
+static cl_program compileTemplate(SharedOpenCL *cl, QString path, const QString &options = "")
+{
+    QByteArray templateSource = kernelFromTemplate(path);
+    QByteArray headerSource = checkedFileRead(path.replace(QStringLiteral("-template.cl"), QStringLiteral(".cl")));
+    if (headerSource.isNull())
+    {
+        qWarning() << "Failed to read template header " << path;
+        return {};
+    }
+
+    cout << "Compiling " << qPrintable(path) << " (template)" << endl;
+
+    return compileBytes(cl, headerSource + templateSource, options);
 }
 
 #ifndef cl_khr_gl_sharing
@@ -412,15 +545,15 @@ SharedOpenCL::SharedOpenCL()
         clReleaseProgram (baseKernelProg);
     }
 
-    cl_program myPaintKernelsProg = compileFile(this, ":/MyPaintKernels.cl", kernelDefs);
+    cl_program myPaintKernelsProg = compileTemplate(this, ":/MyPaintKernels-template.cl", kernelDefs);
     if (myPaintKernelsProg)
     {
         mypaintDabKernel = buildOrWarn(myPaintKernelsProg, "mypaint_dab");
         mypaintDabLockedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_dab_locked");
-        mypaintMicroDabKernel = buildOrWarn(myPaintKernelsProg, "mypaint_micro_dab");
-        mypaintMicroDabLockedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_micro_dab_locked");
-        mypaintMaskDabKernel = buildOrWarn(myPaintKernelsProg, "mypaint_mask_dab");
-        mypaintMaskDabLockedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_mask_dab_locked");
+        mypaintMicroDabKernel = buildOrWarn(myPaintKernelsProg, "mypaint_micro");
+        mypaintMicroDabLockedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_micro_locked");
+        mypaintMaskDabKernel = buildOrWarn(myPaintKernelsProg, "mypaint_mask");
+        mypaintMaskDabLockedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_mask_locked");
         mypaintGetColorKernelPart1 = buildOrWarn(myPaintKernelsProg, "mypaint_color_query_part1");
         mypaintGetColorKernelEmptyPart1 = buildOrWarn(myPaintKernelsProg, "mypaint_color_query_empty_part1");
         mypaintGetColorKernelPart2 = buildOrWarn(myPaintKernelsProg, "mypaint_color_query_part2");
