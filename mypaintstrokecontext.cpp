@@ -36,6 +36,7 @@ struct CanvasMyPaintSurface : public MyPaintSurface
 class CLMaskImage
 {
 public:
+    CLMaskImage() : image(0), size(0, 0) {}
     CLMaskImage(cl_mem image, QSize size) : image(image), size(size) {}
     CLMaskImage(CLMaskImage &from) = delete;
     CLMaskImage& operator=(CLMaskImage &from) = delete;
@@ -46,6 +47,7 @@ public:
 
     int width() const { return size.width(); }
     int height() const { return size.height(); }
+    bool isNull() const { return (image == 0); }
 
     cl_mem image;
     QSize  size;
