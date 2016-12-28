@@ -27,6 +27,18 @@ buf[idx] = apply_normal_mode(buf[idx], color, alpha, color_alpha);
 buf[idx] = apply_locked_normal_mode(buf[idx], color, alpha);
 #pragma template
 
+#pragma template TEXTURE_ARGS
+#pragma template TEXTURE_ARGS textured
+              float   tex_offset_x,
+              float   tex_offset_y,
+    read_only image2d_t texture,
+#pragma template
+
+#pragma template TEXTURE
+#pragma template TEXTURE textured
+    alpha = apply_texture(alpha, gidx + tex_offset_x - x, gidy + tex_offset_y - y, texture);
+#pragma template
+
 #pragma template_body
 __kernel void mypaintFUNCTION_SUFFIX(
     __global  float4 *buf,
@@ -34,6 +46,7 @@ __kernel void mypaintFUNCTION_SUFFIX(
               float   x,
               float   y,
 #pragma template DAB_ARGS
+#pragma template TEXTURE_ARGS
               float   color_alpha,
               float4  color)
 {
@@ -45,6 +58,7 @@ __kernel void mypaintFUNCTION_SUFFIX(
   if (alpha > 0.0f)
     {
       const int idx = gidx + gidy * TILE_PIXEL_WIDTH + offset;
+      #pragma template TEXTURE
       #pragma template APPLY_ALPHA
     }
 }

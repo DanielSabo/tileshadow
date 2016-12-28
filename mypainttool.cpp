@@ -48,6 +48,8 @@ public:
     MyPaintToolSettings currentSettings;
     QList<MaskBuffer> currentMaskImages;
     QList<MaskBuffer> originalMaskImages;
+    MaskBuffer originalTexture;
+    MaskBuffer currentTexture;
 
     float cursorRadius;
 
@@ -202,6 +204,17 @@ MyPaintTool::MyPaintTool(const QString &path) : priv(new MyPaintToolPrivate())
                     throw QString("MBI brush error, empty mask");
             }
             priv->originalMaskImages = masks;
+
+            QString textureStr = settingsObj.value("texture").toString();
+            if (!textureStr.isEmpty())
+            {
+                QByteArray decoded = QByteArray::fromBase64(textureStr.toUtf8());
+                QImage mask;
+                mask.loadFromData(decoded);
+                if (mask.isNull())
+                    throw QString("MBI brush error, failed to decode texture");
+                priv->originalTexture = MaskBuffer(mask);
+            }
         }
 
         priv->originalSettings = settings;
@@ -214,6 +227,7 @@ MyPaintTool::MyPaintTool(const QString &path) : priv(new MyPaintToolPrivate())
 
     priv->currentSettings = priv->originalSettings;
     priv->currentMaskImages = priv->originalMaskImages;
+    priv->currentTexture = priv->originalTexture;
     priv->updateRadius();
 }
 
@@ -236,6 +250,7 @@ void MyPaintTool::reset()
 {
     priv->currentSettings = priv->originalSettings;
     priv->currentMaskImages = priv->originalMaskImages;
+    priv->currentTexture = priv->originalTexture;
     priv->updateRadius();
 }
 
@@ -476,9 +491,9 @@ QByteArray MyPaintTool::serialize()
     }
     document["settings"] = settingsMap;
 
+    QVariantMap imageSettingsMap;
     if (!priv->currentMaskImages.isEmpty())
     {
-        QVariantMap imageSettingsMap;
         QVariantList maskList;
         for (auto const &mask: priv->currentMaskImages)
         {
@@ -486,8 +501,13 @@ QByteArray MyPaintTool::serialize()
             maskList.append(QString(inverted.toPNG().toBase64()));
         }
         imageSettingsMap["masks"] = maskList;
-        document["image_settings"] = imageSettingsMap;
     }
+
+    if (!priv->currentTexture.isNull())
+        imageSettingsMap["texture"] = QString(priv->currentTexture.toPNG().toBase64());
+
+    if (!imageSettingsMap.empty())
+        document["image_settings"] = imageSettingsMap;
 
     return QJsonDocument::fromVariant(QVariant(document)).toJson();
 }
@@ -510,6 +530,9 @@ StrokeContext *MyPaintTool::newStroke(const StrokeContextArgs &args)
 
     stroke->fromSettings(priv->currentSettings);
     stroke->setMasks(priv->currentMaskImages);
+
+    if (!priv->currentTexture.isNull())
+        stroke->setTexture(priv->currentTexture);
 
     return stroke;
 }

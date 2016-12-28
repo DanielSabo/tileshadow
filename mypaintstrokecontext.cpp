@@ -79,6 +79,7 @@ public:
     MyPaintBrush            *brush;
     int                      activeMask;
     std::vector<MipSet<CLMaskImage>> masks;
+    CLMaskImage              texture;
     CanvasMyPaintSurface     surface;
     TileSet                  modTiles;
 };
@@ -176,6 +177,31 @@ void MyPaintStrokeContext::setMasks(const QList<MaskBuffer> &masks)
 
         if (!clMips.mips.empty())
         priv->masks.push_back(std::move(clMips));
+    }
+}
+
+void MyPaintStrokeContext::setTexture(const MaskBuffer &texture)
+{
+    if (texture.isNull())
+    {
+        priv->texture = CLMaskImage();
+    }
+    else
+    {
+        cl_int err = CL_SUCCESS;
+        cl_image_format fmt = {CL_INTENSITY, CL_UNORM_INT8};
+
+        cl_mem maskImage = clCreateImage2D(SharedOpenCL::getSharedOpenCL()->ctx,
+                                          CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+                                          &fmt,
+                                          texture.width(), texture.height(), 0,
+                                          (void *)texture.constData(), &err);
+        check_cl_error(err);
+
+        if (err == CL_SUCCESS)
+            priv->texture = CLMaskImage(maskImage, QSize(texture.width(), texture.height()));
+        else
+            priv->texture = CLMaskImage();
     }
 }
 
@@ -403,6 +429,7 @@ static int drawDabFunction (MyPaintSurface *base_surface,
     cl_kernel kernel;
     cl_int err = CL_SUCCESS;
     (void)err; /* Ignore the fact that err is unused, it's helpful for debugging */
+    int argIndex = 4;
 
     if (priv->masks.empty())
     {
@@ -419,20 +446,27 @@ static int drawDabFunction (MyPaintSurface *base_surface,
 
         if (radius < 1.0f)
         {
-            if (lock_alpha > 0.0f)
+            if ((lock_alpha > 0.0f) && priv->texture.isNull())
                 kernel = SharedOpenCL::getSharedOpenCL()->mypaintMicroDabLockedKernel;
-            else
+            else if (lock_alpha > 0.0f)
+                kernel = SharedOpenCL::getSharedOpenCL()->mypaintMicroDabLockedTexturedKernel;
+            else if (priv->texture.isNull())
                 kernel = SharedOpenCL::getSharedOpenCL()->mypaintMicroDabKernel;
+            else
+                kernel = SharedOpenCL::getSharedOpenCL()->mypaintMicroDabTexturedKernel;
         }
         else
         {
-            if (lock_alpha > 0.0f)
+            if ((lock_alpha > 0.0f) && priv->texture.isNull())
                 kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabLockedKernel;
-            else
+            else if (lock_alpha > 0.0f)
+                kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabLockedTexturedKernel;
+            else if (priv->texture.isNull())
                 kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabKernel;
+            else
+                kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabTexturedKernel;
         }
 
-        cl_float4 color = {color_r, color_g, color_b, opaque};
         cl_float4 transformMatrix;
         transformMatrix.s[0] = transform.m11();
         transformMatrix.s[1] = transform.m21();
@@ -442,12 +476,10 @@ static int drawDabFunction (MyPaintSurface *base_surface,
         float slope1 = -(1.0f / hardness - 1.0f);
         float slope2 = -(hardness / (1.0f - hardness));
 
-        err = clSetKernelArg<cl_float>(kernel, 4, hardness);
-        err = clSetKernelArg<cl_float4>(kernel, 5, transformMatrix);
-        err = clSetKernelArg<cl_float>(kernel, 6, slope1);
-        err = clSetKernelArg<cl_float>(kernel, 7, slope2);
-        err = clSetKernelArg<cl_float>(kernel, 8, color_a);
-        err = clSetKernelArg<cl_float4>(kernel, 9, color);
+        err = clSetKernelArg<cl_float>(kernel, argIndex++, hardness);
+        err = clSetKernelArg<cl_float4>(kernel, argIndex++, transformMatrix);
+        err = clSetKernelArg<cl_float>(kernel, argIndex++, slope1);
+        err = clSetKernelArg<cl_float>(kernel, argIndex++, slope2);
     }
     else
     {
@@ -470,23 +502,35 @@ static int drawDabFunction (MyPaintSurface *base_surface,
         boundRect.setRect(-0.5f, -0.5f, 1.0f, 1.0f);
         boundRect = transform.inverted().mapRect(boundRect).adjusted(-1.0, -1.0, 1.0, 1.0);
 
-        if (lock_alpha > 0.0f)
+        if ((lock_alpha > 0.0f) && priv->texture.isNull())
             kernel = SharedOpenCL::getSharedOpenCL()->mypaintMaskDabLockedKernel;
-        else
+        else if (lock_alpha > 0.0f)
+            kernel = SharedOpenCL::getSharedOpenCL()->mypaintMaskDabLockedTexturedKernel;
+        else if (priv->texture.isNull())
             kernel = SharedOpenCL::getSharedOpenCL()->mypaintMaskDabKernel;
+        else
+            kernel = SharedOpenCL::getSharedOpenCL()->mypaintMaskDabTexturedKernel;
 
-        cl_float4 color = {color_r, color_g, color_b, opaque};
         cl_float4 transformMatrix;
         transformMatrix.s[0] = transform.m11();
         transformMatrix.s[1] = transform.m21();
         transformMatrix.s[2] = transform.m12();
         transformMatrix.s[3] = transform.m22();
 
-        err = clSetKernelArg<cl_mem>(kernel, 4, maskImage.image);
-        err = clSetKernelArg<cl_float4>(kernel, 5, transformMatrix);
-        err = clSetKernelArg<cl_float>(kernel, 6, color_a);
-        err = clSetKernelArg<cl_float4>(kernel, 7, color);
+        err = clSetKernelArg<cl_mem>(kernel, argIndex++, maskImage.image);
+        err = clSetKernelArg<cl_float4>(kernel, argIndex++, transformMatrix);
     }
+
+    if (!priv->texture.isNull())
+    {
+        // Add 1.0f to (x, y) to reverse the offset applied to (tileX, tileY)
+        err = clSetKernelArg<cl_float>(kernel, argIndex++, x + 1.0f);
+        err = clSetKernelArg<cl_float>(kernel, argIndex++, y + 1.0f);
+        err = clSetKernelArg<cl_mem>(kernel, argIndex++, priv->texture.image);
+    }
+
+    err = clSetKernelArg<cl_float>(kernel, argIndex++, color_a);
+    err = clSetKernelArg<cl_float4>(kernel, argIndex++, cl_float4{color_r, color_g, color_b, opaque});
 
     bool skipEmptyTiles = false;
     if (lock_alpha > 0.0f || color_a <= 0.0f)

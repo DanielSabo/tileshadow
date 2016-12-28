@@ -17,6 +17,8 @@ float alpha_from_mask(float x, float y, float4 matrix, image2d_t stamp);
 inline float4 apply_normal_mode (float4 pixel, float4 color, float alpha, float color_alpha);
 inline float4 apply_locked_normal_mode (float4 pixel, float4 color, float alpha);
 
+float apply_texture(float alpha, float x, float y, image2d_t texture);
+
 float calculate_alpha (float rr, float hardness, float slope1, float slope2)
 {
   float segment1_offset = 1.0f;
@@ -103,6 +105,14 @@ float alpha_from_mask(float x, float y, float4 matrix, image2d_t stamp)
                    dot(coord, matrix.s23) + 0.5f);
 
   return read_imagef(stamp, sampler, coord).s0;
+}
+
+float apply_texture(float alpha, float x, float y, image2d_t texture)
+{
+  const sampler_t sampler = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_REPEAT | CLK_FILTER_NEAREST;
+  float2 coord = (float2)(x, y) / (float2)(get_image_width(texture), get_image_height(texture));
+  float texture_value = read_imagef(texture, sampler, coord).s0;
+  return clamp(alpha - texture_value, 0.0f, 1.0f);
 }
 
 float color_query_weight (float xx, float yy, float radius)

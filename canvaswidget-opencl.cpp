@@ -554,6 +554,12 @@ SharedOpenCL::SharedOpenCL()
         mypaintMicroDabLockedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_micro_locked");
         mypaintMaskDabKernel = buildOrWarn(myPaintKernelsProg, "mypaint_mask");
         mypaintMaskDabLockedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_mask_locked");
+        mypaintDabTexturedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_dab_textured");
+        mypaintDabLockedTexturedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_dab_locked_textured");
+        mypaintMicroDabTexturedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_micro_textured");
+        mypaintMicroDabLockedTexturedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_micro_locked_textured");
+        mypaintMaskDabTexturedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_mask_textured");
+        mypaintMaskDabLockedTexturedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_mask_locked_textured");
         mypaintGetColorKernelPart1 = buildOrWarn(myPaintKernelsProg, "mypaint_color_query_part1");
         mypaintGetColorKernelEmptyPart1 = buildOrWarn(myPaintKernelsProg, "mypaint_color_query_empty_part1");
         mypaintGetColorKernelPart2 = buildOrWarn(myPaintKernelsProg, "mypaint_color_query_part2");
