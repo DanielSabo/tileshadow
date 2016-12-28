@@ -17,6 +17,8 @@ public:
         return data.get();
     }
 
+    bool isNull() const { return data.get() == nullptr; }
+
     MaskBuffer invert() const;
     MaskBuffer downscale() const;
     QByteArray toPNG() const;
