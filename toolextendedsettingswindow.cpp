@@ -19,6 +19,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QDir>
+#include <QMenu>
 
 class ToolExtendedSettingsWindowPrivate
 {
@@ -41,10 +42,18 @@ public:
     bool needsPreview;
 
     QString maskSettingName;
+    QString textureSettingName;
 
-    QPushButton *clearMasksButton;
-    QPushButton *setMasksButton;
-    QPushButton *exportMasksButton;
+    QPushButton *textureButton;
+    QAction *clearTextureAction;
+    QAction *setTextureAction;
+    QAction *exportTextureAction;
+
+    QPushButton *masksButton;
+    QAction *clearMasksAction;
+    QAction *setMasksAction;
+    QAction *exportMasksAction;
+
     QPushButton *saveButton;
 
     std::vector<CanvasStrokePoint> previewStrokeData;
@@ -76,9 +85,14 @@ public:
     void applyMappings();
 
     void saveToolAs();
+
     void clearMasks();
     void importMasks();
     void exportMasks();
+
+    void clearTexture();
+    void importTexture();
+    void exportTexture();
 
     void loadPreviewStroke(QString const &path);
     void setPreviewStrokeData(std::vector<CanvasStrokePoint> &&data);
@@ -212,31 +226,59 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
             d->saveToolAs();
     });
 
-    d->clearMasksButton = new QPushButton(tr("Clear Masks"));
-    connect(d->clearMasksButton, &QPushButton::clicked, this, [this](bool) {
+    d->textureButton = new QPushButton(tr("Brush Texture"));
+    QMenu *textureMenu = new QMenu();
+    d->textureButton->setMenu(textureMenu);
+
+    d->clearTextureAction = textureMenu->addAction(tr("Clear Texture"));
+    connect(d->clearTextureAction, &QAction::triggered, this, [this](bool) {
+        Q_D(ToolExtendedSettingsWindow);
+        if (d->canvas)
+            d->clearTexture();
+    });
+
+    d->setTextureAction = textureMenu->addAction(tr("Import Texture..."));
+    connect(d->setTextureAction, &QAction::triggered, this, [this](bool) {
+        Q_D(ToolExtendedSettingsWindow);
+        if (d->canvas)
+            d->importTexture();
+    });
+
+    d->exportTextureAction = textureMenu->addAction(tr("Export Texture..."));
+    connect(d->exportTextureAction, &QAction::triggered, this, [this](bool) {
+        Q_D(ToolExtendedSettingsWindow);
+        if (d->canvas)
+            d->exportTexture();
+    });
+
+    d->masksButton = new QPushButton(tr("Brush Mask"));
+    QMenu *maskMenu = new QMenu();
+    d->masksButton->setMenu(maskMenu);
+
+    d->clearMasksAction = maskMenu->addAction(tr("Clear Masks"));
+    connect(d->clearMasksAction, &QAction::triggered, this, [this](bool) {
         Q_D(ToolExtendedSettingsWindow);
         if (d->canvas)
             d->clearMasks();
     });
 
-    d->setMasksButton = new QPushButton(tr("Import Masks..."));
-    connect(d->setMasksButton, &QPushButton::clicked, this, [this](bool) {
+    d->setMasksAction = maskMenu->addAction(tr("Import Masks..."));
+    connect(d->setMasksAction, &QAction::triggered, this, [this](bool) {
         Q_D(ToolExtendedSettingsWindow);
         if (d->canvas)
             d->importMasks();
     });
 
-    d->exportMasksButton = new QPushButton(tr("Export Masks..."));
-    connect(d->exportMasksButton, &QPushButton::clicked, this, [this](bool) {
+    d->exportMasksAction = maskMenu->addAction(tr("Export Masks..."));
+    connect(d->exportMasksAction, &QAction::triggered, this, [this](bool) {
         Q_D(ToolExtendedSettingsWindow);
         if (d->canvas)
             d->exportMasks();
     });
 
     buttonsLayout->addStretch(1);
-    buttonsLayout->addWidget(d->setMasksButton);
-    buttonsLayout->addWidget(d->exportMasksButton);
-    buttonsLayout->addWidget(d->clearMasksButton);
+    buttonsLayout->addWidget(d->textureButton);
+    buttonsLayout->addWidget(d->masksButton);
     buttonsLayout->addWidget(d->saveButton);
 
     layout->addWidget(buttonsBox);
@@ -291,6 +333,7 @@ void ToolExtendedSettingsWindow::updateTool()
     {
         bool keepInputEditor = false;
         d->maskSettingName = QString();
+        d->textureSettingName = QString();
 
         d->activeToolpath = canvasActiveTool;
 
@@ -356,6 +399,10 @@ void ToolExtendedSettingsWindow::updateTool()
             {
                 d->maskSettingName = info.settingID;
             }
+            else if (info.type == ToolSettingInfoType::Texture)
+            {
+                d->textureSettingName = info.settingID;
+            }
         }
 
         d->settingsAreaSettings = settingsBox;
@@ -392,16 +439,34 @@ void ToolExtendedSettingsWindow::updateTool()
 
     if (!d->maskSettingName.isEmpty())
     {
+        d->masksButton->setEnabled(true);
         bool hasMasks = !d->canvas->getToolSetting(d->maskSettingName).value<QList<MaskBuffer>>().empty();
-        d->exportMasksButton->setEnabled(hasMasks);
-        d->setMasksButton->setEnabled(true);
-        d->clearMasksButton->setEnabled(hasMasks);
+        d->exportMasksAction->setEnabled(hasMasks);
+        d->setMasksAction->setEnabled(true);
+        d->clearMasksAction->setEnabled(hasMasks);
     }
     else
     {
-        d->exportMasksButton->setEnabled(false);
-        d->setMasksButton->setEnabled(false);
-        d->clearMasksButton->setEnabled(false);
+        d->masksButton->setEnabled(false);
+        d->exportMasksAction->setEnabled(false);
+        d->setMasksAction->setEnabled(false);
+        d->clearMasksAction->setEnabled(false);
+    }
+
+    if (!d->textureSettingName.isEmpty())
+    {
+        d->textureButton->setEnabled(true);
+        bool hasTexture = !d->canvas->getToolSetting(d->textureSettingName).value<MaskBuffer>().isNull();
+        d->setTextureAction->setEnabled(true);
+        d->clearTextureAction->setEnabled(hasTexture);
+        d->exportTextureAction->setEnabled(hasTexture);
+    }
+    else
+    {
+        d->textureButton->setEnabled(false);
+        d->setTextureAction->setEnabled(false);
+        d->clearTextureAction->setEnabled(false);
+        d->exportTextureAction->setEnabled(false);
     }
 
     if (isActiveWindow())
@@ -622,6 +687,66 @@ void ToolExtendedSettingsWindowPrivate::exportMasks()
         exportFile.write(mask.invert().toPNG());
         exportFile.close();
     }
+}
+
+void ToolExtendedSettingsWindowPrivate::clearTexture()
+{
+    if (textureSettingName.isEmpty())
+        return;
+
+    canvas->setToolSetting(textureSettingName, QVariant::fromValue(MaskBuffer()));
+}
+
+void ToolExtendedSettingsWindowPrivate::importTexture()
+{
+    if (textureSettingName.isEmpty())
+        return;
+
+    QStringList importWildcards;
+
+    for (auto const &readerFormat: QImageReader::supportedImageFormats())
+        importWildcards.append(QStringLiteral("*.") + readerFormat);
+
+    QString formats = QObject::tr("Images") + " (" + importWildcards.join(" ") + ")";
+
+    QString filename = FileDialog::getOpenFileName(nullptr,
+                                                   QObject::tr("Import Texture"),
+                                                   QDir::homePath(),
+                                                   formats);
+
+    if (filename.isNull())
+        return;
+
+    QImage image(filename);
+    if (!image.isNull())
+    {
+        MaskBuffer mask(image);
+        // Note: Unlike brush masks, textures are not inverted
+        canvas->setToolSetting(textureSettingName, QVariant::fromValue(mask));
+    }
+}
+
+void ToolExtendedSettingsWindowPrivate::exportTexture()
+{
+    if (textureSettingName.isEmpty())
+        return;
+
+    MaskBuffer mask = canvas->getToolSetting(textureSettingName).value<MaskBuffer>();
+
+    if (mask.isNull())
+        return;
+
+    QString exportPath = FileDialog::getSaveFileName(nullptr,
+                                                     QObject::tr("Export Texture"),
+                                                     QDir::homePath());
+
+    if (exportPath.isEmpty())
+        return;
+
+    QFile exportFile(exportPath);
+    exportFile.open(QIODevice::WriteOnly);
+    exportFile.write(mask.toPNG());
+    exportFile.close();
 }
 
 void ToolExtendedSettingsWindowPrivate::loadPreviewStroke(const QString &path)
