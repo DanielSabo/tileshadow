@@ -283,6 +283,11 @@ void MyPaintTool::setToolSetting(QString const &inName, QVariant const &value)
         priv->currentMaskImages = value.value<QList<MaskBuffer>>();
         return;
     }
+    else if (name == QStringLiteral("texture"))
+    {
+        priv->currentTexture = value.value<MaskBuffer>();
+        return;
+    }
     else if (isMapping)
     {
         auto iter = priv->currentSettings.find(name);
@@ -334,6 +339,8 @@ QVariant MyPaintTool::getToolSetting(const QString &inName)
 
     if (name == QStringLiteral("masks"))
         return QVariant::fromValue(priv->currentMaskImages);
+    else if (name == QStringLiteral("texture"))
+        return QVariant::fromValue(priv->currentTexture);
     else if (name == QStringLiteral("size"))
         name = QStringLiteral("radius_logarithmic");
     else if (BOOL_SETTING_NAMES.contains(name))
@@ -450,6 +457,8 @@ QList<ToolSettingInfo> MyPaintTool::listAdvancedSettings()
     }
 
     result.append(ToolSettingInfo::maskSet("masks", "Masks"));
+
+    result.append(ToolSettingInfo::texture("texture", "Texture"));
 
     return result;
 }

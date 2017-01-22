@@ -11,7 +11,8 @@ namespace ToolSettingInfoType {
         LinearSlider,
         Checkbox,
         Listbox,
-        MaskSet
+        MaskSet,
+        Texture
     } Type;
 }
 
@@ -33,6 +34,7 @@ public:
     static ToolSettingInfo checkbox(QString const &settingID, QString const &name);
     static ToolSettingInfo listBox(QString const &settingID, QString const &name, OptionsList const &options);
     static ToolSettingInfo maskSet(QString const &settingID, QString const &name);
+    static ToolSettingInfo texture(QString const &settingID, QString const &name);
 private:
     ToolSettingInfo(ToolSettingInfoType::Type type);
 };

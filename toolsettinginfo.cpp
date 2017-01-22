@@ -51,6 +51,14 @@ ToolSettingInfo ToolSettingInfo::maskSet(const QString &settingID, const QString
     return result;
 }
 
+ToolSettingInfo ToolSettingInfo::texture(const QString &settingID, const QString &name)
+{
+    ToolSettingInfo result(ToolSettingInfoType::Texture);
+    result.settingID = settingID;
+    result.name = name;
+    return result;
+}
+
 ToolSettingInfo::ToolSettingInfo(ToolSettingInfoType::Type type)
     : type(type)
 {
