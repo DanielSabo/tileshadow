@@ -31,12 +31,13 @@ buf[idx] = apply_locked_normal_mode(buf[idx], color, alpha);
 #pragma template TEXTURE_ARGS textured
               float   tex_offset_x,
               float   tex_offset_y,
+              float   tex_strength,
     read_only image2d_t texture,
 #pragma template
 
 #pragma template TEXTURE
 #pragma template TEXTURE textured
-    alpha = apply_texture(alpha, gidx + tex_offset_x - x, gidy + tex_offset_y - y, texture);
+    alpha = apply_texture(alpha, gidx + tex_offset_x - x, gidy + tex_offset_y - y, texture, tex_strength);
 #pragma template
 
 #pragma template_body

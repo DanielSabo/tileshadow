@@ -22,7 +22,7 @@ public:
     bool fromSettings(MyPaintToolSettings const &settings);
     void fromDefaults();
     void setMasks(QList<MaskBuffer> const &masks = QList<MaskBuffer>());
-    void setTexture(const MaskBuffer &texture);
+    void setTexture(const MaskBuffer &texture, float textureOpacity);
 
     MyPaintStrokeContextPrivate *priv;
 };

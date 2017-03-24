@@ -50,6 +50,8 @@ public:
     QList<MaskBuffer> originalMaskImages;
     MaskBuffer originalTexture;
     MaskBuffer currentTexture;
+    float originalTextureOpacity = 1.0f;
+    float currentTextureOpacity = 1.0f;
 
     float cursorRadius;
 
@@ -215,6 +217,8 @@ MyPaintTool::MyPaintTool(const QString &path) : priv(new MyPaintToolPrivate())
                     throw QString("MBI brush error, failed to decode texture");
                 priv->originalTexture = MaskBuffer(mask);
             }
+
+            priv->originalTextureOpacity = settingsObj.value("texture_opacity").toDouble(1.0);
         }
 
         priv->originalSettings = settings;
@@ -228,6 +232,7 @@ MyPaintTool::MyPaintTool(const QString &path) : priv(new MyPaintToolPrivate())
     priv->currentSettings = priv->originalSettings;
     priv->currentMaskImages = priv->originalMaskImages;
     priv->currentTexture = priv->originalTexture;
+    priv->currentTextureOpacity = priv->originalTextureOpacity;
     priv->updateRadius();
 }
 
@@ -251,6 +256,7 @@ void MyPaintTool::reset()
     priv->currentSettings = priv->originalSettings;
     priv->currentMaskImages = priv->originalMaskImages;
     priv->currentTexture = priv->originalTexture;
+    priv->currentTextureOpacity = priv->originalTextureOpacity;
     priv->updateRadius();
 }
 
@@ -286,6 +292,11 @@ void MyPaintTool::setToolSetting(QString const &inName, QVariant const &value)
     else if (name == QStringLiteral("texture"))
     {
         priv->currentTexture = value.value<MaskBuffer>();
+        return;
+    }
+    else if (name == QStringLiteral("texture_opacity"))
+    {
+        priv->currentTextureOpacity = qBound<float>(0.0f, value.toFloat(), 1.0f);
         return;
     }
     else if (isMapping)
@@ -341,6 +352,8 @@ QVariant MyPaintTool::getToolSetting(const QString &inName)
         return QVariant::fromValue(priv->currentMaskImages);
     else if (name == QStringLiteral("texture"))
         return QVariant::fromValue(priv->currentTexture);
+    else if (name == QStringLiteral("texture_opacity"))
+        return QVariant::fromValue(priv->currentTextureOpacity);
     else if (name == QStringLiteral("size"))
         name = QStringLiteral("radius_logarithmic");
     else if (BOOL_SETTING_NAMES.contains(name))
@@ -460,6 +473,8 @@ QList<ToolSettingInfo> MyPaintTool::listAdvancedSettings()
 
     result.append(ToolSettingInfo::texture("texture", "Texture"));
 
+    result.append(ToolSettingInfo::linearSlider("texture_opacity", "Texture Opacity", 0.0f, 1.0f));
+
     return result;
 }
 
@@ -515,6 +530,9 @@ QByteArray MyPaintTool::serialize()
     if (!priv->currentTexture.isNull())
         imageSettingsMap["texture"] = QString(priv->currentTexture.toPNG().toBase64());
 
+    if (priv->currentTextureOpacity != 1.0f)
+        imageSettingsMap["texture_opacity"] = priv->currentTextureOpacity;
+
     if (!imageSettingsMap.empty())
         document["image_settings"] = imageSettingsMap;
 
@@ -541,7 +559,7 @@ StrokeContext *MyPaintTool::newStroke(const StrokeContextArgs &args)
     stroke->setMasks(priv->currentMaskImages);
 
     if (!priv->currentTexture.isNull())
-        stroke->setTexture(priv->currentTexture);
+        stroke->setTexture(priv->currentTexture, priv->currentTextureOpacity);
 
     return stroke;
 }

@@ -80,6 +80,7 @@ public:
     int                      activeMask;
     std::vector<MipSet<CLMaskImage>> masks;
     CLMaskImage              texture;
+    float                    textureOpacity;
     CanvasMyPaintSurface     surface;
     TileSet                  modTiles;
 };
@@ -180,8 +181,10 @@ void MyPaintStrokeContext::setMasks(const QList<MaskBuffer> &masks)
     }
 }
 
-void MyPaintStrokeContext::setTexture(const MaskBuffer &texture)
+void MyPaintStrokeContext::setTexture(const MaskBuffer &texture, float textureOpacity)
 {
+    priv->textureOpacity = textureOpacity;
+
     if (texture.isNull())
     {
         priv->texture = CLMaskImage();
@@ -526,6 +529,7 @@ static int drawDabFunction (MyPaintSurface *base_surface,
         // Add 1.0f to (x, y) to reverse the offset applied to (tileX, tileY)
         err = clSetKernelArg<cl_float>(kernel, argIndex++, x + 1.0f);
         err = clSetKernelArg<cl_float>(kernel, argIndex++, y + 1.0f);
+        err = clSetKernelArg<cl_float>(kernel, argIndex++, priv->textureOpacity);
         err = clSetKernelArg<cl_mem>(kernel, argIndex++, priv->texture.image);
     }
 
