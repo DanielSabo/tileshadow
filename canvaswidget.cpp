@@ -1465,7 +1465,10 @@ void CanvasWidget::pickColorAt(QPoint pos, bool merged)
     if (merged)
     {
         mergedTile = ctx->layers.getTileMaybe(ix, iy);
-        tile = mergedTile.get();
+        if (mergedTile)
+            tile = mergedTile.get();
+        else
+            tile = ctx->layers.backgroundTileCL.get();
     }
     else
     {
