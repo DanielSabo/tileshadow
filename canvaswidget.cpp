@@ -877,15 +877,27 @@ void CanvasWidget::mergeLayerDown(int layerIndex)
 
     CanvasLayer *above = parentInfo.container->at(parentInfo.index);
     CanvasLayer *below = parentInfo.container->at(parentInfo.index - 1);
+    std::unique_ptr<CanvasLayer> mergedPtr;
 
-    if (above->type != LayerType::Layer || below->type != LayerType::Layer)
+    if (above->type == LayerType::Layer && below->type == LayerType::Layer)
+    {
+        mergedPtr = above->mergeDown(below);
+    }
+    else if (above->type == LayerType::Group && below->type == LayerType::Layer)
+    {
+        mergedPtr = above->flattened();
+        mergedPtr = mergedPtr->mergeDown(below);
+    }
+    else
+    {
         return;
+    }
 
     tileSetInsert(ctx->dirtyTiles, dirtyTilesForLayer(&ctx->layers, ctx->currentLayer));
 
     ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
 
-    CanvasLayer *merged = above->mergeDown(below).release();
+    CanvasLayer *merged = mergedPtr.release();
     delete above;
     parentInfo.container->replace(parentInfo.index, merged);
     delete below;
