@@ -946,13 +946,7 @@ void CanvasWidget::updateLayerTranslate(int x,  int y)
         if (!ctx->currentLayerCopy)
         {
             // If the current layer is a group generate a cached rendering of it
-            ctx->currentLayerCopy.reset(new CanvasLayer());
-            for (auto const &idx: currentLayer->getTileSet())
-            {
-                auto tile = renderList(currentLayer->children, idx.x(), idx.y());
-                if (tile)
-                    (*ctx->currentLayerCopy->tiles)[idx] = std::move(tile);
-            }
+            ctx->currentLayerCopy = currentLayer->flattened();
         }
         std::unique_ptr<CanvasLayer> newLayer = ctx->currentLayerCopy->translated(x, y);
 
