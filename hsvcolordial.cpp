@@ -1,5 +1,6 @@
 #include "hsvcolordial.h"
 #include <QDebug>
+#include <QApplication>
 #include <QPainter>
 #include <QImage>
 #include <QRgb>
@@ -138,17 +139,29 @@ void HSVColorDial::paintEvent(QPaintEvent *event)
 
     if (d->renderedDial.isNull())
     {
-        d->renderedDial = QImage(metrics.size, metrics.size, QImage::Format_ARGB32);
+        int dialSize = metrics.size;
+        float rFactor = 1.0f;
+        if (qApp->devicePixelRatio() > 1.0)
+        {
+            dialSize *= 2;
+            rFactor = 0.5f;
+            d->renderedDial = QImage(dialSize, dialSize, QImage::Format_ARGB32);
+            d->renderedDial.setDevicePixelRatio(2.0f);
+        }
+        else
+        {
+            d->renderedDial = QImage(dialSize, dialSize, QImage::Format_ARGB32);
+        }
 
-        for (int row = 0; row < metrics.size; row++)
+        for (int row = 0; row < dialSize; row++)
         {
             QRgb *pixel = (QRgb *)d->renderedDial.scanLine(row);
-            for (int col = 0; col < metrics.size; col++)
+            for (int col = 0; col < dialSize; col++)
             {
-                float dx = col - metrics.size / 2.0f;
-                float dy = row - metrics.size / 2.0f;
+                float dx = col - dialSize / 2.0f;
+                float dy = row - dialSize / 2.0f;
 
-                float r = sqrtf(dx*dx + dy*dy);
+                float r = sqrtf(dx*dx + dy*dy) * rFactor;
                 if (r <= metrics.outerRadius && r >= metrics.innerRadius)
                 {
                     float alpha;
@@ -178,16 +191,25 @@ void HSVColorDial::paintEvent(QPaintEvent *event)
         int boxSize = boxInnerRadius * 2;
         d->boxRect = QRect(boxOrigin, boxOrigin, boxSize, boxSize);
 
-        d->renderedInnerBox = QImage(d->boxRect.size(), QImage::Format_ARGB32);
+        if (qApp->devicePixelRatio() > 1.0)
+        {
+            boxSize *= 2;
+            d->renderedInnerBox = QImage(boxSize, boxSize, QImage::Format_ARGB32);
+            d->renderedInnerBox.setDevicePixelRatio(2.0f);
+        }
+        else
+        {
+            d->renderedInnerBox = QImage(boxSize, boxSize, QImage::Format_ARGB32);
+        }
 
-        for (int row = 0; row < d->boxRect.height(); row++)
+        for (int row = 0; row < boxSize; row++)
         {
             QRgb *pixel = (QRgb *)d->renderedInnerBox.scanLine(row);
-            float v = float(d->boxRect.height() - row) / d->boxRect.height();
+            float v = float(boxSize - row) / boxSize;
             v = powf(v, BOX_VALUE_FACTOR);
-            for (int col = 0; col < d->boxRect.width(); col++)
+            for (int col = 0; col < boxSize; col++)
             {
-                float s = float(d->boxRect.width() - col) / d->boxRect.width();
+                float s = float(boxSize - col) / boxSize;
                 s = powf(s, BOX_VALUE_FACTOR);
 
                 QColor pixelColor = QColor::fromHsvF(d->h, s, v);
