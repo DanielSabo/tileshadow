@@ -199,6 +199,28 @@ std::unique_ptr<CanvasLayer> CanvasLayer::mergeDown(const CanvasLayer *target) c
     return result;
 }
 
+std::unique_ptr<CanvasLayer> CanvasLayer::flattened() const
+{
+    if (type == LayerType::Group)
+    {
+        std::unique_ptr<CanvasLayer> result = shellCopy();
+        result->type = LayerType::Layer;
+
+        for (auto const &idx: getTileSet())
+        {
+            auto tile = renderList(children, idx.x(), idx.y());
+            if (tile)
+                (*result->tiles)[idx] = std::move(tile);
+        }
+
+        return result;
+    }
+    else
+    {
+        return deepCopy();
+    }
+}
+
 TileSet CanvasLayer::takeTiles(CanvasLayer *source)
 {
     TileSet result;
