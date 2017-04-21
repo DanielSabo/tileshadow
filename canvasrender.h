@@ -58,8 +58,13 @@ public:
         GLuint previewColor;
     } colorDotShader;
 
+    struct : GLShaderProgram {
+        GLuint fillColor;
+    } canvasFrameShader;
+
     GLuint backbufferFramebuffer;
     GLuint backbufferRenderbuffer;
+    GLuint backbufferStencilbuffer;
 
     typedef struct {
         GLuint glBuf;
@@ -78,6 +83,7 @@ public:
     QSize viewSize;
     float viewScale;
     int viewPixelRatio;
+    QRect viewFrame;
 
     void resizeFramebuffer(int w, int h);
     void shiftFramebuffer(int xOffset, int yOffset);
@@ -89,9 +95,10 @@ public:
     void ensureTiles(const TileMap &tiles);
     void renderTileMap(TileMap &tiles);
 
-    void renderView(QPoint newOrigin, QSize newSize, float newScale, bool fullRedraw);
+    void renderView(QPoint newOrigin, QSize newSize, float newScale, QRect newFrame, bool fullRedraw);
     void drawToolCursor(QPoint cursorPos, float cusrorRadius, QColor outerColor = Qt::black, QColor innerColor = Qt::white);
     void drawColorDots(QColor dotPreviewColor);
+    void drawFrame(QRect frame);
 private:
     void renderTile(int x, int y, CanvasTile *tile);
 };

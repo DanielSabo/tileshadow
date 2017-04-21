@@ -356,7 +356,7 @@ void CanvasWidget::paintGL()
 
     render->renderTileMap(renderTiles);
 
-    render->renderView(canvasOrigin, size(), viewScale, false);
+    render->renderView(canvasOrigin, size(), viewScale, d->canvasFrame, false);
 
     if (d->activeTool && d->currentLayerEditable && d->showToolCursor && underMouse())
     {

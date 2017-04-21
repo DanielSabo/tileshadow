@@ -62,6 +62,24 @@ static void uploadVertexData2f(QOpenGLFunctions_3_2_Core *glFuncs,
     glFuncs->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
 }
 
+static void dynamicVertexData2f(QOpenGLFunctions_3_2_Core *glFuncs,
+                               GLShaderProgram &shader,
+                               std::vector<float> const &data)
+{
+    if (!shader.vertexBuffer && !shader.vertexArray)
+    {
+        glFuncs->glGenBuffers(1, &shader.vertexBuffer);
+        glFuncs->glGenVertexArrays(1, &shader.vertexArray);
+    }
+    glFuncs->glBindVertexArray(shader.vertexArray);
+    glFuncs->glBindBuffer(GL_ARRAY_BUFFER, shader.vertexBuffer);
+
+    glFuncs->glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), data.data(), GL_DYNAMIC_DRAW);
+
+    glFuncs->glEnableVertexAttribArray(0);
+    glFuncs->glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+}
+
 CanvasRender::CanvasRender() :
     glFuncs(new QOpenGLFunctions_3_2_Core()),
     backgroundGLTile(0),
@@ -140,9 +158,18 @@ CanvasRender::CanvasRender() :
     });
     uploadVertexData2f(glFuncs, colorDotShader, shaderVerts);
 
+    /* Frame fill shaders */
+    buildProgram(glFuncs, canvasFrameShader, ":/ColorFill.vert", ":/ColorFill.frag");
+
+    if (canvasFrameShader.program)
+    {
+        canvasFrameShader.fillColor = glFuncs->glGetUniformLocation(canvasFrameShader.program, "fillColor");
+    }
+
     /* Framebuffers */
     glFuncs->glGenFramebuffers(1, &backbufferFramebuffer);
     glFuncs->glGenRenderbuffers(1, &backbufferRenderbuffer);
+    glFuncs->glGenRenderbuffers(1, &backbufferStencilbuffer);
 }
 
 CanvasRender::~CanvasRender()
@@ -152,6 +179,7 @@ CanvasRender::~CanvasRender()
     tileShader.cleanup(glFuncs);
     cursorShader.cleanup(glFuncs);
     colorDotShader.cleanup(glFuncs);
+    canvasFrameShader.cleanup(glFuncs);
 
     if (backgroundGLTile)
         glFuncs->glDeleteBuffers(1, &backgroundGLTile);
@@ -161,6 +189,9 @@ CanvasRender::~CanvasRender()
 
     if (backbufferRenderbuffer)
         glFuncs->glDeleteRenderbuffers(1, &backbufferRenderbuffer);
+
+    if (backbufferStencilbuffer)
+        glFuncs->glDeleteRenderbuffers(1, &backbufferStencilbuffer);
 
     delete glFuncs;
 }
@@ -180,13 +211,21 @@ void CanvasRender::resizeFramebuffer(int w, int h)
 
         glFuncs->glBindRenderbuffer(GL_RENDERBUFFER, backbufferRenderbuffer);
         glFuncs->glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB8, viewSize.width(), viewSize.height());
+        glFuncs->glBindRenderbuffer(GL_RENDERBUFFER, backbufferStencilbuffer);
+        glFuncs->glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, viewSize.width(), viewSize.height());
 
         glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, backbufferFramebuffer);
         glFuncs->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, backbufferRenderbuffer);
+        glFuncs->glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, backbufferStencilbuffer);
+
+        // If creating the framebuffer with STENCIL_INDEX8 failed fall back to DEPTH24_STENCIL8
+        if (glFuncs->glCheckFramebufferStatus(GL_READ_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            glFuncs->glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, viewSize.width(), viewSize.height());
 
         glFuncs->glClearColor(1.0, 0.0, 0.0, 1.0);
-        glFuncs->glClear(GL_COLOR_BUFFER_BIT);
+        glFuncs->glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        glFuncs->glBindRenderbuffer(GL_RENDERBUFFER, GL_NONE);
         glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
     }
 }
@@ -195,11 +234,11 @@ void CanvasRender::shiftFramebuffer(int xOffset, int yOffset)
 {
     GLuint newFramebuffer = 0;
     GLuint newRenderbuffer = 0;
-    QSize siftArea = viewSize;
+    QSize shiftArea = viewSize;
     // Y offset is flipped because GL's origin is lower right vs top right for Qt
     yOffset = -yOffset;
-    siftArea.rwidth() -= abs(xOffset);
-    siftArea.rheight() -= abs(yOffset);
+    shiftArea.rwidth() -= abs(xOffset);
+    shiftArea.rheight() -= abs(yOffset);
     int readX = xOffset > 0 ? xOffset : 0;
     int writeX = xOffset > 0 ? 0 : -xOffset;
     int readY = yOffset > 0 ? yOffset : 0;
@@ -208,20 +247,24 @@ void CanvasRender::shiftFramebuffer(int xOffset, int yOffset)
     glFuncs->glGenFramebuffers(1, &newFramebuffer);
     glFuncs->glGenRenderbuffers(1, &newRenderbuffer);
 
-    glFuncs->glBindRenderbuffer(GL_RENDERBUFFER, newFramebuffer);
+    glFuncs->glBindRenderbuffer(GL_RENDERBUFFER, newRenderbuffer);
     glFuncs->glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB8, viewSize.width(), viewSize.height());
-    glFuncs->glBindFramebuffer(GL_READ_FRAMEBUFFER, backbufferFramebuffer);
-    glFuncs->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, newFramebuffer);
-    glFuncs->glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, newFramebuffer);
+    glFuncs->glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
-    glFuncs->glBlitFramebuffer(readX, readY, siftArea.width() + readX, siftArea.height() + readY,
-                               writeX, writeY, siftArea.width() + writeX, siftArea.height() + writeY,
+    glFuncs->glBindFramebuffer(GL_READ_FRAMEBUFFER, backbufferFramebuffer);
+    glFuncs->glFramebufferRenderbuffer(GL_READ_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, 0);
+    glFuncs->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, newFramebuffer);
+    glFuncs->glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, newRenderbuffer);
+
+    glFuncs->glBlitFramebuffer(readX, readY, shiftArea.width() + readX, shiftArea.height() + readY,
+                               writeX, writeY, shiftArea.width() + writeX, shiftArea.height() + writeY,
                                GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
+    glFuncs->glDeleteRenderbuffers(1, &backbufferRenderbuffer);
+    glFuncs->glDeleteFramebuffers(1, &backbufferFramebuffer);
+    glFuncs->glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, backbufferStencilbuffer);
     glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, GL_NONE);
 
-    glFuncs->glDeleteFramebuffers(1, &backbufferFramebuffer);
-    glFuncs->glDeleteRenderbuffers(1, &backbufferRenderbuffer);
     backbufferFramebuffer = newFramebuffer;
     backbufferRenderbuffer = newRenderbuffer;
 }
@@ -424,11 +467,15 @@ void CanvasRender::renderTileMap(TileMap &tiles)
         clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
 }
 
-void CanvasRender::renderView(QPoint newOrigin, QSize newSize, float newScale, bool fullRedraw)
+void CanvasRender::renderView(QPoint newOrigin, QSize newSize, float newScale, QRect newFrame, bool fullRedraw)
 {
     if (viewScale != newScale)
         fullRedraw = true;
     viewScale = newScale;
+
+    if (viewFrame != newFrame)
+        fullRedraw = true;
+    viewFrame = newFrame;
 
     if (viewSize != newSize)
     {
@@ -500,6 +547,18 @@ void CanvasRender::renderView(QPoint newOrigin, QSize newSize, float newScale, b
 
     };
 
+    bool stencilTiles = !(viewFrame.isEmpty() || fullRedraw);
+
+    if (stencilTiles)
+    {
+        glFuncs->glEnable(GL_STENCIL_TEST);
+        glFuncs->glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glFuncs->glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        glFuncs->glStencilMask(0xFF);
+        glFuncs->glClearStencil(0);
+        glFuncs->glClear(GL_STENCIL_BUFFER_BIT);
+    }
+
     if (fullRedraw || dirtyBackground)
     {
         for (int ix = originTileX; ix < tileCountX + originTileX; ++ix)
@@ -510,6 +569,20 @@ void CanvasRender::renderView(QPoint newOrigin, QSize newSize, float newScale, b
     {
         for (QPoint const &iter: dirtyTiles)
             drawOneTile(iter.x(), iter.y());
+    }
+
+    if (stencilTiles)
+    {
+        glFuncs->glStencilFunc(GL_EQUAL, 1, 0xFF);
+        glFuncs->glStencilMask(0x00);
+    }
+
+    drawFrame(viewFrame);
+
+    if (stencilTiles)
+    {
+        glFuncs->glDisable(GL_STENCIL_TEST);
+        glFuncs->glClear(GL_STENCIL_BUFFER_BIT);
     }
 
     glFuncs->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, GL_NONE);
@@ -601,4 +674,67 @@ void CanvasRender::drawColorDots(QColor dotPreviewColor)
                          0.0f, yShift, dotWidth, dotHeight);
     glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glFuncs->glDisable(GL_BLEND);
+}
+
+namespace {
+    void appendRectVerts(std::vector<float> &shaderVerts, QRectF const &rect)
+    {
+        shaderVerts.push_back(rect.x()); shaderVerts.push_back(rect.y());
+        shaderVerts.push_back(rect.x() + rect.width()); shaderVerts.push_back(rect.y());
+        shaderVerts.push_back(rect.x() + rect.width()); shaderVerts.push_back(rect.y() + rect.height());
+
+        shaderVerts.push_back(rect.x()); shaderVerts.push_back(rect.y());
+        shaderVerts.push_back(rect.x() + rect.width()); shaderVerts.push_back(rect.y() + rect.height());
+        shaderVerts.push_back(rect.x()); shaderVerts.push_back(rect.y() + rect.height());
+    }
+}
+
+void CanvasRender::drawFrame(QRect frame)
+{
+    if (frame.isEmpty())
+        return;
+
+    QColor fillColor(Qt::black);
+    fillColor.setAlphaF(0.35);
+
+    // Map the frame rect to gl coordinates
+    float frameWidth = viewScale * frame.width() * 2.0f / viewSize.width();
+    float frameHeight = viewScale * frame.height() * 2.0f / viewSize.height();
+    float frameX = ((viewScale * frame.x() - viewOrigin.x()) / viewSize.width() * 2.0f) - 1.0f;
+    float frameY = 1.0f - ((viewScale * (frame.y() + frame.height()) - viewOrigin.y()) / viewSize.height() * 2.0f);
+
+    std::vector<float> shaderVerts;
+
+    if (frameX + frameWidth < 1.0f) // Right
+        appendRectVerts(shaderVerts, {{frameX + frameWidth, frameY}, QPointF{1.0f, 1.0f}});
+    if (frameY + frameHeight < 1.0f) // Top
+        appendRectVerts(shaderVerts, {{frameX + frameWidth, frameY + frameHeight}, QPointF{-1.0f, 1.0f}});
+    if (frameX > -1.0f) // Left
+        appendRectVerts(shaderVerts, {{frameX, frameY + frameHeight}, QPointF{-1.0f, -1.0f}});
+    if (frameY > -1.0f) // Bottom
+        appendRectVerts(shaderVerts, {{frameX, frameY}, QPointF{1.0f, -1.0f}});
+
+    if(!shaderVerts.empty())
+    {
+        float extraX = (2.0f * 2.0f) / viewSize.width();
+        float extraY = (2.0f * 2.0f) / viewSize.height();
+        appendRectVerts(shaderVerts, {{frameX + frameWidth, frameY}, QSizeF(extraX, frameHeight + extraY)}); // Right
+        appendRectVerts(shaderVerts, {{frameX + frameWidth, frameY + frameHeight}, QSizeF(-(frameWidth + extraX), extraY)}); // Top
+        appendRectVerts(shaderVerts, {{frameX, frameY + frameHeight}, QSizeF(-extraX, -(frameHeight + extraY))}); // Left
+        appendRectVerts(shaderVerts, {{frameX, frameY}, QSizeF(frameWidth + extraX, -extraY)}); // Bottom
+
+        glFuncs->glEnable(GL_BLEND);
+        glFuncs->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glFuncs->glUseProgram(canvasFrameShader.program);
+        glFuncs->glUniform4f(canvasFrameShader.fillColor,
+                             fillColor.redF(),
+                             fillColor.greenF(),
+                             fillColor.blueF(),
+                             fillColor.alphaF());
+        // Calling dynamicVertexData2f binds the vertex array
+        //glFuncs->glBindVertexArray(canvasFrameShader.vertexArray);
+        dynamicVertexData2f(glFuncs, canvasFrameShader, shaderVerts);
+        glFuncs->glDrawArrays(GL_TRIANGLES, 0, shaderVerts.size() / 2);
+        glFuncs->glDisable(GL_BLEND);
+    }
 }

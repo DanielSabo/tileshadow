@@ -67,6 +67,8 @@
         <file>CursorCircle.frag</file>
         <file>CursorCircle.vert</file>
         <file>ColorDot.frag</file>
+        <file>ColorFill.vert</file>
+        <file>ColorFill.frag</file>
         <file>cursors/eyedropper.png</file>
         <file>cursors/eyedropper@2x.png</file>
         <file>cursors/move-view.png</file>
