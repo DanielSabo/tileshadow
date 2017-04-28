@@ -16,7 +16,8 @@
 #include "lodepng.h"
 #include "imagefiles.h"
 
-static QString blendModeToOraOp(BlendMode::Mode mode)
+namespace {
+QString blendModeToOraOp(BlendMode::Mode mode)
 {
     if (mode == BlendMode::Over)
         return QStringLiteral("svg:src-over");
@@ -47,7 +48,7 @@ static QString blendModeToOraOp(BlendMode::Mode mode)
     return QStringLiteral("svg:src-over");
 }
 
-static BlendMode::Mode oraOpToMode(QString opName)
+BlendMode::Mode oraOpToMode(QString opName)
 {
     if (opName == "svg:src-over")
         return BlendMode::Over;
@@ -127,15 +128,15 @@ void writeBackground(QZipWriter &writer, QString const &path, CanvasTile *tile, 
         free(pngData);
 }
 
-static void writeStack(QXmlStreamWriter &stackXML,
-                       QZipWriter &oraZipWriter,
-                       int imageX,
-                       int imageY,
-                       QList<CanvasLayer *> const &layers,
-                       int &layerNum,
-                       int &progressStep,
-                       float progressStepTotal,
-                       std::function<void(QString const &, float)> progressCallback)
+void writeStack(QXmlStreamWriter &stackXML,
+                QZipWriter &oraZipWriter,
+                int imageX,
+                int imageY,
+                QList<CanvasLayer *> const &layers,
+                int &layerNum,
+                int &progressStep,
+                float progressStepTotal,
+                std::function<void(QString const &, float)> progressCallback)
 {
     for (int layerIdx = layers.size() - 1; layerIdx >= 0; layerIdx--)
     {
@@ -266,6 +267,7 @@ static void writeStack(QXmlStreamWriter &stackXML,
         }
     }
 }
+}
 
 void saveStackAs(CanvasStack *stack, QString path, std::function<void(QString const &, float)> progressCallback)
 {
@@ -351,7 +353,8 @@ void saveStackAs(CanvasStack *stack, QString path, std::function<void(QString co
     saveFile.commit();
 }
 
-static CanvasLayer *layerFromLinear(uint16_t *layerData, QRect bounds)
+namespace {
+CanvasLayer *layerFromLinear(uint16_t *layerData, QRect bounds)
 {
     QRect tileBounds;
     const size_t dataCompStride = bounds.width() * 4;
@@ -430,7 +433,7 @@ static CanvasLayer *layerFromLinear(uint16_t *layerData, QRect bounds)
     return result;
 }
 
-static CanvasTile *backgroundFromLinear(uint16_t *imageData, QSize imageSize)
+CanvasTile *backgroundFromLinear(uint16_t *imageData, QSize imageSize)
 {
     const size_t dataCompStride = imageSize.width() * 4;
 
@@ -454,7 +457,7 @@ static CanvasTile *backgroundFromLinear(uint16_t *imageData, QSize imageSize)
     return result;
 }
 
-static uint16_t *readZipPNG(QZipReader &reader, QString const &path, QSize *resultSize)
+uint16_t *readZipPNG(QZipReader &reader, QString const &path, QSize *resultSize)
 {
     *resultSize = QSize(0, 0);
 
@@ -486,8 +489,8 @@ static uint16_t *readZipPNG(QZipReader &reader, QString const &path, QSize *resu
     return layerData;
 }
 
-static void setLayerAttributes(CanvasLayer *layer,
-                               QXmlStreamAttributes const &attributes)
+void setLayerAttributes(CanvasLayer *layer,
+                        QXmlStreamAttributes const &attributes)
 {
     QString mode;
     QString name;
@@ -518,9 +521,9 @@ static void setLayerAttributes(CanvasLayer *layer,
     layer->opacity = opacity;
 }
 
-static QList<CanvasLayer *> readStack(QXmlStreamReader &stackXML,
-                                      std::unique_ptr<CanvasTile> &resultBackgroundTile,
-                                      QZipReader &oraZipReader)
+QList<CanvasLayer *> readStack(QXmlStreamReader &stackXML,
+                               std::unique_ptr<CanvasTile> &resultBackgroundTile,
+                               QZipReader &oraZipReader)
 {
     QList<CanvasLayer *> resultLayers;
 
@@ -603,6 +606,7 @@ static QList<CanvasLayer *> readStack(QXmlStreamReader &stackXML,
 
     qDebug() << "Unclosed layer stack!";
     return resultLayers;
+}
 }
 
 void loadStackFromORA(CanvasStack *stack, QString path)
