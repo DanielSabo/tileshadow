@@ -116,7 +116,7 @@ std::unique_ptr<CanvasLayer> layerFromImage(QImage image)
         tileBounds = QRect(tileX1, tileY1, tileX2 - tileX1, tileY2 - tileY1);
     }
 
-    float *newTileData = new float[TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT * 4];
+    std::unique_ptr<float[]> newTileData(new float[TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT * 4]);
     std::unique_ptr<CanvasLayer> result(new CanvasLayer(""));
 
     for (int iy = 0; iy < tileBounds.height(); ++iy)
@@ -129,7 +129,7 @@ std::unique_ptr<CanvasLayer> layerFromImage(QImage image)
             for (int row = 0; row < TILE_PIXEL_HEIGHT; ++row)
                 for (int col = 0; col < TILE_PIXEL_WIDTH; ++col)
                 {
-                    float *outPtr = newTileData + (row * TILE_PIXEL_WIDTH * 4) + (col * 4);
+                    float *outPtr = newTileData.get() + (row * TILE_PIXEL_WIDTH * 4) + (col * 4);
                     int srcX = col + srcXOffset;
                     int srcY = row + srcYOffset;
                     QRgb *inPtr = (QRgb *)(image.scanLine(srcY)) + srcX;
@@ -172,7 +172,7 @@ std::unique_ptr<CanvasLayer> layerFromImage(QImage image)
             if (realPixels)
             {
                 memcpy(result->openTileAt(ix + tileBounds.x(), iy + tileBounds.y()),
-                       newTileData, TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT * sizeof(float) * 4);
+                       newTileData.get(), TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT * sizeof(float) * 4);
             }
         }
 
