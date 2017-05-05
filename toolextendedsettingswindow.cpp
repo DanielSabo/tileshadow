@@ -105,22 +105,19 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
 {
     Q_D(ToolExtendedSettingsWindow);
 
-    auto layout = new QVBoxLayout();
+    auto layout = new QVBoxLayout(this);
     layout->setContentsMargins(QMargins());
     layout->setSpacing(0);
-    setLayout(layout);
 
     auto windowBody = new QWidget();
-    auto windowHorizontal = new QHBoxLayout();
+    auto windowHorizontal = new QHBoxLayout(windowBody);
     windowHorizontal->setSpacing(3);
-    windowBody->setLayout(windowHorizontal);
     layout->addWidget(windowBody);
 
     auto rightBody = new QWidget();
-    auto rightVertical = new QVBoxLayout();
+    auto rightVertical = new QVBoxLayout(rightBody);
     rightVertical->setSpacing(3);
     rightVertical->setContentsMargins(QMargins());
-    rightBody->setLayout(rightVertical);
     rightBody->setFixedWidth(600);
 
     d->scroll = new QScrollArea();
@@ -130,9 +127,9 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
     d->scroll->setFrameShape(QFrame::NoFrame);
 
     d->settingsAreaBody = new QWidget();
-    d->settingsAreaBody->setLayout(new QVBoxLayout());
-    d->settingsAreaBody->layout()->setContentsMargins(QMargins());
-    d->settingsAreaBody->layout()->setSpacing(0);
+    auto settingsAreaBodyLayout = new QVBoxLayout(d->settingsAreaBody);
+    settingsAreaBodyLayout->setContentsMargins(QMargins());
+    settingsAreaBodyLayout->setSpacing(0);
     d->settingsAreaSettings = nullptr;
 
     d->scroll->setWidget(d->settingsAreaBody);
@@ -178,10 +175,9 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
 
     auto inputEditorArea = new QWidget();
     inputEditorArea->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-    auto inputEditorAreaLayout = new QVBoxLayout();
-    inputEditorArea->setLayout(inputEditorAreaLayout);
-    inputEditorArea->layout()->setContentsMargins(QMargins());
-    inputEditorArea->layout()->setSpacing(0);
+    auto inputEditorAreaLayout = new QVBoxLayout(inputEditorArea);
+    inputEditorAreaLayout->setContentsMargins(QMargins());
+    inputEditorAreaLayout->setSpacing(0);
 
     rightVertical->addLayout(previewVerticalLayout);
     rightVertical->addWidget(inputEditorArea);
@@ -189,15 +185,14 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
     rightVertical->setStretch(1, 1);
 
     d->inputEditorBody = new QWidget();
-    d->inputEditorBody->setLayout(new QVBoxLayout());
-    d->inputEditorBody->layout()->setContentsMargins(QMargins());
-    d->inputEditorBody->layout()->setSpacing(0);
+    auto inputEditorBodyLayout = new QVBoxLayout(d->inputEditorBody);
+    inputEditorBodyLayout->setContentsMargins(QMargins());
+    inputEditorBodyLayout->setSpacing(0);
     d->inputEditorSettings = nullptr;
 
     auto inputEditorButtons = new QWidget();
-    auto inputEditorButtonsLayout = new QHBoxLayout();
+    auto inputEditorButtonsLayout = new QHBoxLayout(inputEditorButtons);
     inputEditorButtonsLayout->setContentsMargins(QMargins());
-    inputEditorButtons->setLayout(inputEditorButtonsLayout);
     inputEditorAreaLayout->addStretch(1);
     inputEditorAreaLayout->addWidget(d->inputEditorBody);
     inputEditorAreaLayout->addWidget(inputEditorButtons);
@@ -215,9 +210,8 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
         "}"
     ));
 
-    auto buttonsLayout = new QHBoxLayout();
     auto buttonsBox = new QWidget();
-    buttonsBox->setLayout(buttonsLayout);
+    auto buttonsLayout = new QHBoxLayout(buttonsBox);
 
     d->saveButton = new QPushButton(tr("Save As..."));
     connect(d->saveButton, &QPushButton::clicked, this, [this](bool) {
@@ -344,10 +338,9 @@ void ToolExtendedSettingsWindow::updateTool()
         d->items.clear();
 
         auto settingsBox = new QWidget();
-        auto layout = new QGridLayout();
+        auto layout = new QGridLayout(settingsBox);
         layout->setSpacing(3);
         layout->setColumnStretch(0, 1);
-        settingsBox->setLayout(layout);
 
         for (const ToolSettingInfo info: d->canvas->getAdvancedToolSettings())
         {
@@ -492,9 +485,8 @@ void ToolExtendedSettingsWindowPrivate::showMappingsFor(ToolSettingInfo const &i
     inputEditorItems.clear();
 
     auto settingsBox = new QWidget();
-    auto layout = new QFormLayout();
+    auto layout = new QFormLayout(settingsBox);
     layout->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
-    settingsBox->setLayout(layout);
 
     inputEditorSettingID = info.settingID;
 
