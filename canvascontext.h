@@ -33,7 +33,6 @@ public:
     void addUndoEvent(CanvasUndoEvent *undoEvent);
     void clearUndoHistory();
     void clearRedoHistory();
-    void updateBackgroundTile();
 };
 
 #endif // CANVASCONTEXT_H
