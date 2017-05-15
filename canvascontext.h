@@ -22,6 +22,8 @@ public:
     std::unique_ptr<CanvasLayer> currentLayerCopy;
     CanvasStack layers;
     std::unique_ptr<CanvasStack> flashStack;
+    std::unique_ptr<CanvasLayer> quickmask;
+    std::unique_ptr<CanvasLayer> quickmaskCopy;
 
     QList<CanvasUndoEvent *> undoHistory;
     QList<CanvasUndoEvent *> redoHistory;
@@ -29,6 +31,11 @@ public:
     bool inTransientOpacity;
     TileSet dirtyTiles;
     TileSet strokeModifiedTiles;
+
+    void renderDirty(TileMap *into);
+
+    void resetQuickmask();
+    void updateQuickmaskCopy();
 
     void addUndoEvent(CanvasUndoEvent *undoEvent);
     void clearUndoHistory();

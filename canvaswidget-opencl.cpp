@@ -528,6 +528,7 @@ SharedOpenCL::SharedOpenCL()
         fillKernel = buildOrWarn(baseKernelProg, "fill");
         floatToU8 = buildOrWarn(baseKernelProg, "floatToU8");
         gradientApply = buildOrWarn(baseKernelProg, "gradientApply");
+        colorMask = buildOrWarn(baseKernelProg, "tileColorMask");
         blendKernel_over = buildOrWarn(baseKernelProg, "tileSVGOver");
         blendKernel_multiply = buildOrWarn(baseKernelProg, "tileSVGMultipy");
         blendKernel_colorDodge = buildOrWarn(baseKernelProg, "tileSVGMColorDodge");

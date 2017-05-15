@@ -482,4 +482,26 @@ __kernel void tileSVGDstAtop(__global float4 *out,
     out_pixel.s3 = alpha;
 
     out[get_global_id(0)] = out_pixel;
+
+}
+
+__kernel void tileColorMask(__global float4 *out,
+                            __global float4 *in,
+                            __global float4 *aux,
+                                     float4  color)
+{
+    float4 out_pixel;
+    float4 in_pixel = in[get_global_id(0)];
+    float aux_alpha = aux[get_global_id(0)].s3;
+
+    float alpha = aux_alpha * color.s3;
+    float dst_alpha = in_pixel.s3;
+
+    float a = alpha + dst_alpha * (1.0f - alpha);
+    float src_term = (a > 0.0f) ? alpha / a : 0.0f;
+    float aux_term = 1.0f - src_term;
+    out_pixel.s012 = color.s012 * src_term + in_pixel.s012 * aux_term;
+    out_pixel.s3   = a;
+
+    out[get_global_id(0)] = out_pixel;
 }

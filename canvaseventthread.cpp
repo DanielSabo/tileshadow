@@ -107,14 +107,7 @@ void CanvasEventThread::run()
             if ((needResultTiles || messages.empty()) && !ctx->dirtyTiles.empty())
             {
                 TileMap newTiles;
-                for (QPoint const &iter : ctx->dirtyTiles)
-                {
-                    int x = iter.x();
-                    int y = iter.y();
-
-                    newTiles[QPoint(x, y)] = ctx->layers.getTileMaybe(x, y);
-                }
-                ctx->dirtyTiles.clear();
+                ctx->renderDirty(&newTiles);
 
                 resultTilesMutex.lock();
                 for (auto &iter: newTiles)

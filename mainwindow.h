@@ -76,6 +76,7 @@ public slots:
     void actionNewLayer();
     void actionNewGroup();
     void actionDrawLine();
+    void actionToggleQuickmask();
     void canvasStats();
     void showStatusBar(bool visible);
     void updateTool();

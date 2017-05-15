@@ -26,7 +26,7 @@ CanvasUndoTiles::~CanvasUndoTiles()
     tiles.clear();
 }
 
-TileSet CanvasUndoTiles::apply(CanvasStack *stack, int *activeLayer)
+TileSet CanvasUndoTiles::apply(CanvasStack *stack, int *activeLayer, CanvasLayer *quickmask)
 {
     TileSet modifiedTiles;
 
@@ -63,7 +63,7 @@ CanvasUndoLayers::~CanvasUndoLayers()
     layers.clear();
 }
 
-TileSet CanvasUndoLayers::apply(CanvasStack *stack, int *activeLayer)
+TileSet CanvasUndoLayers::apply(CanvasStack *stack, int *activeLayer, CanvasLayer *quickmask)
 {
     TileSet oldStackTiles = stack->getTileSet();
 
@@ -81,7 +81,7 @@ CanvasUndoBackground::CanvasUndoBackground(CanvasStack *stack)
     tile = stack->backgroundTileCL->copy();
 }
 
-TileSet CanvasUndoBackground::apply(CanvasStack *stack, int *activeLayer)
+TileSet CanvasUndoBackground::apply(CanvasStack *stack, int *activeLayer, CanvasLayer *quickmask)
 {
     std::unique_ptr<CanvasTile> oldBackground = stack->backgroundTileCL->copy();
     stack->setBackground(std::move(tile));
@@ -93,4 +93,17 @@ TileSet CanvasUndoBackground::apply(CanvasStack *stack, int *activeLayer)
 bool CanvasUndoBackground::modifiesBackground()
 {
     return true;
+}
+
+CanvasUndoQuickMask::CanvasUndoQuickMask(bool visible)
+    : visible(visible)
+{
+}
+
+TileSet CanvasUndoQuickMask::apply(CanvasStack *stack, int *activeLayer, CanvasLayer *quickmask)
+{
+    quickmask->visible = visible;
+    visible = !visible;
+
+    return quickmask->getTileSet();
 }

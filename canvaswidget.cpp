@@ -96,6 +96,7 @@ public:
 
     bool currentLayerEditable;
     bool currentLayerMoveable;
+    bool quickmaskActive;
 
     bool deviceIsEraser;
     CanvasAction::Action primaryAction;
@@ -121,6 +122,7 @@ CanvasWidgetPrivate::CanvasWidgetPrivate()
     lastFrameTimer.invalidate();
     nextFrameDelay = 15;
     activeTool = nullptr;
+    quickmaskActive = false;
     deviceIsEraser = false;
     primaryAction = CanvasAction::MouseStroke;
     keyModifiers = 0;
@@ -345,11 +347,7 @@ void CanvasWidget::paintGL()
 
         // Render dirty tiles after result tiles to avoid stale tiles
         if (CanvasContext *ctx = getContextMaybe())
-        {
-            for (auto iter: ctx->dirtyTiles)
-                renderTiles[iter] = ctx->layers.getTileMaybe(iter.x(), iter.y());
-            ctx->dirtyTiles.clear();
-        }
+            ctx->renderDirty(&renderTiles);
     }
 
     render->renderTileMap(renderTiles);
@@ -366,6 +364,22 @@ void CanvasWidget::paintGL()
 
     if (d->dotPreviewColor.isValid())
         render->drawColorDots(d->dotPreviewColor);
+}
+
+namespace {
+    void getPaintingTargets(CanvasContext *ctx, CanvasLayer *&targetLayer, CanvasLayer *&undoLayer)
+    {
+        if (ctx->quickmask->visible)
+        {
+            targetLayer = ctx->quickmask.get();
+            undoLayer = ctx->quickmaskCopy.get();
+        }
+        else
+        {
+            targetLayer = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
+            undoLayer = ctx->currentLayerCopy.get();
+        }
+    }
 }
 
 void CanvasWidget::startStroke(QPointF pos, float pressure)
@@ -389,14 +403,15 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
         ctx->strokeTool.reset(strokeTool);
         ctx->stroke.reset(nullptr);
 
-        CanvasLayer *targetLayer = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
+        CanvasLayer *targetLayer, *undoLayer;
+        getPaintingTargets(ctx, targetLayer, undoLayer);
 
         if (!targetLayer)
             return;
         if (!targetLayer->visible)
             return;
 
-        StrokeContextArgs args = {targetLayer, ctx->currentLayerCopy.get()};
+        StrokeContextArgs args = {targetLayer, undoLayer};
         ctx->stroke.reset(strokeTool->newStroke(args));
 
         TileSet changedTiles = ctx->stroke->startStroke(pos, pressure);
@@ -479,11 +494,13 @@ void CanvasWidget::endStroke()
             ctx->stroke.reset();
             ctx->strokeTool.reset();
 
-            CanvasLayer *currentLayerObj = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
+            CanvasLayer *targetLayer, *undoLayer;
+            getPaintingTargets(ctx, targetLayer, undoLayer);
+
             CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
-            undoEvent->targetTileMap = currentLayerObj->tiles;
+            undoEvent->targetTileMap = targetLayer->tiles;
             undoEvent->currentLayer = ctx->currentLayer;
-            transferUndoEventTiles(undoEvent, ctx->strokeModifiedTiles, ctx->currentLayerCopy.get(), currentLayerObj);
+            transferUndoEventTiles(undoEvent, ctx->strokeModifiedTiles, undoLayer, targetLayer);
 
             ctx->addUndoEvent(undoEvent);
             ctx->strokeModifiedTiles.clear();
@@ -536,11 +553,12 @@ void CanvasWidget::lineTo(QPointF start, QPointF end)
         if (coalesceToken && coalesceToken->deref() == true)
             return;
 
-        CanvasLayer *targetLayer = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
+        CanvasLayer *targetLayer, *undoLayer;
+        getPaintingTargets(ctx, targetLayer, undoLayer);
 
         for (QPoint const &iter : ctx->strokeModifiedTiles)
         {
-            CanvasTile *oldTile = ctx->currentLayerCopy->getTileMaybe(iter.x(), iter.y());
+            CanvasTile *oldTile = undoLayer->getTileMaybe(iter.x(), iter.y());
 
             if (oldTile)
                 (*targetLayer->tiles)[iter] = oldTile->copy();
@@ -552,7 +570,7 @@ void CanvasWidget::lineTo(QPointF start, QPointF end)
 
         ctx->strokeModifiedTiles.clear();
 
-        StrokeContextArgs args = {targetLayer, ctx->currentLayerCopy.get()};
+        StrokeContextArgs args = {targetLayer, undoLayer};
         std::unique_ptr<StrokeContext> stroke(ctx->strokeTool->newStroke(args));
 
 
@@ -582,11 +600,13 @@ void CanvasWidget::endLine()
         if (ctx->strokeModifiedTiles.empty())
             return;
 
-        CanvasLayer *currentLayerObj = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
+        CanvasLayer *targetLayer, *undoLayer;
+        getPaintingTargets(ctx, targetLayer, undoLayer);
+
         CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
-        undoEvent->targetTileMap = currentLayerObj->tiles;
+        undoEvent->targetTileMap = targetLayer->tiles;
         undoEvent->currentLayer = ctx->currentLayer;
-        transferUndoEventTiles(undoEvent, ctx->strokeModifiedTiles, ctx->currentLayerCopy.get(), currentLayerObj);
+        transferUndoEventTiles(undoEvent, ctx->strokeModifiedTiles, undoLayer, targetLayer);
 
         ctx->addUndoEvent(undoEvent);
         ctx->strokeModifiedTiles.clear();
@@ -1270,6 +1290,24 @@ QList<CanvasWidget::LayerInfo> CanvasWidget::getLayerList()
     return result;
 }
 
+void CanvasWidget::toggleQuickmask()
+{
+    if (action != CanvasAction::None)
+        return;
+
+    Q_D(CanvasWidget);
+
+    CanvasContext *ctx = getContext();
+    ctx->addUndoEvent(new CanvasUndoQuickMask(ctx->quickmask->visible));
+    ctx->quickmask->visible = !ctx->quickmask->visible;
+    d->quickmaskActive = ctx->quickmask->visible;
+    ctx->updateQuickmaskCopy();
+
+    tileSetInsert(ctx->dirtyTiles, ctx->quickmask->getTileSet());
+
+    update();
+}
+
 void CanvasWidget::flashCurrentLayer()
 {
     Q_D(CanvasWidget);
@@ -1341,6 +1379,8 @@ void CanvasWidget::lineDrawMode()
 
 void CanvasWidget::undo()
 {
+    Q_D(CanvasWidget);
+
     CanvasContext *ctx = getContext();
 
     if (ctx->undoHistory.empty())
@@ -1355,8 +1395,8 @@ void CanvasWidget::undo()
     CanvasUndoEvent *undoEvent = ctx->undoHistory.first();
     ctx->undoHistory.removeFirst();
     bool changedBackground = undoEvent->modifiesBackground();
-    TileSet changedTiles = undoEvent->apply(&ctx->layers, &newActiveLayer);
-
+    TileSet changedTiles = undoEvent->apply(&ctx->layers, &newActiveLayer, ctx->quickmask.get());
+    d->quickmaskActive = ctx->quickmask->visible;
     ctx->redoHistory.push_front(undoEvent);
 
     if (changedBackground)
@@ -1370,6 +1410,7 @@ void CanvasWidget::undo()
     }
 
     resetCurrentLayer(ctx, newActiveLayer);
+    ctx->updateQuickmaskCopy();
 
     update();
     modified = true;
@@ -1378,6 +1419,8 @@ void CanvasWidget::undo()
 
 void CanvasWidget::redo()
 {
+    Q_D(CanvasWidget);
+
     CanvasContext *ctx = getContext();
 
     if (ctx->redoHistory.empty())
@@ -1392,7 +1435,8 @@ void CanvasWidget::redo()
     CanvasUndoEvent *undoEvent = ctx->redoHistory.first();
     ctx->redoHistory.removeFirst();
     bool changedBackground = undoEvent->modifiesBackground();
-    TileSet changedTiles = undoEvent->apply(&ctx->layers, &newActiveLayer);
+    TileSet changedTiles = undoEvent->apply(&ctx->layers, &newActiveLayer, ctx->quickmask.get());
+    d->quickmaskActive = ctx->quickmask->visible;
     ctx->undoHistory.push_front(undoEvent);
 
     if (changedBackground)
@@ -1406,6 +1450,7 @@ void CanvasWidget::redo()
     }
 
     resetCurrentLayer(ctx, newActiveLayer);
+    ctx->updateQuickmaskCopy();
 
     update();
     modified = true;
@@ -2031,6 +2076,7 @@ void CanvasWidget::newDrawing()
     render->clearTiles();
     lastNewLayerNumber = 0;
     ctx->layers.clearLayers();
+    ctx->resetQuickmask();
     ctx->layers.layers.append(new CanvasLayer(QString().sprintf("Layer %02d", ++lastNewLayerNumber)));
     setActiveLayer(0); // Sync up the undo layer
     canvasOrigin = QPoint(0, 0);
@@ -2062,6 +2108,7 @@ void CanvasWidget::openORA(QString path)
     ctx->clearRedoHistory();
     render->clearTiles();
     loadStackFromORA(&ctx->layers, path);
+    ctx->resetQuickmask();
     lastNewLayerNumber = findHighestLayerNumber(ctx->layers.layers, layerNameReg);
     setActiveLayer(0); // Sync up the undo layer
     canvasOrigin = QPoint(0, 0);
@@ -2081,6 +2128,7 @@ void CanvasWidget::openImage(QImage image)
     render->clearTiles();
     lastNewLayerNumber = 0;
     ctx->layers.clearLayers();
+    ctx->resetQuickmask();
     CanvasLayer *imageLayer = new CanvasLayer(QString().sprintf("Layer %02d", ++lastNewLayerNumber));
     ctx->layers.layers.append(imageLayer);
     if (image.isNull())

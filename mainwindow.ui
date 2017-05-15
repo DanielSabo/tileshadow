@@ -134,6 +134,8 @@
     <addaction name="actionMerge_Layer"/>
     <addaction name="actionDuplicate_Layer"/>
     <addaction name="actionSet_Background_Color"/>
+    <addaction name="separator"/>
+    <addaction name="actionToggle_Quickmask"/>
    </widget>
    <widget class="QMenu" name="menuTool">
     <property name="title">
@@ -352,6 +354,14 @@
    </property>
    <property name="shortcut">
     <string>Shift+D</string>
+   </property>
+  </action>
+  <action name="actionToggle_Quickmask">
+   <property name="text">
+    <string>Toggle Quickmask</string>
+   </property>
+   <property name="shortcut">
+    <string>Q</string>
    </property>
   </action>
  </widget>

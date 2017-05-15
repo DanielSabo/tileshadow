@@ -108,6 +108,8 @@ public:
     BlendMode::Mode getLayerMode(int layerIndex);
     QList<LayerInfo> getLayerList();
 
+    void toggleQuickmask();
+
     void flashCurrentLayer();
     void showColorPreview(QColor const &color);
     void hideColorPreview();

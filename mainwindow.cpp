@@ -122,6 +122,7 @@ void MainWindow::connectActions()
     connect(ui->actionMerge_Layer, &QAction::triggered, this, &MainWindow::actionMergeLayerDown);
     connect(ui->actionDuplicate_Layer, &QAction::triggered, this, &MainWindow::actionDuplicateLayer);
     connect(ui->actionSet_Background_Color, &QAction::triggered, this, &MainWindow::actionSetBackgroundColor);
+    connect(ui->actionToggle_Quickmask, &QAction::triggered, this, &MainWindow::actionToggleQuickmask);
 
     // View
     connect(ui->actionZoom_In, &QAction::triggered, this, &MainWindow::actionZoomIn);
@@ -665,6 +666,11 @@ void MainWindow::actionNewGroup()
 void MainWindow::actionDrawLine()
 {
     canvas->lineDrawMode();
+}
+
+void MainWindow::actionToggleQuickmask()
+{
+    canvas->toggleQuickmask();
 }
 
 void MainWindow::actionZoomIn()
