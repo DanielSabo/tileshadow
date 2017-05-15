@@ -2,6 +2,8 @@
 
 in vec2 texCoord;
 out vec4 fragColor;
+uniform vec4 innerColor;
+uniform vec4 outerColor;
 uniform float pixelRadius;
 
 void main( void )
@@ -11,9 +13,9 @@ void main( void )
     if (r < pixelRadius - 1 && r > pixelRadius - 3)
       {
         if (r > pixelRadius - 2)
-          fragColor = vec4(0.0, 0.0, 0.0, 1.0);
+          fragColor = outerColor;
         else
-          fragColor = vec4(1.0, 1.0, 1.0, 1.0);
+          fragColor = innerColor;
       }
     else
       {

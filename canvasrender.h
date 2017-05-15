@@ -2,6 +2,7 @@
 #define CANVASRENDER_H
 
 #include "canvaswidget-opencl.h"
+#include <QColor>
 #include <QPoint>
 #include <QRect>
 #include <QOpenGLFunctions_3_2_Core>
@@ -47,6 +48,8 @@ public:
     struct : GLShaderProgram {
         GLuint dimensions;
         GLuint pixelRadius;
+        GLuint innerColor;
+        GLuint outerColor;
     } cursorShader;
 
     struct : GLShaderProgram {
@@ -87,7 +90,7 @@ public:
     void renderTileMap(TileMap &tiles);
 
     void renderView(QPoint newOrigin, QSize newSize, float newScale, bool fullRedraw);
-    void drawToolCursor(QPoint cursorPos, float cusrorRadius);
+    void drawToolCursor(QPoint cursorPos, float cusrorRadius, QColor outerColor = Qt::black, QColor innerColor = Qt::white);
     void drawColorDots(QColor dotPreviewColor);
 private:
     void renderTile(int x, int y, CanvasTile *tile);

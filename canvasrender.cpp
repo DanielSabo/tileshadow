@@ -110,6 +110,8 @@ CanvasRender::CanvasRender() :
     {
         cursorShader.dimensions = glFuncs->glGetUniformLocation(cursorShader.program, "dimensions");
         cursorShader.pixelRadius = glFuncs->glGetUniformLocation(cursorShader.program, "pixelRadius");
+        cursorShader.innerColor = glFuncs->glGetUniformLocation(cursorShader.program, "innerColor");
+        cursorShader.outerColor = glFuncs->glGetUniformLocation(cursorShader.program, "outerColor");
     }
 
     shaderVerts = std::vector<float>({
@@ -524,7 +526,7 @@ void CanvasRender::renderView(QPoint newOrigin, QSize newSize, float newScale, b
     dirtyTiles.clear();
 }
 
-void CanvasRender::drawToolCursor(QPoint cursorPos, float cursorRadius)
+void CanvasRender::drawToolCursor(QPoint cursorPos, float cursorRadius, QColor outerColor, QColor innerColor)
 {
     if (cursorRadius < 1.0f)
         return;
@@ -535,6 +537,16 @@ void CanvasRender::drawToolCursor(QPoint cursorPos, float cursorRadius)
     glFuncs->glEnable(GL_BLEND);
     glFuncs->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glFuncs->glUseProgram(cursorShader.program);
+    glFuncs->glUniform4f(cursorShader.innerColor,
+                         innerColor.redF(),
+                         innerColor.greenF(),
+                         innerColor.blueF(),
+                         innerColor.alphaF());
+    glFuncs->glUniform4f(cursorShader.outerColor,
+                         outerColor.redF(),
+                         outerColor.greenF(),
+                         outerColor.blueF(),
+                         outerColor.alphaF());
     glFuncs->glUniform4f(cursorShader.dimensions,
                          (float(cursorPos.x()) / widgetWidth * 2.0f) - 1.0f,
                          1.0f - (float(cursorPos.y()) / widgetHeight * 2.0f),

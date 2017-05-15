@@ -361,7 +361,7 @@ void CanvasWidget::paintGL()
         QPoint cursorPos = mapFromGlobal(QCursor::pos());
         float toolSize = std::max(d->activeTool->getPixelRadius() * 2.0f * viewScale, 6.0f);
 
-        render->drawToolCursor(cursorPos, toolSize);
+        render->drawToolCursor(cursorPos, toolSize, Qt::black, Qt::white);
     }
 
     if (d->dotPreviewColor.isValid())
