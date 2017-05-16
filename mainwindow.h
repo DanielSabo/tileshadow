@@ -77,6 +77,9 @@ public slots:
     void actionNewGroup();
     void actionDrawLine();
     void actionToggleQuickmask();
+    void actionQuickmaskCut();
+    void actionQuickmaskCopy();
+    void actionQuickmaskErase();
     void canvasStats();
     void showStatusBar(bool visible);
     void updateTool();

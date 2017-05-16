@@ -109,6 +109,9 @@ public:
     QList<LayerInfo> getLayerList();
 
     void toggleQuickmask();
+    void quickmaskCut();
+    void quickmaskCopy();
+    void quickmaskErase();
 
     void flashCurrentLayer();
     void showColorPreview(QColor const &color);
@@ -164,6 +167,8 @@ private:
     void startLine();
     void lineTo(QPointF start, QPointF end);
     void endLine();
+
+    void quickmaskApply(bool copyTo, bool eraseFrom);
 
     void pickColorAt(QPoint pos, bool merged = false);
     void updateLayerTranslate(int x, int y);

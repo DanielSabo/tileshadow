@@ -136,6 +136,9 @@
     <addaction name="actionSet_Background_Color"/>
     <addaction name="separator"/>
     <addaction name="actionToggle_Quickmask"/>
+    <addaction name="actionQuickmask_Cut"/>
+    <addaction name="actionQuickmask_Copy"/>
+    <addaction name="actionQuickmask_Erase"/>
    </widget>
    <widget class="QMenu" name="menuTool">
     <property name="title">
@@ -362,6 +365,21 @@
    </property>
    <property name="shortcut">
     <string>Q</string>
+   </property>
+  </action>
+  <action name="actionQuickmask_Cut">
+   <property name="text">
+    <string>Quickmask Cut</string>
+   </property>
+  </action>
+  <action name="actionQuickmask_Copy">
+   <property name="text">
+    <string>Quickmask Copy</string>
+   </property>
+  </action>
+  <action name="actionQuickmask_Erase">
+   <property name="text">
+    <string>Quickmask Erase</string>
    </property>
   </action>
  </widget>

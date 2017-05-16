@@ -1311,6 +1311,87 @@ void CanvasWidget::toggleQuickmask()
     update();
 }
 
+void CanvasWidget::quickmaskCut()
+{
+    // Mask + Erase
+    quickmaskApply(true, true);
+}
+
+void CanvasWidget::quickmaskCopy()
+{
+    // Mask + No-op
+    quickmaskApply(true, false);
+}
+
+void CanvasWidget::quickmaskErase()
+{
+    // No-op + Erase
+    quickmaskApply(false, true);
+}
+
+void CanvasWidget::quickmaskApply(bool copyTo, bool eraseFrom)
+{
+    if (action != CanvasAction::None)
+        return;
+
+    if (!copyTo && !eraseFrom)
+        return;
+
+    CanvasContext *ctx = getContext();
+
+    CanvasLayer *quickmask = ctx->quickmask.get();
+
+    if (!ctx->quickmask->visible)
+        return;
+
+    auto parentInfo = parentFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
+    CanvasLayer *currentLayer = parentInfo.element;
+    CanvasLayer *eraseFromLayer = nullptr;
+    CanvasLayer *copyToLayer = nullptr;
+    if (!currentLayer || currentLayer->type != LayerType::Layer)
+        return; // Nothing to do
+
+    ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
+    tileSetInsert(ctx->dirtyTiles, dirtyTilesForLayer(&ctx->layers, ctx->currentLayer));
+
+    if (copyTo)
+    {
+        quickmask->mode = BlendMode::DestinationIn; // Mask
+        std::unique_ptr<CanvasLayer> newLayer = quickmask->mergeDown(currentLayer);
+        newLayer->name = currentLayer->name + " Copy";
+        copyToLayer = newLayer.get();
+        parentInfo.container->insert(parentInfo.index + 1, newLayer.release());
+    }
+
+    if (eraseFrom)
+    {
+        quickmask->mode = BlendMode::DestinationOut; // Erase
+        std::unique_ptr<CanvasLayer> newLayer = quickmask->mergeDown(currentLayer);
+        eraseFromLayer = newLayer.get();
+        parentInfo.container->replace(parentInfo.index, newLayer.release());
+        delete currentLayer;
+        currentLayer = nullptr;
+    }
+
+    quickmask->mode = BlendMode::Over;
+
+    if (copyToLayer)
+        resetCurrentLayer(ctx, absoluteIndexOfLayer(&ctx->layers, copyToLayer));
+    else if (eraseFromLayer)
+        resetCurrentLayer(ctx, absoluteIndexOfLayer(&ctx->layers, eraseFromLayer));
+    else
+        resetCurrentLayer(ctx, absoluteIndexOfLayer(&ctx->layers, currentLayer));
+
+    if (copyToLayer)
+        tileSetInsert(ctx->dirtyTiles, dirtyTilesForLayer(&ctx->layers, absoluteIndexOfLayer(&ctx->layers, copyToLayer)));
+    if (eraseFromLayer)
+        tileSetInsert(ctx->dirtyTiles, dirtyTilesForLayer(&ctx->layers, absoluteIndexOfLayer(&ctx->layers, eraseFromLayer)));
+
+    update();
+    modified = true;
+    emit updateLayers();
+}
+
 void CanvasWidget::flashCurrentLayer()
 {
     Q_D(CanvasWidget);
