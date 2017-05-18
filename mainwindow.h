@@ -38,6 +38,8 @@ private:
     CanvasWidget *canvas;
     QLabel *statusBarLabel;
 
+    void connectActions();
+
     void updateTitle();
     void updateStatus();
     bool doSave(QString filename);

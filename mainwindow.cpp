@@ -32,6 +32,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    connectActions();
     statusBarLabel = new QLabel();
     ui->statusBar->addWidget(statusBarLabel);
 
@@ -100,6 +101,45 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::connectActions()
+{
+    // File
+    connect(ui->actionNew, &QAction::triggered, this, &MainWindow::actionNewFile);
+    connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::actionOpenFile);
+    connect(ui->actionOpen_As_Layer, &QAction::triggered, this, &MainWindow::actionOpenAsLayer);
+    connect(ui->actionSave, &QAction::triggered, this, &MainWindow::actionSave);
+    connect(ui->actionSave_As, &QAction::triggered, this, &MainWindow::actionSaveAs);
+    connect(ui->actionExport, &QAction::triggered, this, &MainWindow::actionExport);
+    connect(ui->actionQuit, &QAction::triggered, this, &MainWindow::actionQuit);
+
+    // Edit
+    connect(ui->actionUndo, &QAction::triggered, this, &MainWindow::actionUndo);
+    connect(ui->actionRedo, &QAction::triggered, this, &MainWindow::actionRedo);
+    connect(ui->actionNew_Layer, &QAction::triggered, this, &MainWindow::actionNewLayer);
+    connect(ui->actionNew_Group, &QAction::triggered, this, &MainWindow::actionNewGroup);
+    connect(ui->actionMerge_Layer, &QAction::triggered, this, &MainWindow::actionMergeLayerDown);
+    connect(ui->actionSet_Background_Color, &QAction::triggered, this, &MainWindow::actionSetBackgroundColor);
+
+    // View
+    connect(ui->actionZoom_In, &QAction::triggered, this, &MainWindow::actionZoomIn);
+    connect(ui->actionZoom_Out, &QAction::triggered, this, &MainWindow::actionZoomOut);
+
+    // Tool
+    connect(ui->actionIncrease_Tool_Size, &QAction::triggered, this, &MainWindow::actionToolSizeIncrease);
+    connect(ui->actionDecrease_Tool_Size, &QAction::triggered, this, &MainWindow::actionToolSizeDecrease);
+    connect(ui->actionAdvanced_Settings, &QAction::triggered, this, &MainWindow::actionAdvancedToolSettings);
+    connect(ui->actionResetTool, &QAction::triggered, this, &MainWindow::actionResetTool);
+    connect(ui->actionDraw_Line, &QAction::triggered, this, &MainWindow::actionDrawLine);
+
+    // System
+    connect(ui->actionCircle_Benchmark, &QAction::triggered, this, &MainWindow::runCircleBenchmark);
+    connect(ui->actionCopy_Stroke_Data, &QAction::triggered, this, &MainWindow::actionCopyStrokeData);
+    connect(ui->actionShow_Tools_Folder, &QAction::triggered, this, &MainWindow::showToolsFolder);
+    connect(ui->actionSelect_OpenCL_Device, &QAction::triggered, this, &MainWindow::showDeviceSelect);
+    connect(ui->actionShow_OpenCL_Information, &QAction::triggered, this, &MainWindow::showOpenCLInfo);
+    connect(ui->actionStatus_Bar, &QAction::toggled, this, &MainWindow::showStatusBar);
 }
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event)
