@@ -72,6 +72,7 @@ public slots:
     void actionAdvancedToolSettings();
     void actionSetBackgroundColor();
     void actionMergeLayerDown();
+    void actionDuplicateLayer();
     void actionNewLayer();
     void actionNewGroup();
     void actionDrawLine();

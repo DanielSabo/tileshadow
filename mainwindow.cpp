@@ -120,6 +120,7 @@ void MainWindow::connectActions()
     connect(ui->actionNew_Layer, &QAction::triggered, this, &MainWindow::actionNewLayer);
     connect(ui->actionNew_Group, &QAction::triggered, this, &MainWindow::actionNewGroup);
     connect(ui->actionMerge_Layer, &QAction::triggered, this, &MainWindow::actionMergeLayerDown);
+    connect(ui->actionDuplicate_Layer, &QAction::triggered, this, &MainWindow::actionDuplicateLayer);
     connect(ui->actionSet_Background_Color, &QAction::triggered, this, &MainWindow::actionSetBackgroundColor);
 
     // View
@@ -643,6 +644,11 @@ void MainWindow::actionSetBackgroundColor()
 void MainWindow::actionMergeLayerDown()
 {
     canvas->mergeLayerDown(canvas->getActiveLayer());
+}
+
+void MainWindow::actionDuplicateLayer()
+{
+    canvas->duplicateLayer(canvas->getActiveLayer());
 }
 
 void MainWindow::actionNewLayer()

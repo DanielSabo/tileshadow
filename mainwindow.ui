@@ -132,6 +132,7 @@
     <addaction name="actionNew_Layer"/>
     <addaction name="actionNew_Group"/>
     <addaction name="actionMerge_Layer"/>
+    <addaction name="actionDuplicate_Layer"/>
     <addaction name="actionSet_Background_Color"/>
    </widget>
    <widget class="QMenu" name="menuTool">
@@ -343,6 +344,14 @@
    </property>
    <property name="shortcut">
     <string>Shift+N</string>
+   </property>
+  </action>
+  <action name="actionDuplicate_Layer">
+   <property name="text">
+    <string>Duplicate Layer</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+D</string>
    </property>
   </action>
  </widget>
