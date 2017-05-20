@@ -965,18 +965,31 @@ void CanvasWidget::updateLayerTranslate(int x,  int y)
         if (coalesceToken && coalesceToken->deref() == true)
             return;
 
-        CanvasLayer *currentLayer = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
-        if (!ctx->currentLayerCopy)
-        {
-            // If the current layer is a group generate a cached rendering of it
-            ctx->currentLayerCopy = currentLayer->flattened();
-        }
-        std::unique_ptr<CanvasLayer> newLayer = ctx->currentLayerCopy->translated(x, y);
+        CanvasLayer *sourceLayer;
+        CanvasLayer *targetLayer;
 
-        tileSetInsert(ctx->dirtyTiles, currentLayer->getTileSet());
+        if (!ctx->quickmask->visible)
+        {
+            targetLayer = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
+            if (!ctx->currentLayerCopy)
+            {
+                // If the current layer is a group generate a cached rendering of it
+                ctx->currentLayerCopy = targetLayer->flattened();
+            }
+            sourceLayer = ctx->currentLayerCopy.get();
+        }
+        else
+        {
+            targetLayer = ctx->quickmask.get();
+            sourceLayer = ctx->quickmaskCopy.get();
+        }
+
+        std::unique_ptr<CanvasLayer> newLayer = sourceLayer->translated(x, y);
+
+        tileSetInsert(ctx->dirtyTiles, targetLayer->getTileSet());
         tileSetInsert(ctx->dirtyTiles, newLayer->getTileSet());
 
-        currentLayer->takeTiles(newLayer.get());
+        targetLayer->takeTiles(newLayer.get());
     };
 
     d->eventThread.enqueueCommand(msg);
@@ -993,10 +1006,23 @@ void CanvasWidget::translateCurrentLayer(int x,  int y)
 
     CanvasContext *ctx = getContext();
 
-    CanvasLayer *currentLayer = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
+    CanvasLayer *currentLayer;
+    CanvasLayer *sourceLayer;
+
+    if (ctx->quickmask->visible)
+    {
+        currentLayer = ctx->quickmask.get();
+        sourceLayer = ctx->quickmaskCopy.get();
+    }
+    else
+    {
+        currentLayer = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
+        sourceLayer = ctx->currentLayerCopy.get();
+    }
+
     if (currentLayer->type == LayerType::Layer)
     {
-        std::unique_ptr<CanvasLayer> newLayer = ctx->currentLayerCopy->translated(x, y);
+        std::unique_ptr<CanvasLayer> newLayer = sourceLayer->translated(x, y);
         newLayer->prune();
 
         CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
@@ -1011,12 +1037,12 @@ void CanvasWidget::translateCurrentLayer(int x,  int y)
         ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
 
         // The undo tiles are the original layer + new layer
-        TileSet originalTiles = ctx->currentLayerCopy->getTileSet();
+        TileSet originalTiles = sourceLayer->getTileSet();
         layerTiles.insert(originalTiles.begin(), originalTiles.end());
 
         currentLayer->takeTiles(newLayer.get());
 
-        transferUndoEventTiles(undoEvent, layerTiles, ctx->currentLayerCopy.get(), currentLayer);
+        transferUndoEventTiles(undoEvent, layerTiles, sourceLayer, currentLayer);
         ctx->addUndoEvent(undoEvent);
     }
     else if (currentLayer->type == LayerType::Group)
