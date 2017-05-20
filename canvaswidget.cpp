@@ -970,8 +970,7 @@ void CanvasWidget::translateCurrentLayer(int x,  int y)
 
     CanvasContext *ctx = getContext();
 
-    auto parentInfo = parentFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
-    CanvasLayer *currentLayer = parentInfo.element;
+    CanvasLayer *currentLayer = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
     if (currentLayer->type == LayerType::Layer)
     {
         std::unique_ptr<CanvasLayer> newLayer = ctx->currentLayerCopy->translated(x, y);
@@ -1014,8 +1013,9 @@ void CanvasWidget::translateCurrentLayer(int x,  int y)
         ctx->dirtyTiles.insert(dirtyTiles.begin(), dirtyTiles.end());
 
         ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
-        delete (*parentInfo.container)[parentInfo.index];
-        (*parentInfo.container)[parentInfo.index] = newLayer.release();
+
+        /* Take the translated children */
+        std::swap(currentLayer->children, newLayer->children);
     }
 
     update();
