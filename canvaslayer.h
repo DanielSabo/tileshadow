@@ -15,6 +15,7 @@ class CanvasLayer
 public:
     CanvasLayer(QString name = "");
     CanvasLayer(CanvasLayer const& from);
+    CanvasTile &operator=(const CanvasTile&) = delete;
     ~CanvasLayer();
 
     QString name;
