@@ -177,6 +177,24 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 
         return false;
     }
+    else if (event->type() == QEvent::Show)
+    {
+        if (qobject_cast<QFileDialog *>(obj))
+        {
+            ui->actionCut->setVisible(true);
+            ui->actionCopy->setVisible(true);
+            ui->actionPaste->setVisible(true);
+        }
+    }
+    else if (event->type() == QEvent::Hide)
+    {
+        if (qobject_cast<QFileDialog *>(obj))
+        {
+            ui->actionCut->setVisible(false);
+            ui->actionCopy->setVisible(false);
+            ui->actionPaste->setVisible(false);
+        }
+    }
 #endif
 
     return false;
