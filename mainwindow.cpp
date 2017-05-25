@@ -126,6 +126,7 @@ void MainWindow::connectActions()
     connect(ui->actionQuickmask_Cut, &QAction::triggered, this, &MainWindow::actionQuickmaskCut);
     connect(ui->actionQuickmask_Copy, &QAction::triggered, this, &MainWindow::actionQuickmaskCopy);
     connect(ui->actionQuickmask_Erase, &QAction::triggered, this, &MainWindow::actionQuickmaskErase);
+    connect(ui->actionClear_Quickmask, &QAction::triggered, this, &MainWindow::actionClearQuickmask);
 
     // View
     connect(ui->actionZoom_In, &QAction::triggered, this, &MainWindow::actionZoomIn);
@@ -674,6 +675,11 @@ void MainWindow::actionDrawLine()
 void MainWindow::actionToggleQuickmask()
 {
     canvas->toggleQuickmask();
+}
+
+void MainWindow::actionClearQuickmask()
+{
+    canvas->clearQuickmask();
 }
 
 void MainWindow::actionQuickmaskCut()

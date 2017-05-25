@@ -1337,6 +1337,29 @@ void CanvasWidget::toggleQuickmask()
     update();
 }
 
+void CanvasWidget::clearQuickmask()
+{
+    if (action != CanvasAction::None)
+        return;
+
+    CanvasContext *ctx = getContext();
+
+    if (!ctx->quickmask->visible)
+        return;
+
+    tileSetInsert(ctx->dirtyTiles, ctx->quickmask->getTileSet());
+
+    CanvasUndoTiles *undo = new CanvasUndoTiles();
+    undo->currentLayer = ctx->currentLayer;
+    undo->targetTileMap = ctx->quickmask->tiles;
+    // undo->tiles is empty, so swapping will steal the tiles and clear the mask
+    std::swap(*ctx->quickmask->tiles, undo->tiles);
+    ctx->quickmaskCopy->tiles->clear();
+    ctx->addUndoEvent(undo);
+
+    update();
+}
+
 void CanvasWidget::quickmaskCut()
 {
     // Mask + Erase

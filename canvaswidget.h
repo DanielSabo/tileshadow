@@ -109,6 +109,7 @@ public:
     QList<LayerInfo> getLayerList();
 
     void toggleQuickmask();
+    void clearQuickmask();
     void quickmaskCut();
     void quickmaskCopy();
     void quickmaskErase();

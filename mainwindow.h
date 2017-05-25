@@ -77,6 +77,7 @@ public slots:
     void actionNewGroup();
     void actionDrawLine();
     void actionToggleQuickmask();
+    void actionClearQuickmask();
     void actionQuickmaskCut();
     void actionQuickmaskCopy();
     void actionQuickmaskErase();
