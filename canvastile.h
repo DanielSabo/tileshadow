@@ -27,6 +27,8 @@ class CanvasTile
 {
 public:
     CanvasTile();
+    CanvasTile(const CanvasTile&) = delete;
+    CanvasTile &operator=(const CanvasTile&) = delete;
     ~CanvasTile();
 
     float *mapHost();
@@ -41,9 +43,6 @@ public:
     static int deviceTileCount();
 
 private:
-  CanvasTile(const CanvasTile&);
-  CanvasTile &operator=(const CanvasTile&);
-
   cl_mem  tileMem;
   float  *tileData;
 };
