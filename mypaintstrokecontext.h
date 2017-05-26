@@ -24,7 +24,7 @@ public:
     void setMasks(QList<MaskBuffer> const &masks = QList<MaskBuffer>());
     void setTexture(const MaskBuffer &texture, float textureOpacity);
 
-    MyPaintStrokeContextPrivate *priv;
+    std::unique_ptr<MyPaintStrokeContextPrivate> priv;
 };
 
 #endif // MYPAINTSTROKECONTEXT_H

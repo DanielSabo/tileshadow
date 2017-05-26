@@ -27,7 +27,7 @@ public:
 
 private:
     MyPaintTool(const MyPaintTool &tool);
-    MyPaintToolPrivate *priv;
+    std::unique_ptr<MyPaintToolPrivate> priv;
 };
 
 #endif // MYPAINTTOOL_H

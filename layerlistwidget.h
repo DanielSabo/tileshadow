@@ -2,6 +2,7 @@
 #define LAYERLISTWIDGET_H
 
 #include <QWidget>
+#include <memory>
 
 namespace Ui {
 class LayerListWidget;
@@ -12,7 +13,7 @@ class LayerListWidget : public QWidget
 {
     Q_OBJECT
 private:
-    Ui::LayerListWidget *ui;
+    std::unique_ptr<Ui::LayerListWidget> ui;
 
 public:
     explicit LayerListWidget(CanvasWidget *canvas, QWidget *parent);

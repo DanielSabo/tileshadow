@@ -1,8 +1,6 @@
 #ifndef GRADIENTTOOL_H
 #define GRADIENTTOOL_H
 
-
-
 #include "basetool.h"
 
 class GradientToolPrivate;
@@ -21,7 +19,7 @@ public:
     bool coalesceMovement() override;
 
 private:
-    GradientToolPrivate *priv;
+    std::unique_ptr<GradientToolPrivate> priv;
 };
 
 #endif // GRADIENTTOOL_H

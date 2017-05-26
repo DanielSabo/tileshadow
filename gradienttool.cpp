@@ -31,7 +31,6 @@ GradientTool::GradientTool()
 
 GradientTool::~GradientTool()
 {
-    delete priv;
 }
 
 BaseTool *GradientTool::clone()

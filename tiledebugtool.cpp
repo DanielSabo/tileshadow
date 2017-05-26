@@ -116,7 +116,6 @@ TileDebugTool::TileDebugTool() :
 
 TileDebugTool::~TileDebugTool()
 {
-    delete priv;
 }
 
 BaseTool *TileDebugTool::clone()

@@ -167,5 +167,4 @@ void SystemInfoDialog::showEvent(QShowEvent *event)
 
 SystemInfoDialog::~SystemInfoDialog()
 {
-    delete ui;
 }

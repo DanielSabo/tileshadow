@@ -2,6 +2,7 @@
 #define SYSTEMINFODIALOG_H
 
 #include <QDialog>
+#include <memory>
 
 namespace Ui {
 class SystemInfoDialog;
@@ -19,7 +20,7 @@ protected:
     void showEvent(QShowEvent *event);
 
 private:
-    Ui::SystemInfoDialog *ui;
+    std::unique_ptr<Ui::SystemInfoDialog> ui;
 };
 
 #endif // SYSTEMINFODIALOG_H

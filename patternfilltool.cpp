@@ -172,7 +172,6 @@ PatternFillTool::PatternFillTool(PatternFillTool const &from) :
 
 PatternFillTool::~PatternFillTool()
 {
-    delete priv;
 }
 
 BaseTool *PatternFillTool::clone()

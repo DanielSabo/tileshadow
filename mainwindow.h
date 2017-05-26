@@ -31,7 +31,7 @@ public:
     void dropEvent(QDropEvent * event);
 
 private:
-    Ui::MainWindow *ui;
+    std::unique_ptr<Ui::MainWindow> ui;
     QScopedPointer<SystemInfoDialog> infoWindow;
     QScopedPointer<BenchmarkDialog> benchmarkWindow;
     QPointer<ToolExtendedSettingsWindow> toolSettingsWindow;

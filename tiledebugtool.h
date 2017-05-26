@@ -22,7 +22,7 @@ public:
     StrokeContext *newStroke(StrokeContextArgs const &args) override;
 
 private:
-    TileDebugToolPrivate *priv;
+    std::unique_ptr<TileDebugToolPrivate> priv;
 };
 
 #endif // TILEDEBUGTOOL_H

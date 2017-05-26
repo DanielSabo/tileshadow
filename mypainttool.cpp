@@ -243,7 +243,6 @@ MyPaintTool::MyPaintTool(const MyPaintTool &tool) : priv(new MyPaintToolPrivate(
 
 MyPaintTool::~MyPaintTool()
 {
-    delete priv;
 }
 
 BaseTool *MyPaintTool::clone()

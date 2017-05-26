@@ -221,7 +221,6 @@ RoundBrushTool::RoundBrushTool() : priv(new RoundBrushToolPrivate())
 
 RoundBrushTool::~RoundBrushTool()
 {
-    delete priv;
 }
 
 BaseTool *RoundBrushTool::clone()

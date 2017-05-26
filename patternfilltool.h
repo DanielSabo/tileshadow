@@ -24,7 +24,7 @@ public:
     StrokeContext *newStroke(StrokeContextArgs const &args) override;
 
 private:
-    PatternFillToolPrivate *priv;
+    std::unique_ptr<PatternFillToolPrivate> priv;
 };
 
 #endif // PATTERNFILLTOOL_H

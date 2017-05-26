@@ -51,7 +51,6 @@ LayerListWidget::LayerListWidget(CanvasWidget *canvas, QWidget *parent) :
 
 LayerListWidget::~LayerListWidget()
 {
-    delete ui;
 }
 
 void LayerListWidget::updateLayers()

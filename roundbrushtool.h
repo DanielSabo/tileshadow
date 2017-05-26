@@ -22,7 +22,7 @@ public:
     StrokeContext *newStroke(StrokeContextArgs const &args) override;
 
 private:
-    RoundBrushToolPrivate *priv;
+    std::unique_ptr<RoundBrushToolPrivate> priv;
 };
 
 #endif // ROUNDBRUSHTOOL_H

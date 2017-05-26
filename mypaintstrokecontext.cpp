@@ -208,10 +208,9 @@ void MyPaintStrokeContext::setTexture(const MaskBuffer &texture, float textureOp
     }
 }
 
-MyPaintStrokeContext::MyPaintStrokeContext(CanvasLayer *layer) : StrokeContext(layer)
+MyPaintStrokeContext::MyPaintStrokeContext(CanvasLayer *layer)
+    : StrokeContext(layer), priv(new MyPaintStrokeContextPrivate())
 {
-    priv = new MyPaintStrokeContextPrivate();
-
     priv->brush = mypaint_brush_new();
 
     memset(&priv->surface, 0, sizeof(MyPaintSurface));
@@ -224,7 +223,6 @@ MyPaintStrokeContext::~MyPaintStrokeContext()
 {
     mypaint_brush_unref(priv->brush);
     priv->brush = nullptr;
-    delete priv;
 }
 
 TileSet MyPaintStrokeContext::startStroke(QPointF point, float pressure)
@@ -427,7 +425,7 @@ static int drawDabFunction (MyPaintSurface *base_surface,
 
     CanvasMyPaintSurface *surface = static_cast<CanvasMyPaintSurface *>(base_surface);
     CanvasLayer *layer = surface->strokeContext->layer;
-    MyPaintStrokeContextPrivate *priv = surface->strokeContext->priv;
+    MyPaintStrokeContextPrivate *priv = surface->strokeContext->priv.get();
     QRectF boundRect;
     cl_kernel kernel;
     cl_int err = CL_SUCCESS;
