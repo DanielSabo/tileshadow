@@ -319,6 +319,9 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
 
 CanvasWidget::~CanvasWidget()
 {
+    Q_D(CanvasWidget);
+    d->eventThread.stop();
+
     delete render;
     delete context;
 }

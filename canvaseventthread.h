@@ -26,12 +26,14 @@ public:
     QMutex resultTilesMutex;
     TileMap resultTiles;
     volatile bool needResultTiles;
+    volatile bool needExit;
 
     CanvasContext *ctx;
 
     void enqueueCommand(std::function<void(CanvasContext *)> msg);
     bool checkSync();
     void sync();
+    void stop();
 
     bool getSynchronous();
     void setSynchronous(bool synced);

@@ -10,6 +10,7 @@ CanvasEventThread::CanvasEventThread(QObject *parent)
       threadIsSynced(true),
       synchronous(false),
       needResultTiles(false),
+      needExit(false),
       ctx(nullptr)
 {
 }
@@ -41,6 +42,16 @@ void CanvasEventThread::sync()
     queueMutex.unlock();
 
     return;
+}
+
+void CanvasEventThread::stop()
+{
+    queueMutex.lock();
+    needExit = true;
+    queueNotEmpty.wakeOne();
+    queueMutex.unlock();
+
+    wait();
 }
 
 bool CanvasEventThread::getSynchronous()
@@ -84,7 +95,7 @@ void CanvasEventThread::run()
         workPending -= batchSize;
         Q_ASSERT(workPending >= 0);
 
-        if (inQueue.empty())
+        if (inQueue.empty() && !needExit)
         {
             queueFinished.wakeOne();
             queueNotEmpty.wait(&queueMutex);
@@ -99,6 +110,8 @@ void CanvasEventThread::run()
         Q_ASSERT(workPending == batchSize);
         queueMutex.unlock();
 
+        if (needExit)
+            return;
 
         while (!messages.empty())
         {
