@@ -159,6 +159,8 @@ CanvasRender::~CanvasRender()
 
     if (backbufferRenderbuffer)
         glFuncs->glDeleteRenderbuffers(1, &backbufferRenderbuffer);
+
+    delete glFuncs;
 }
 
 void CanvasRender::resizeFramebuffer(int w, int h)
