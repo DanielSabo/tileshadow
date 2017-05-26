@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
     parser.process(a);
     QString batchFilePath = parser.value(batchFile);
 
+    std::unique_ptr<MainWindow> w;
     if (!batchFilePath.isEmpty())
     {
         BatchProcessor *batch = new BatchProcessor();
@@ -54,7 +55,7 @@ int main(int argc, char *argv[])
             DeviceSelectDialog().exec();
         }
 
-        MainWindow *w = new MainWindow();
+        w.reset(new MainWindow());
         w->show();
 
         if (!parser.positionalArguments().empty())
