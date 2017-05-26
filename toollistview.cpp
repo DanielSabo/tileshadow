@@ -45,6 +45,10 @@ ToolListView::ToolListView(QWidget *parent)
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 }
 
+ToolListView::~ToolListView()
+{
+}
+
 QSize ToolListView::viewportSizeHint() const
 {
     Q_D(const ToolListView);

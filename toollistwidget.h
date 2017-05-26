@@ -12,6 +12,7 @@ class ToolListWidget : public QWidget
 
 public:
     explicit ToolListWidget(CanvasWidget *canvas, QWidget *parent);
+    ~ToolListWidget();
 
     void reloadTools();
     void pickTool(QString const &toolPath);
@@ -21,7 +22,7 @@ protected:
     ToolListPopup *popup;
 
 private:
-    ToolListWidgetPrivate * const d_ptr;
+    QScopedPointer<ToolListWidgetPrivate> const d_ptr;
     Q_DECLARE_PRIVATE(ToolListWidget)
 
 private slots:

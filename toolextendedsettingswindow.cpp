@@ -292,6 +292,10 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
     updateTool();
 }
 
+ToolExtendedSettingsWindow::~ToolExtendedSettingsWindow()
+{
+}
+
 void ToolExtendedSettingsWindow::closeEvent(QCloseEvent *closeEvent)
 {
     QSettings().setValue("ToolExtendedSettingsWindow/geometry", saveGeometry());

@@ -14,6 +14,7 @@ class LayerListView : public QWidget
     Q_OBJECT
 public:
     explicit LayerListView(QWidget *parent = 0);
+    ~LayerListView();
 
     QSize sizeHint() const;
     int rowHeight();
@@ -40,7 +41,7 @@ protected:
     void recalulateSize();
 
 private:
-    LayerListViewPrivate *d_ptr;
+    QScopedPointer<LayerListViewPrivate> const d_ptr;
     Q_DECLARE_PRIVATE(LayerListView)
 
 signals:

@@ -11,6 +11,7 @@ class ToolExtendedSettingsWindow : public QWidget
     Q_OBJECT
 public:
     explicit ToolExtendedSettingsWindow(CanvasWidget *canvas, QWidget *parent = 0);
+    ~ToolExtendedSettingsWindow();
 
 protected:
     void closeEvent(QCloseEvent *);
@@ -18,7 +19,7 @@ protected:
     bool event(QEvent *);
 
 private:
-    ToolExtendedSettingsWindowPrivate * const d_ptr;
+    QScopedPointer<ToolExtendedSettingsWindowPrivate> const d_ptr;
     Q_DECLARE_PRIVATE(ToolExtendedSettingsWindow)
 
 signals:

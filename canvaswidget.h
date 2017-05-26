@@ -140,7 +140,7 @@ protected:
     void enterEvent(QEvent *event);
 
 private:
-    CanvasWidgetPrivate * const d_ptr;
+    QScopedPointer<CanvasWidgetPrivate> const d_ptr;
     Q_DECLARE_PRIVATE(CanvasWidget)
 
     CanvasRender *render;

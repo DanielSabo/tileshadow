@@ -11,6 +11,7 @@ class ToolListView : public QAbstractScrollArea
     Q_OBJECT
 public:
     explicit ToolListView(QWidget *parent = 0);
+    ~ToolListView();
 
     void setToolList(ToolList const &list);
     void setActiveTool(const QString &toolPath);
@@ -23,7 +24,7 @@ public:
     void mouseReleaseEvent(QMouseEvent *event);
 
 private:
-    ToolListViewPrivate * const d_ptr;
+    QScopedPointer<ToolListViewPrivate> const d_ptr;
     Q_DECLARE_PRIVATE(ToolListView)
 
 signals:

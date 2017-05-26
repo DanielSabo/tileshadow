@@ -11,12 +11,14 @@ class ToolListPopup : public QWidget
     Q_OBJECT
 public:
     explicit ToolListPopup(QWidget *parent = 0);
+    ~ToolListPopup();
+
     void setToolList(ToolList const &list);
     void setActiveTool(const QString &toolPath);
     void reposition(const QRect &globalBounds, const QPoint &globalOrigin);
 
 private:
-    ToolListPopupPrivate * const d_ptr;
+    QScopedPointer<ToolListPopupPrivate> const d_ptr;
     Q_DECLARE_PRIVATE(ToolListPopup)
 
 signals:

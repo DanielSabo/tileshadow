@@ -10,9 +10,10 @@ class ToolSettingsWidget : public QWidget
     Q_OBJECT
 public:
     explicit ToolSettingsWidget(CanvasWidget *canvas, QWidget *parent);
+    ~ToolSettingsWidget();
 
 private:
-    ToolSettingsWidgetPrivate * const d_ptr;
+    QScopedPointer<ToolSettingsWidgetPrivate> const d_ptr;
     Q_DECLARE_PRIVATE(ToolSettingsWidget)
 
 private slots:

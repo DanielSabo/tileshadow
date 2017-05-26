@@ -106,6 +106,10 @@ LayerListView::LayerListView(QWidget *parent) :
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 }
 
+LayerListView::~LayerListView()
+{
+}
+
 QSize LayerListView::sizeHint() const
 {
     Q_D(const LayerListView);

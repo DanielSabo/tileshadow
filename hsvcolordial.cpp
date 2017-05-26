@@ -54,6 +54,10 @@ HSVColorDial::HSVColorDial(QWidget *parent) :
 {
 }
 
+HSVColorDial::~HSVColorDial()
+{
+}
+
 bool HSVColorDial::hasHeightForWidth() const
 {
     return true;

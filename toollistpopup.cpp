@@ -35,6 +35,10 @@ ToolListPopup::ToolListPopup(QWidget *parent) :
     });
 }
 
+ToolListPopup::~ToolListPopup()
+{
+}
+
 void ToolListPopup::setToolList(const ToolList &list)
 {
     Q_D(ToolListPopup);

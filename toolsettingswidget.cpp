@@ -216,6 +216,10 @@ ToolSettingsWidget::ToolSettingsWidget(CanvasWidget *canvas, QWidget *parent) :
     updateTool();
 }
 
+ToolSettingsWidget::~ToolSettingsWidget()
+{
+}
+
 void ToolSettingsWidget::updateTool()
 {
     Q_D(ToolSettingsWidget);

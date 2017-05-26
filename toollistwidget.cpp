@@ -38,6 +38,10 @@ ToolListWidget::ToolListWidget(CanvasWidget *canvas, QWidget *parent) :
     updateTool();
 }
 
+ToolListWidget::~ToolListWidget()
+{
+}
+
 void ToolListWidget::reloadTools()
 {
     popup->setToolList(ToolFactory::listTools());

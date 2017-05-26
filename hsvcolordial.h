@@ -9,6 +9,7 @@ class HSVColorDial : public QWidget
     Q_OBJECT
 public:
     explicit HSVColorDial(QWidget *parent = 0);
+    ~HSVColorDial();
 
     bool hasHeightForWidth() const;
     int heightForWidth(int w) const;
@@ -24,9 +25,8 @@ protected:
     void mousePressEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
 
-    HSVColorDialPrivate * const d_ptr;
-
 private:
+    QScopedPointer<HSVColorDialPrivate> const d_ptr;
     Q_DECLARE_PRIVATE(HSVColorDial)
 
 signals:
