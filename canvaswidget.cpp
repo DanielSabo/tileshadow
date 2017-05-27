@@ -1525,12 +1525,12 @@ void CanvasWidget::undo()
     int newActiveLayer = ctx->currentLayer;
 
     ctx->inTransientOpacity = false; //FIXME: This should be implicit
-    CanvasUndoEvent *undoEvent = ctx->undoHistory.first();
-    ctx->undoHistory.removeFirst();
+    std::unique_ptr<CanvasUndoEvent> undoEvent = std::move(ctx->undoHistory.front());
+    ctx->undoHistory.pop_front();
     bool changedBackground = undoEvent->modifiesBackground();
     TileSet changedTiles = undoEvent->apply(&ctx->layers, &newActiveLayer, ctx->quickmask.get());
     d->quickmaskActive = ctx->quickmask->visible;
-    ctx->redoHistory.push_front(undoEvent);
+    ctx->redoHistory.push_front(std::move(undoEvent));
 
     if (changedBackground)
     {
@@ -1565,12 +1565,12 @@ void CanvasWidget::redo()
     int newActiveLayer = ctx->currentLayer;
 
     ctx->inTransientOpacity = false; //FIXME: This should be implicit
-    CanvasUndoEvent *undoEvent = ctx->redoHistory.first();
-    ctx->redoHistory.removeFirst();
+    std::unique_ptr<CanvasUndoEvent> undoEvent = std::move(ctx->redoHistory.front());
+    ctx->redoHistory.pop_front();
     bool changedBackground = undoEvent->modifiesBackground();
     TileSet changedTiles = undoEvent->apply(&ctx->layers, &newActiveLayer, ctx->quickmask.get());
     d->quickmaskActive = ctx->quickmask->visible;
-    ctx->undoHistory.push_front(undoEvent);
+    ctx->undoHistory.push_front(std::move(undoEvent));
 
     if (changedBackground)
     {

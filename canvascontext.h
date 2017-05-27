@@ -1,7 +1,8 @@
 #ifndef CANVASCONTEXT_H
 #define CANVASCONTEXT_H
 
-#include <QList>
+#include <memory>
+#include <list>
 #include "tileset.h"
 #include "canvaslayer.h"
 #include "canvasstack.h"
@@ -25,8 +26,8 @@ public:
     std::unique_ptr<CanvasLayer> quickmask;
     std::unique_ptr<CanvasLayer> quickmaskCopy;
 
-    QList<CanvasUndoEvent *> undoHistory;
-    QList<CanvasUndoEvent *> redoHistory;
+    std::list<std::unique_ptr<CanvasUndoEvent>> undoHistory;
+    std::list<std::unique_ptr<CanvasUndoEvent>> redoHistory;
 
     bool inTransientOpacity;
     TileSet dirtyTiles;

@@ -73,26 +73,16 @@ void CanvasContext::addUndoEvent(CanvasUndoEvent *undoEvent)
 {
     clearRedoHistory();
     inTransientOpacity = false;
-    undoHistory.prepend(undoEvent);
+    undoHistory.push_front(std::unique_ptr<CanvasUndoEvent>(undoEvent));
 }
 
 void CanvasContext::clearUndoHistory()
 {
     inTransientOpacity = false;
-    while (!undoHistory.empty())
-    {
-        CanvasUndoEvent *event = undoHistory.first();
-        delete event;
-        undoHistory.removeFirst();
-    }
+    undoHistory.clear();
 }
 
 void CanvasContext::clearRedoHistory()
 {
-    while (!redoHistory.empty())
-    {
-        CanvasUndoEvent *event = redoHistory.first();
-        delete event;
-        redoHistory.removeFirst();
-    }
+    redoHistory.clear();
 }
