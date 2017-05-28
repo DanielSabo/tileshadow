@@ -510,8 +510,8 @@ SharedOpenCL::SharedOpenCL()
     platform = deviceInfo.platform;
     deviceType = deviceInfo.getType();
 
-    cout << "CL Platform: " << deviceInfo.getPlatformName().toUtf8().constData() << endl;
-    cout << "CL Device: " << deviceInfo.getDeviceName().toUtf8().constData() << endl;
+    cout << "CL Platform: " << qPrintable(deviceInfo.getPlatformName().simplified()) << endl;
+    cout << "CL Device: " << qPrintable(deviceInfo.getDeviceName().simplified()) << endl;
     cout << "CL Sharing: " << (gl_sharing ? "yes" : "no") << endl;
 
     cmdQueue = clCreateCommandQueue (ctx, device, command_queue_flags, &err);
