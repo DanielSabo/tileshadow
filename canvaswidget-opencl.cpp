@@ -443,6 +443,8 @@ SharedOpenCL::SharedOpenCL()
 {
     cl_int err = CL_SUCCESS;
 
+    OpenCLDeviceInfo deviceInfo;
+
     platform = 0;
     device = 0;
     deviceType = 0;
@@ -474,6 +476,7 @@ SharedOpenCL::SharedOpenCL()
     if (ctx)
     {
         clGetContextInfo(ctx, CL_CONTEXT_DEVICES, sizeof(device), &device, nullptr);
+        deviceInfo = OpenCLDeviceInfo(device);
         gl_sharing = true;
     }
     else
@@ -481,7 +484,6 @@ SharedOpenCL::SharedOpenCL()
         std::list<OpenCLDeviceInfo> deviceInfoList = enumerateOpenCLDevices();
         std::list<OpenCLDeviceInfo>::iterator deviceInfoIter;
 
-        /* Then for a CPU device */
         for (deviceInfoIter = deviceInfoList.begin(); deviceInfoIter != deviceInfoList.end(); ++deviceInfoIter)
         {
             if (deviceInfoIter->getType() == selectedDeviceType)
@@ -490,7 +492,7 @@ SharedOpenCL::SharedOpenCL()
             }
         }
 
-        /* Finally fall back to whatever non-shared device is left */
+        /* If we can't find the selected device fall back to whatever is left */
         if (deviceInfoIter == deviceInfoList.end())
             deviceInfoIter = deviceInfoList.begin();
 
@@ -500,13 +502,10 @@ SharedOpenCL::SharedOpenCL()
             exit(1);
         }
 
-        /* FIXME: Scope issues */
-        device = deviceInfoIter->device;
-
-        ctx = clCreateContext (nullptr, 1, &device, nullptr, nullptr, &err);
+        deviceInfo = *deviceInfoIter;
+        ctx = clCreateContext(nullptr, 1, &deviceInfo.device, nullptr, nullptr, &err);
     }
 
-    OpenCLDeviceInfo deviceInfo(device);
     device = deviceInfo.device;
     platform = deviceInfo.platform;
     deviceType = deviceInfo.getType();

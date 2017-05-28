@@ -13,12 +13,14 @@
 class OpenCLDeviceInfo
 {
 public:
+  OpenCLDeviceInfo();
   OpenCLDeviceInfo(cl_device_id device);
   ~OpenCLDeviceInfo();
 
   cl_platform_id platform;
   cl_device_id   device;
 
+  bool isNull() { return !platform || !device; }
   const QString  &getDeviceName();
   const QString  &getPlatformName();
   cl_device_type  getType();

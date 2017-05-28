@@ -3,11 +3,15 @@
 
 using namespace std;
 
+OpenCLDeviceInfo::OpenCLDeviceInfo() :
+    platform(0),
+    device(0)
+{
+}
+
 OpenCLDeviceInfo::OpenCLDeviceInfo(cl_device_id d) :
     platform(0),
-    device(d),
-    deviceName(),
-    platformName()
+    device(d)
 {
     clGetDeviceInfo(device, CL_DEVICE_PLATFORM, sizeof(platform), &platform, nullptr);
 }
