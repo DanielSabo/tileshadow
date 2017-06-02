@@ -10,20 +10,20 @@ void _check_gl_error(const char *file, int line)
 
     while (err != GL_NO_ERROR)
     {
-        QString error("UNKNOWN");
+        const char *error = "UNKNOWN";
 
         if (err == GL_INVALID_OPERATION)
-            error = QStringLiteral("INVALID_OPERATION");
+            error = "GL_INVALID_OPERATION";
         else if (err == GL_INVALID_ENUM)
-            error = QStringLiteral("INVALID_ENUM");
+            error = "GL_INVALID_ENUM";
         else if (err == GL_INVALID_VALUE)
-            error = QStringLiteral("INVALID_VALUE");
+            error = "GL_INVALID_VALUE";
         else if (err == GL_OUT_OF_MEMORY)
-            error = QStringLiteral("OUT_OF_MEMORY");
+            error = "GL_OUT_OF_MEMORY";
         else if (err == GL_INVALID_FRAMEBUFFER_OPERATION)
-            error = QStringLiteral("INVALID_FRAMEBUFFER_OPERATION");
+            error = "GL_INVALID_FRAMEBUFFER_OPERATION";
 
-        qWarning() << "GL_" << error << " - " << file << ":" << line << endl;
+        qWarning() << error << "-" << file << ":" << line;
         err = glGetError();
     }
 }
