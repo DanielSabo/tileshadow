@@ -258,6 +258,13 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
     addShiftAction(Qt::Key_Down, QPoint(0, 128));
     addShiftAction(Qt::Key_Left, QPoint(-128, 0));
     addShiftAction(Qt::Key_Right, QPoint(128, 0));
+
+    QAction *abortAction = new QAction(this);
+    abortAction->setShortcut(Qt::Key_Escape);
+    connect(abortAction, &QAction::triggered, [this](){
+        cancelCanvasAction();
+    });
+    addAction(abortAction);
 }
 
 CanvasWidget::~CanvasWidget()
