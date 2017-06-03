@@ -1924,15 +1924,23 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
     }
     else if (action == CanvasAction::EditFrame)
     {
-        if (actionButton == Qt::NoButton && d->canvasFrameHandle != RectHandle::None)
+        if (actionButton == Qt::NoButton)
         {
-            actionOrigin = pos.toPoint();
-            actionButton = event->button();
-            QPoint p = d->canvasFrame.topLeft();
-            d->frameGrab.a = p;
-            p.rx() += d->canvasFrame.width();
-            p.ry() += d->canvasFrame.height();
-            d->frameGrab.b = p;
+            if (event->button() == Qt::LeftButton && d->canvasFrameHandle != RectHandle::None)
+            {
+                actionOrigin = pos.toPoint();
+                actionButton = event->button();
+                QPoint p = d->canvasFrame.topLeft();
+                d->frameGrab.a = p;
+                p.rx() += d->canvasFrame.width();
+                p.ry() += d->canvasFrame.height();
+                d->frameGrab.b = p;
+            }
+            else if (event->button() == Qt::RightButton)
+            {
+                actionButton = event->button();
+                actionOrigin = event->pos();
+            }
         }
     }
 
@@ -2027,7 +2035,7 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
                 updateCursor();
             }
         }
-        else
+        else if (actionButton == Qt::LeftButton)
         {
             if (d->canvasFrameHandle == RectHandle::Center)
             {
@@ -2059,6 +2067,12 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
 
             if (d->canvasFrame.height() <= 0)
                 d->canvasFrame.setHeight(1);
+        }
+        else if (actionButton == Qt::RightButton)
+        {
+            QPoint dPos = event->pos() - actionOrigin;
+            actionOrigin = event->pos();
+            canvasOrigin -= dPos;
         }
     }
 
