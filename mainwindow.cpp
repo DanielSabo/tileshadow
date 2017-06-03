@@ -202,7 +202,6 @@ void MainWindow::updateTitle()
     setWindowTitle(title);
 }
 
-
 void MainWindow::showStatusBar(bool show)
 {
     ui->actionStatus_Bar->setChecked(show);
@@ -659,7 +658,6 @@ void MainWindow::actionNewLayer()
 {
     canvas->addLayerAbove(canvas->getActiveLayer());
 }
-
 
 void MainWindow::actionNewGroup()
 {
