@@ -94,6 +94,7 @@ public:
 
     CanvasEventThread eventThread;
 
+    bool showToolCursor;
     bool currentLayerEditable;
     bool currentLayerMoveable;
     bool quickmaskActive;
@@ -128,6 +129,7 @@ CanvasWidgetPrivate::CanvasWidgetPrivate()
     keyModifiers = 0;
     lastTabletEvent = {0, };
     strokeEventTimestamp = 0;
+    showToolCursor = false;
     currentLayerEditable = false;
     currentLayerMoveable = false;
     renderMode = RenderMode::Normal;
@@ -353,7 +355,7 @@ void CanvasWidget::paintGL()
 
     render->renderView(canvasOrigin, size(), viewScale, false);
 
-    if (d->activeTool && d->currentLayerEditable && underMouse())
+    if (d->activeTool && d->currentLayerEditable && d->showToolCursor && underMouse())
     {
         QPoint cursorPos = mapFromGlobal(QCursor::pos());
         float toolSize = std::max(d->activeTool->getPixelRadius() * 2.0f * viewScale, 6.0f);
@@ -1957,6 +1959,8 @@ void CanvasWidget::updateCursor()
     if (!underMouse())
         return;
 
+    bool toolCursor = false;
+
     CanvasAction::Action cursorAction = action;
     if (cursorAction == CanvasAction::None)
         cursorAction = d->actionForMouseEvent(1, d->keyModifiers);
@@ -1965,7 +1969,8 @@ void CanvasWidget::updateCursor()
          cursorAction == CanvasAction::TabletStroke) &&
          d->activeTool && d->currentLayerEditable)
     {
-       CURSOR_WIDGET->setCursor(Qt::BlankCursor);
+        toolCursor = true;
+        CURSOR_WIDGET->setCursor(Qt::BlankCursor);
     }
     else if (cursorAction == CanvasAction::ColorPick ||
              cursorAction == CanvasAction::ColorPickMerged )
@@ -1983,11 +1988,18 @@ void CanvasWidget::updateCursor()
     }
     else if (cursorAction == CanvasAction::DrawLine)
     {
+        toolCursor = true;
         CURSOR_WIDGET->setCursor(Qt::CrossCursor);
     }
     else
     {
         CURSOR_WIDGET->setCursor(Qt::ArrowCursor);
+    }
+
+    if (d->showToolCursor != toolCursor)
+    {
+        d->showToolCursor = toolCursor;
+        update();
     }
 }
 
