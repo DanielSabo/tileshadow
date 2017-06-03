@@ -177,6 +177,8 @@ private:
     void insertLayerAbove(int layerIndex, std::unique_ptr<CanvasLayer> newLayer);
     void resetCurrentLayer(CanvasContext *ctx, int index);
 
+    void cancelCanvasAction();
+
     CanvasContext *getContext();
     CanvasContext *getContextMaybe();
 

@@ -1904,6 +1904,65 @@ void CanvasWidget::wheelEvent(QWheelEvent *event)
     update();
 }
 
+void CanvasWidget::cancelCanvasAction()
+{
+    if (action == CanvasAction::None)
+        return;
+
+    if (action == CanvasAction::MouseStroke ||
+        action == CanvasAction::TabletStroke ||
+        action == CanvasAction::DrawLine)
+    {
+        CanvasContext *ctx = getContext();
+
+        ctx->strokeTool.reset();
+        ctx->stroke.reset();
+
+        CanvasLayer *targetLayer, *undoLayer;
+        getPaintingTargets(ctx, targetLayer, undoLayer);
+
+        targetLayer->takeTiles(undoLayer->deepCopy().get());
+
+        tileSetInsert(ctx->dirtyTiles, ctx->strokeModifiedTiles);
+        ctx->strokeModifiedTiles.clear();
+    }
+    else if (action == CanvasAction::MoveView ||
+             action == CanvasAction::ColorPick ||
+             action == CanvasAction::ColorPickMerged)
+    {
+        // No-op
+    }
+    else if (action == CanvasAction::MoveLayer)
+    {
+        CanvasContext *ctx = getContext();
+        CanvasLayer *targetLayer, *undoLayer;
+        getPaintingTargets(ctx, targetLayer, undoLayer);
+
+        tileSetInsert(ctx->dirtyTiles, targetLayer->getTileSet());
+
+        if (targetLayer->type == LayerType::Layer)
+        {
+            targetLayer->takeTiles(undoLayer->deepCopy().get());
+            tileSetInsert(ctx->dirtyTiles, undoLayer->getTileSet());
+        }
+        else if (targetLayer->type == LayerType::Group)
+        {
+            targetLayer->tiles->clear();
+            ctx->currentLayerCopy.reset();
+            tileSetInsert(ctx->dirtyTiles, targetLayer->getTileSet());
+        }
+        else
+        {
+            qWarning() << "cancelCanvasAction() called on unknown layer type!";
+        }
+    }
+
+    action = CanvasAction::None;
+    actionButton = Qt::NoButton;
+    updateCursor();
+    update();
+}
+
 /* As of Qt 5.4 the cursor is not correctly set over OpenGL windows on OSX,
  * this hacks around that by setting the cursor for the toplevel window instead.
  */
@@ -2211,6 +2270,9 @@ QColor CanvasWidget::getToolColor()
 
 void CanvasWidget::newDrawing()
 {
+    if (action != CanvasAction::None)
+        cancelCanvasAction();
+
     CanvasContext *ctx = getContext();
 
     ctx->clearUndoHistory();
@@ -2243,6 +2305,9 @@ namespace {
 
 void CanvasWidget::openORA(QString path)
 {
+    if (action != CanvasAction::None)
+        cancelCanvasAction();
+
     QRegExp layerNameReg("Layer (\\d+)");
     CanvasContext *ctx = getContext();
 
@@ -2263,6 +2328,9 @@ void CanvasWidget::openORA(QString path)
 
 void CanvasWidget::openImage(QImage image)
 {
+    if (action != CanvasAction::None)
+        cancelCanvasAction();
+
     CanvasContext *ctx = getContext();
 
     ctx->clearUndoHistory();
@@ -2292,6 +2360,9 @@ void CanvasWidget::openImage(QImage image)
 
 void CanvasWidget::saveAsORA(QString path)
 {
+    if (action != CanvasAction::None)
+        cancelCanvasAction();
+
     CanvasContext *ctx = getContext();
 
     QProgressDialog dialog("Saving...", QString(), 0, 100, topLevelWidget());
@@ -2317,6 +2388,9 @@ void CanvasWidget::saveAsORA(QString path)
 
 QImage CanvasWidget::asImage()
 {
+    if (action != CanvasAction::None)
+        cancelCanvasAction();
+
     CanvasContext *ctx = getContext();
 
     return stackToImage(&ctx->layers);
