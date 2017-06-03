@@ -207,7 +207,6 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
     action(CanvasAction::None),
     toolColor(QColor::fromRgbF(0.0, 0.0, 0.0)),
     viewScale(1.0f),
-    showToolCursor(true),
     lastNewLayerNumber(0),
     modified(false),
     canvasOrigin(0, 0)
@@ -354,7 +353,7 @@ void CanvasWidget::paintGL()
 
     render->renderView(canvasOrigin, size(), viewScale, false);
 
-    if (d->activeTool && d->currentLayerEditable && showToolCursor)
+    if (d->activeTool && d->currentLayerEditable && underMouse())
     {
         QPoint cursorPos = mapFromGlobal(QCursor::pos());
         float toolSize = std::max(d->activeTool->getPixelRadius() * 2.0f * viewScale, 6.0f);
@@ -1914,14 +1913,12 @@ void CanvasWidget::wheelEvent(QWheelEvent *event)
 
 void CanvasWidget::leaveEvent(QEvent * event)
 {
-    showToolCursor = false;
     CURSOR_WIDGET->unsetCursor();
     update();
 }
 
 void CanvasWidget::enterEvent(QEvent * event)
 {
-    showToolCursor = true;
     updateCursor();
     update();
 }

@@ -155,7 +155,6 @@ private:
     CanvasAction::Action action;
     QColor toolColor;
     float viewScale;
-    bool showToolCursor;
     int lastNewLayerNumber;
     bool modified;
     QPoint canvasOrigin;
