@@ -76,6 +76,8 @@ public slots:
     void actionNewLayer();
     void actionNewGroup();
     void actionDrawLine();
+    void actionToggleEditFrame();
+    void actionToggleFrame();
     void actionToggleQuickmask();
     void actionClearQuickmask();
     void actionQuickmaskCut();

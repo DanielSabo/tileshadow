@@ -87,7 +87,7 @@
      <x>0</x>
      <y>0</y>
      <width>561</width>
-     <height>22</height>
+     <height>34</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -144,6 +144,9 @@
     <addaction name="actionQuickmask_Cut"/>
     <addaction name="actionQuickmask_Copy"/>
     <addaction name="actionQuickmask_Erase"/>
+    <addaction name="separator"/>
+    <addaction name="actionEdit_Frame"/>
+    <addaction name="actionToggle_Frame"/>
    </widget>
    <widget class="QMenu" name="menuTool">
     <property name="title">
@@ -432,6 +435,22 @@
    </property>
    <property name="visible">
     <bool>false</bool>
+   </property>
+  </action>
+  <action name="actionEdit_Frame">
+   <property name="text">
+    <string>Edit Canvas Frame</string>
+   </property>
+   <property name="shortcut">
+    <string>E</string>
+   </property>
+  </action>
+  <action name="actionToggle_Frame">
+   <property name="text">
+    <string>Toggle Canvas Frame</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+E</string>
    </property>
   </action>
  </widget>

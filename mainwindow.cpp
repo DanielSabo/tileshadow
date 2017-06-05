@@ -126,6 +126,8 @@ void MainWindow::connectActions()
     connect(ui->actionQuickmask_Copy, &QAction::triggered, this, &MainWindow::actionQuickmaskCopy);
     connect(ui->actionQuickmask_Erase, &QAction::triggered, this, &MainWindow::actionQuickmaskErase);
     connect(ui->actionClear_Quickmask, &QAction::triggered, this, &MainWindow::actionClearQuickmask);
+    connect(ui->actionEdit_Frame, &QAction::triggered, this, &MainWindow::actionToggleEditFrame);
+    connect(ui->actionToggle_Frame, &QAction::triggered, this, &MainWindow::actionToggleFrame);
 
     // View
     connect(ui->actionZoom_In, &QAction::triggered, this, &MainWindow::actionZoomIn);
@@ -685,6 +687,16 @@ void MainWindow::actionNewGroup()
 void MainWindow::actionDrawLine()
 {
     canvas->lineDrawMode();
+}
+
+void MainWindow::actionToggleEditFrame()
+{
+    canvas->toggleEditFrame();
+}
+
+void MainWindow::actionToggleFrame()
+{
+    canvas->toggleFrame();
 }
 
 void MainWindow::actionToggleQuickmask()

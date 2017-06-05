@@ -26,7 +26,11 @@ CanvasUndoTiles::~CanvasUndoTiles()
     tiles.clear();
 }
 
-TileSet CanvasUndoTiles::apply(CanvasStack *stack, int *activeLayer, CanvasLayer *quickmask)
+TileSet CanvasUndoTiles::apply(CanvasStack *stack,
+                               int         *activeLayer,
+                               CanvasLayer *quickmask,
+                               QRect       *activeFrame,
+                               QRect       *inactiveFrame)
 {
     TileSet modifiedTiles;
 
@@ -63,7 +67,11 @@ CanvasUndoLayers::~CanvasUndoLayers()
     layers.clear();
 }
 
-TileSet CanvasUndoLayers::apply(CanvasStack *stack, int *activeLayer, CanvasLayer *quickmask)
+TileSet CanvasUndoLayers::apply(CanvasStack *stack,
+                                int         *activeLayer,
+                                CanvasLayer *quickmask,
+                                QRect       *activeFrame,
+                                QRect       *inactiveFrame)
 {
     TileSet oldStackTiles = stack->getTileSet();
 
@@ -81,7 +89,11 @@ CanvasUndoBackground::CanvasUndoBackground(CanvasStack *stack)
     tile = stack->backgroundTileCL->copy();
 }
 
-TileSet CanvasUndoBackground::apply(CanvasStack *stack, int *activeLayer, CanvasLayer *quickmask)
+TileSet CanvasUndoBackground::apply(CanvasStack *stack,
+                                    int         *activeLayer,
+                                    CanvasLayer *quickmask,
+                                    QRect       *activeFrame,
+                                    QRect       *inactiveFrame)
 {
     std::unique_ptr<CanvasTile> oldBackground = stack->backgroundTileCL->copy();
     stack->setBackground(std::move(tile));
@@ -100,10 +112,32 @@ CanvasUndoQuickMask::CanvasUndoQuickMask(bool visible)
 {
 }
 
-TileSet CanvasUndoQuickMask::apply(CanvasStack *stack, int *activeLayer, CanvasLayer *quickmask)
+TileSet CanvasUndoQuickMask::apply(CanvasStack *stack,
+                                   int         *activeLayer,
+                                   CanvasLayer *quickmask,
+                                   QRect       *activeFrame,
+                                   QRect       *inactiveFrame)
 {
     quickmask->visible = visible;
     visible = !visible;
 
     return quickmask->getTileSet();
+}
+
+CanvasUndoFrame::CanvasUndoFrame(const QRect &activeFrame, const QRect &inactiveFrame)
+    : active(activeFrame),
+      inactive(inactiveFrame)
+{
+}
+
+TileSet CanvasUndoFrame::apply(CanvasStack *stack,
+                               int         *activeLayer,
+                               CanvasLayer *quickmask,
+                               QRect       *activeFrame,
+                               QRect       *inactiveFrame)
+{
+    std::swap(active, *activeFrame);
+    std::swap(inactive, *inactiveFrame);
+
+    return TileSet();
 }

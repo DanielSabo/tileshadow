@@ -23,7 +23,8 @@ namespace CanvasAction
         ColorPickMerged,
         MoveView,
         MoveLayer,
-        DrawLine
+        DrawLine,
+        EditFrame
     } Action;
 }
 
@@ -107,6 +108,9 @@ public:
     void setLayerMode(int layerIndex, BlendMode::Mode mode);
     BlendMode::Mode getLayerMode(int layerIndex);
     QList<LayerInfo> getLayerList();
+
+    void toggleEditFrame();
+    void toggleFrame();
 
     void toggleQuickmask();
     void clearQuickmask();

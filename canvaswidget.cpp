@@ -45,6 +45,21 @@ namespace RenderMode
     } typedef Mode;
 }
 
+namespace RectHandle {
+    enum {
+        None        = 0x0000,
+        Top         = 0x0001,
+        Bottom      = 0x0010,
+        Left        = 0x0100,
+        Right       = 0x1000,
+        TopLeft     = Top | Left,
+        TopRight    = Top | Right,
+        BottomRight = Bottom | Right,
+        BottomLeft  = Bottom | Left,
+        Center      = Top | Bottom | Left | Right,
+    } typedef Handle;
+}
+
 struct SavedTabletEvent
 {
     bool valid;
@@ -112,8 +127,19 @@ public:
     RenderMode::Mode renderMode;
     QTimer layerFlashTimeout;
     QColor dotPreviewColor;
+    QRect inactiveFrame;
+    QRect canvasFrame;
+    RectHandle::Handle canvasFrameHandle;
     std::shared_ptr<QAtomicInt> motionCoalesceToken;
 
+    struct {
+        QRect originalActive;
+        QRect originalInactive;
+        QPoint a;
+        QPoint b;
+    } frameGrab;
+
+    RectHandle::Handle frameRectHandle(QPoint pos);
     CanvasAction::Action actionForMouseEvent(int button, Qt::KeyboardModifiers modifiers);
     void updateEditable(CanvasContext *ctx);
 };
@@ -135,10 +161,38 @@ CanvasWidgetPrivate::CanvasWidgetPrivate()
     renderMode = RenderMode::Normal;
     layerFlashTimeout.setSingleShot(true);
     dotPreviewColor = QColor();
+    canvasFrameHandle = RectHandle::None;
 }
 
 CanvasWidgetPrivate::~CanvasWidgetPrivate()
 {
+}
+
+RectHandle::Handle CanvasWidgetPrivate::frameRectHandle(QPoint pos)
+{
+    static const int hotspotRange = 5;
+
+    if (pos.x() < canvasFrame.x() - hotspotRange ||
+        pos.x() > canvasFrame.x() + canvasFrame.width()  + hotspotRange ||
+        pos.y() < canvasFrame.y() - hotspotRange ||
+        pos.y() > canvasFrame.y() + canvasFrame.height() + hotspotRange)
+    {
+        return RectHandle::None;
+    }
+
+    RectHandle::Handle result = RectHandle::None;
+    if (pos.x() < canvasFrame.x() + hotspotRange)
+        result = RectHandle::Handle(result | RectHandle::Left);
+    else if (pos.x() > canvasFrame.x() + canvasFrame.width() - hotspotRange)
+        result = RectHandle::Handle(result | RectHandle::Right);
+    if (pos.y() < canvasFrame.y() + hotspotRange)
+        result = RectHandle::Handle(result | RectHandle::Top);
+    else if (pos.y() > canvasFrame.y() + canvasFrame.height() - hotspotRange)
+        result = RectHandle::Handle(result | RectHandle::Bottom);
+
+    if (result == RectHandle::None)
+        return RectHandle::Center;
+    return result;
 }
 
 CanvasAction::Action CanvasWidgetPrivate::actionForMouseEvent(int button, Qt::KeyboardModifiers modifiers)
@@ -1323,6 +1377,82 @@ QList<CanvasWidget::LayerInfo> CanvasWidget::getLayerList()
     return result;
 }
 
+namespace {
+    QRect defaultCanvasFrame(CanvasContext const *ctx)
+    {
+        QRect tileBounds = (tileSetBounds(ctx->layers.getTileSet()));
+        if (tileBounds.isEmpty())
+            tileBounds = QRect(0, 0, 1, 1);
+
+        return QRect(tileBounds.x() * TILE_PIXEL_WIDTH,
+                     tileBounds.y() * TILE_PIXEL_HEIGHT,
+                     tileBounds.width() * TILE_PIXEL_WIDTH,
+                     tileBounds.height() * TILE_PIXEL_HEIGHT);
+    }
+}
+
+void CanvasWidget::toggleEditFrame()
+{
+    Q_D(CanvasWidget);
+
+    if (action == CanvasAction::EditFrame && actionButton == Qt::NoButton)
+    {
+        if (d->frameGrab.originalActive != d->canvasFrame ||
+            d->frameGrab.originalInactive != d->inactiveFrame)
+        {
+            CanvasContext *ctx = getContext();
+            ctx->addUndoEvent(new CanvasUndoFrame(d->frameGrab.originalActive, d->frameGrab.originalInactive));
+            modified = true;
+        }
+
+        action = CanvasAction::None;
+    }
+    else if (action == CanvasAction::None)
+    {
+        d->frameGrab.originalActive = d->canvasFrame;
+        d->frameGrab.originalInactive = d->inactiveFrame;
+
+        if (d->canvasFrame.isEmpty())
+        {
+            if (!d->inactiveFrame.isEmpty())
+            {
+                std::swap(d->inactiveFrame, d->canvasFrame);
+            }
+            else
+            {
+                CanvasContext *ctx = getContext();
+                d->canvasFrame = defaultCanvasFrame(ctx);
+            }
+        }
+
+        action = CanvasAction::EditFrame;
+        actionButton = Qt::NoButton;
+    }
+
+    updateCursor();
+    update();
+}
+
+void CanvasWidget::toggleFrame()
+{
+    Q_D(CanvasWidget);
+
+    if (action != CanvasAction::None)
+        return;
+
+    if (d->canvasFrame.isEmpty() && d->inactiveFrame.isEmpty())
+    {
+        CanvasContext *ctx = getContext();
+        d->canvasFrame = defaultCanvasFrame(ctx);
+    }
+    else
+    {
+        std::swap(d->inactiveFrame, d->canvasFrame);
+    }
+
+    update();
+}
+
 void CanvasWidget::toggleQuickmask()
 {
     if (action != CanvasAction::None)
@@ -1532,7 +1662,11 @@ void CanvasWidget::undo()
     std::unique_ptr<CanvasUndoEvent> undoEvent = std::move(ctx->undoHistory.front());
     ctx->undoHistory.pop_front();
     bool changedBackground = undoEvent->modifiesBackground();
-    TileSet changedTiles = undoEvent->apply(&ctx->layers, &newActiveLayer, ctx->quickmask.get());
+    TileSet changedTiles = undoEvent->apply(&ctx->layers,
+                                            &newActiveLayer,
+                                            ctx->quickmask.get(),
+                                            &d->canvasFrame,
+                                            &d->inactiveFrame);
     d->quickmaskActive = ctx->quickmask->visible;
     ctx->redoHistory.push_front(std::move(undoEvent));
 
@@ -1572,7 +1706,11 @@ void CanvasWidget::redo()
     std::unique_ptr<CanvasUndoEvent> undoEvent = std::move(ctx->redoHistory.front());
     ctx->redoHistory.pop_front();
     bool changedBackground = undoEvent->modifiesBackground();
-    TileSet changedTiles = undoEvent->apply(&ctx->layers, &newActiveLayer, ctx->quickmask.get());
+    TileSet changedTiles = undoEvent->apply(&ctx->layers,
+                                            &newActiveLayer,
+                                            ctx->quickmask.get(),
+                                            &d->canvasFrame,
+                                            &d->inactiveFrame);
     d->quickmaskActive = ctx->quickmask->visible;
     ctx->undoHistory.push_front(std::move(undoEvent));
 
@@ -1784,6 +1922,19 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
 
         updateCursor();
     }
+    else if (action == CanvasAction::EditFrame)
+    {
+        if (actionButton == Qt::NoButton && d->canvasFrameHandle != RectHandle::None)
+        {
+            actionOrigin = pos.toPoint();
+            actionButton = event->button();
+            QPoint p = d->canvasFrame.topLeft();
+            d->frameGrab.a = p;
+            p.rx() += d->canvasFrame.width();
+            p.ry() += d->canvasFrame.height();
+            d->frameGrab.b = p;
+        }
+    }
 
     event->accept();
 }
@@ -1817,6 +1968,10 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
             actionButton = Qt::NoButton;
 
             translateCurrentLayer(offset.x(), offset.y());
+        }
+        else if (action == CanvasAction::EditFrame)
+        {
+            actionButton = Qt::NoButton;
         }
 
         updateCursor();
@@ -1858,6 +2013,53 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
         offset /= viewScale;
 
         updateLayerTranslate(offset.x(), offset.y());
+    }
+    else if (action == CanvasAction::EditFrame)
+    {
+        QPoint pos = (event->pos() + canvasOrigin) / viewScale;
+
+        if (actionButton == Qt::NoButton)
+        {
+            RectHandle::Handle newHandle = d->frameRectHandle(pos);
+            if (newHandle != d->canvasFrameHandle)
+            {
+                d->canvasFrameHandle = newHandle;
+                updateCursor();
+            }
+        }
+        else
+        {
+            if (d->canvasFrameHandle == RectHandle::Center)
+            {
+                QPoint shift = pos - actionOrigin;
+                d->frameGrab.a += shift;
+                d->frameGrab.b += shift;
+                actionOrigin = pos;
+            }
+            else
+            {
+                if (d->canvasFrameHandle & RectHandle::Left)
+                    d->frameGrab.a.rx() = pos.x();
+                else if (d->canvasFrameHandle & RectHandle::Right)
+                    d->frameGrab.b.rx() = pos.x();
+
+                if (d->canvasFrameHandle & RectHandle::Top)
+                    d->frameGrab.a.ry() = pos.y();
+                else if (d->canvasFrameHandle & RectHandle::Bottom)
+                    d->frameGrab.b.ry() = pos.y();
+            }
+
+            d->canvasFrame.setCoords(d->frameGrab.a.x(), d->frameGrab.a.y(),
+                                     d->frameGrab.b.x() - 1, d->frameGrab.b.y() - 1);
+
+            d->canvasFrame = d->canvasFrame.normalized();
+
+            if (d->canvasFrame.width() <= 0)
+                d->canvasFrame.setWidth(1);
+
+            if (d->canvasFrame.height() <= 0)
+                d->canvasFrame.setHeight(1);
+        }
     }
 
     event->accept();
@@ -1909,6 +2111,8 @@ void CanvasWidget::wheelEvent(QWheelEvent *event)
 
 void CanvasWidget::cancelCanvasAction()
 {
+    Q_D(CanvasWidget);
+
     if (action == CanvasAction::None)
         return;
 
@@ -1958,6 +2162,11 @@ void CanvasWidget::cancelCanvasAction()
         {
             qWarning() << "cancelCanvasAction() called on unknown layer type!";
         }
+    }
+    else if (action == CanvasAction::EditFrame)
+    {
+        d->canvasFrame = d->frameGrab.originalActive;
+        d->inactiveFrame = d->frameGrab.originalInactive;
     }
 
     action = CanvasAction::None;
@@ -2052,6 +2261,21 @@ void CanvasWidget::updateCursor()
     {
         toolCursor = true;
         CURSOR_WIDGET->setCursor(Qt::CrossCursor);
+    }
+    else if (cursorAction == CanvasAction::EditFrame)
+    {
+        if (d->canvasFrameHandle == RectHandle::Left || d->canvasFrameHandle == RectHandle::Right)
+            CURSOR_WIDGET->setCursor(Qt::SizeHorCursor);
+        else if (d->canvasFrameHandle == RectHandle::Bottom || d->canvasFrameHandle == RectHandle::Top)
+            CURSOR_WIDGET->setCursor(Qt::SizeVerCursor);
+        else if (d->canvasFrameHandle == RectHandle::TopLeft || d->canvasFrameHandle == RectHandle::BottomRight)
+            CURSOR_WIDGET->setCursor(Qt::SizeFDiagCursor);
+        else if (d->canvasFrameHandle == RectHandle::TopRight || d->canvasFrameHandle == RectHandle::BottomLeft)
+            CURSOR_WIDGET->setCursor(Qt::SizeBDiagCursor);
+        else if (d->canvasFrameHandle == RectHandle::Center)
+            CURSOR_WIDGET->setCursor(Qt::SizeAllCursor);
+        else
+            CURSOR_WIDGET->setCursor(Qt::ArrowCursor);
     }
     else
     {
@@ -2273,6 +2497,8 @@ QColor CanvasWidget::getToolColor()
 
 void CanvasWidget::newDrawing()
 {
+    Q_D(CanvasWidget);
+
     if (action != CanvasAction::None)
         cancelCanvasAction();
 
@@ -2286,6 +2512,8 @@ void CanvasWidget::newDrawing()
     ctx->resetQuickmask();
     ctx->layers.layers.append(new CanvasLayer(QString().sprintf("Layer %02d", ++lastNewLayerNumber)));
     setActiveLayer(0); // Sync up the undo layer
+    d->inactiveFrame = {};
+    d->canvasFrame = {};
     canvasOrigin = QPoint(0, 0);
     update();
     modified = false;
@@ -2308,9 +2536,12 @@ namespace {
 
 void CanvasWidget::openORA(QString path)
 {
+    Q_D(CanvasWidget);
+
     if (action != CanvasAction::None)
         cancelCanvasAction();
 
+    QRect newFrame;
     QRegExp layerNameReg("Layer (\\d+)");
     CanvasContext *ctx = getContext();
 
@@ -2321,6 +2552,8 @@ void CanvasWidget::openORA(QString path)
     ctx->resetQuickmask();
     lastNewLayerNumber = findHighestLayerNumber(ctx->layers.layers, layerNameReg);
     setActiveLayer(0); // Sync up the undo layer
+    d->inactiveFrame = {};
+    d->canvasFrame = {};
     canvasOrigin = QPoint(0, 0);
     ctx->dirtyTiles = ctx->layers.getTileSet();
     render->updateBackgroundTile(ctx);
@@ -2331,6 +2564,8 @@ void CanvasWidget::openORA(QString path)
 
 void CanvasWidget::openImage(QImage image)
 {
+    Q_D(CanvasWidget);
+
     if (action != CanvasAction::None)
         cancelCanvasAction();
 
@@ -2354,6 +2589,8 @@ void CanvasWidget::openImage(QImage image)
         imageLayer->takeTiles(imported.get());
     }
     setActiveLayer(0); // Sync up the undo layer
+    d->inactiveFrame = QRect(QPoint(0, 0), image.size());
+    d->canvasFrame = {};
     canvasOrigin = QPoint(0, 0);
     ctx->dirtyTiles = ctx->layers.getTileSet();
     update();
