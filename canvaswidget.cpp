@@ -89,8 +89,8 @@ public:
     QString eraserToolPath;
 
     QString activeToolPath;
-    BaseTool *activeTool;
-    QMap<QString, BaseTool *> tools;
+    std::shared_ptr<BaseTool> activeTool;
+    std::map<QString, std::shared_ptr<BaseTool>> tools;
 
     CanvasEventThread eventThread;
 
@@ -139,10 +139,6 @@ CanvasWidgetPrivate::CanvasWidgetPrivate()
 
 CanvasWidgetPrivate::~CanvasWidgetPrivate()
 {
-    activeTool = nullptr;
-    for (auto iter = tools.begin(); iter != tools.end(); ++iter)
-        delete iter.value();
-    tools.clear();
 }
 
 CanvasAction::Action CanvasWidgetPrivate::actionForMouseEvent(int button, Qt::KeyboardModifiers modifiers)
@@ -2082,9 +2078,9 @@ void CanvasWidget::setActiveTool(const QString &toolName)
 
     if (found != d->tools.end())
     {
-        d->activeTool = found.value();
+        d->activeTool = found->second;
     }
-    else if ((d->activeTool = ToolFactory::loadTool(toolName)))
+    else if (d->activeTool = ToolFactory::loadTool(toolName))
     {
         d->tools[toolName] = d->activeTool;
     }
@@ -2092,9 +2088,9 @@ void CanvasWidget::setActiveTool(const QString &toolName)
     {
         qWarning() << "Unknown tool set \'" << toolName << "\', using debug";
         d->activeToolPath = QStringLiteral("debug");
-        d->activeTool = d->tools["debug"];
+        d->activeTool = d->tools[d->activeToolPath];
 
-        if (d->activeTool == nullptr)
+        if (!d->activeTool)
         {
             d->activeTool = ToolFactory::loadTool(d->activeToolPath);
             d->tools[d->activeToolPath] = d->activeTool;

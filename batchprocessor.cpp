@@ -83,7 +83,7 @@ BatchCommandStroke::BatchCommandStroke(const QJsonObject &json)
 void BatchCommandStroke::apply(BatchProcessorContext *ctx)
 {
     CanvasLayer *layer = ctx->layers.layers.at(0);
-    BaseTool *tool = NULL;
+    std::unique_ptr<BaseTool> tool;
     if (!toolPath.isEmpty())
         tool = ToolFactory::loadTool(toolPath);
     if (!tool)

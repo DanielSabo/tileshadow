@@ -136,7 +136,7 @@ ToolList ToolFactory::listTools()
     return toolList;
 }
 
-BaseTool *ToolFactory::loadTool(QString toolName)
+std::unique_ptr<BaseTool> ToolFactory::loadTool(QString toolName)
 {
     BaseTool *result = NULL;
 
@@ -166,7 +166,7 @@ BaseTool *ToolFactory::loadTool(QString toolName)
         result = new PatternFillTool(directories);
     }
 
-    return result;
+    return std::unique_ptr<BaseTool>(result);
 }
 
 QString ToolFactory::defaultToolName()

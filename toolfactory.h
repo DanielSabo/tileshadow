@@ -4,13 +4,14 @@
 #include <QList>
 #include <QPair>
 #include <QString>
+#include <memory>
 #include "basetool.h"
 
 typedef QList<QPair<QString, QString> > ToolList;
 
 namespace ToolFactory {
     ToolList listTools();
-    BaseTool *loadTool(QString toolName);
+    std::unique_ptr<BaseTool> loadTool(QString toolName);
     void initializeUserPaths();
     QString getUserToolsPath();
     QString defaultToolName();
