@@ -2080,7 +2080,7 @@ void CanvasWidget::setActiveTool(const QString &toolName)
     {
         d->activeTool = found->second;
     }
-    else if (d->activeTool = ToolFactory::loadTool(toolName))
+    else if ((d->activeTool = ToolFactory::loadTool(toolName)) != nullptr)
     {
         d->tools[toolName] = d->activeTool;
     }
