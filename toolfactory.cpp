@@ -138,7 +138,7 @@ ToolList ToolFactory::listTools()
 
 std::unique_ptr<BaseTool> ToolFactory::loadTool(QString toolName)
 {
-    BaseTool *result = NULL;
+    BaseTool *result = nullptr;
 
     if (toolName.endsWith(".myb") ||
         toolName.endsWith(".mbi"))
