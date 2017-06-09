@@ -110,31 +110,31 @@ void SystemInfoDialog::showEvent(QShowEvent *event)
 
         char infoReturnStr[1024];
         cl_uint infoReturnInt = 0;
-        clGetDeviceInfo (deviceInfo.device, CL_DEVICE_VERSION, sizeof(infoReturnStr), infoReturnStr, NULL);
-        addPlatformValue(queryResultString, NULL, infoReturnStr);
+        clGetDeviceInfo(deviceInfo.device, CL_DEVICE_VERSION, sizeof(infoReturnStr), infoReturnStr, nullptr);
+        addPlatformValue(queryResultString, nullptr, infoReturnStr);
 
         {
             cl_uint nvComputeMajor = 0;
             cl_uint nvComputeMinor = 0;
-            if (CL_SUCCESS == clGetDeviceInfo (deviceInfo.device, CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV, sizeof(nvComputeMajor), &nvComputeMajor, NULL)
+            if (CL_SUCCESS == clGetDeviceInfo(deviceInfo.device, CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV, sizeof(nvComputeMajor), &nvComputeMajor, nullptr)
                 &&
-                CL_SUCCESS == clGetDeviceInfo (deviceInfo.device, CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV, sizeof(nvComputeMinor), &nvComputeMinor, NULL))
+                CL_SUCCESS == clGetDeviceInfo(deviceInfo.device, CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV, sizeof(nvComputeMinor), &nvComputeMinor, nullptr))
             {
                 addPlatformValue(queryResultString, "NVIDIA Compute Capability", QStringLiteral("%1.%2").arg(nvComputeMajor).arg(nvComputeMinor));
             }
         }
 
-        clGetDeviceInfo (deviceInfo.device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(infoReturnInt), &infoReturnInt, NULL);
+        clGetDeviceInfo(deviceInfo.device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(infoReturnInt), &infoReturnInt, nullptr);
         addPlatformValue(queryResultString, "CL_DEVICE_MAX_COMPUTE_UNITS", QString::number(infoReturnInt));
 
-        if (CL_SUCCESS == clGetDeviceInfo (deviceInfo.device, CL_DEVICE_WARP_SIZE_NV, sizeof(infoReturnInt), &infoReturnInt, NULL))
+        if (CL_SUCCESS == clGetDeviceInfo(deviceInfo.device, CL_DEVICE_WARP_SIZE_NV, sizeof(infoReturnInt), &infoReturnInt, nullptr))
         {
             addPlatformValue(queryResultString, "CL_DEVICE_WARP_SIZE_NV", QString::number(infoReturnInt));
         }
 
         {
             cl_ulong byteSize;
-            clGetDeviceInfo (deviceInfo.device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(byteSize), &byteSize, NULL);
+            clGetDeviceInfo(deviceInfo.device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(byteSize), &byteSize, nullptr);
             QString format = QStringLiteral("%1 bytes");
 
             if (byteSize > 1024)
@@ -154,7 +154,7 @@ void SystemInfoDialog::showEvent(QShowEvent *event)
 
         {
             cl_bool infoReturnBool;
-            clGetDeviceInfo (deviceInfo.device, CL_DEVICE_HOST_UNIFIED_MEMORY, sizeof(infoReturnBool), &infoReturnBool, NULL);
+            clGetDeviceInfo(deviceInfo.device, CL_DEVICE_HOST_UNIFIED_MEMORY, sizeof(infoReturnBool), &infoReturnBool, nullptr);
             addPlatformValue(queryResultString, "CL_DEVICE_HOST_UNIFIED_MEMORY", infoReturnBool ? "True" : "False");
         }
     }
