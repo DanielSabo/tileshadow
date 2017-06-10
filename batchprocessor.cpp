@@ -145,22 +145,29 @@ BatchCommandExport::BatchCommandExport(const QJsonObject &json)
 
 void BatchCommandExport::apply(BatchProcessorContext *ctx)
 {
-    QImage output = stackToImage(&ctx->layers);
-    if (output.isNull())
+    if (path.endsWith(".ora"))
     {
-        qWarning() << "Failed to export, image is empty";
-        return;
+        saveStackAs(&ctx->layers, QRect(), path);
     }
-
-    QImageWriter writer(path);
-    if (path.endsWith(".jpg", Qt::CaseInsensitive) || path.endsWith(".jpeg", Qt::CaseInsensitive))
-        writer.setQuality(90);
-    else if (path.endsWith(".png", Qt::CaseInsensitive))
-        writer.setQuality(9);
-
-    if (!writer.write(output))
+    else
     {
-        qWarning() << "Export failed" << writer.errorString();
+        QImage output = stackToImage(&ctx->layers);
+        if (output.isNull())
+        {
+            qWarning() << "Failed to export, image is empty";
+            return;
+        }
+
+        QImageWriter writer(path);
+        if (path.endsWith(".jpg", Qt::CaseInsensitive) || path.endsWith(".jpeg", Qt::CaseInsensitive))
+            writer.setQuality(90);
+        else if (path.endsWith(".png", Qt::CaseInsensitive))
+            writer.setQuality(9);
+
+        if (!writer.write(output))
+        {
+            qWarning() << "Export failed" << writer.errorString();
+        }
     }
 }
 
