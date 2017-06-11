@@ -39,6 +39,28 @@ public:
     std::vector<CanvasStrokePoint> points;
 };
 
+class BatchCommandRotate : public BatchCommand
+{
+public:
+    BatchCommandRotate(QJsonObject const &json);
+    void apply(BatchProcessorContext *ctx) override;
+
+    QPoint origin;
+    double angle = 0.0;
+    QPointF offset;
+};
+
+class BatchCommandScale : public BatchCommand
+{
+public:
+    BatchCommandScale(QJsonObject const &json);
+    void apply(BatchProcessorContext *ctx) override;
+
+    QPoint origin;
+    QPointF scale;
+    QPointF offset;
+};
+
 class BatchCommandExport : public BatchCommand
 {
 public:
@@ -127,6 +149,99 @@ void BatchCommandStroke::apply(BatchProcessorContext *ctx)
     stroke.reset();
 
     //FIXME: Copy only modified tiles
+    ctx->currentLayerCopy = ctx->layers.layers.at(0)->deepCopy();
+}
+
+BatchCommandRotate::BatchCommandRotate(const QJsonObject &json)
+{
+    angle = json["angle"].toDouble(0.0);
+
+    QJsonArray jsonOrigin = json["origin"].toArray();
+    if (jsonOrigin.size() == 2)
+    {
+        origin.rx() = jsonOrigin.at(0).toInt();
+        origin.ry() = jsonOrigin.at(1).toInt();
+    }
+    else
+    {
+        throw QString("Invalid origin for rotatation");
+    }
+
+    QJsonArray jsonOffset = json["offset"].toArray();
+    if (jsonOffset.size() == 2)
+    {
+        offset.rx() = jsonOffset.at(0).toDouble();
+        offset.ry() = jsonOffset.at(1).toDouble();
+    }
+    else if (jsonOffset.size() != 0)
+    {
+        throw QString("Invalid offset for rotatation");
+    }
+}
+
+void BatchCommandRotate::apply(BatchProcessorContext *ctx)
+{
+    QMatrix transform;
+    transform.translate(offset.x(), offset.y());
+    transform.translate(origin.x(), origin.y());
+    transform.rotate(angle);
+    transform.translate(-origin.x(), -origin.y());
+
+    CanvasLayer *layer = ctx->layers.layers.at(0);
+    std::unique_ptr<CanvasLayer> rotated = layer->applyMatrix(transform);
+    layer->takeTiles(rotated.get());
+    layer->prune();
+    ctx->currentLayerCopy = ctx->layers.layers.at(0)->deepCopy();
+}
+
+BatchCommandScale::BatchCommandScale(const QJsonObject &json)
+{
+    QJsonArray jsonOrigin = json["origin"].toArray();
+    if (jsonOrigin.size() == 2)
+    {
+        origin.rx() = jsonOrigin.at(0).toInt();
+        origin.ry() = jsonOrigin.at(1).toInt();
+    }
+    else
+    {
+        throw QString("Invalid origin for scale");
+    }
+
+    QJsonArray jsonScale = json["scale"].toArray();
+    if (jsonScale.size() == 2)
+    {
+        scale.rx() = jsonScale.at(0).toDouble();
+        scale.ry() = jsonScale.at(1).toDouble();
+    }
+    else
+    {
+        throw QString("Invalid ratio for scale");
+    }
+
+    QJsonArray jsonOffset = json["offset"].toArray();
+    if (jsonOffset.size() == 2)
+    {
+        offset.rx() = jsonOffset.at(0).toDouble();
+        offset.ry() = jsonOffset.at(1).toDouble();
+    }
+    else if (jsonOffset.size() != 0)
+    {
+        throw QString("Invalid offset for scale");
+    }
+}
+
+void BatchCommandScale::apply(BatchProcessorContext *ctx)
+{
+    QMatrix transform;
+    transform.translate(offset.x(), offset.y());
+    transform.translate(origin.x(), origin.y());
+    transform.scale(scale.x(), scale.y());
+    transform.translate(-origin.x(), -origin.y());
+
+    CanvasLayer *layer = ctx->layers.layers.at(0);
+    std::unique_ptr<CanvasLayer> scaled = layer->applyMatrix(transform);
+    layer->takeTiles(scaled.get());
+    layer->prune();
     ctx->currentLayerCopy = ctx->layers.layers.at(0)->deepCopy();
 }
 
@@ -242,7 +357,14 @@ void BatchProcessor::execute(QString path)
             else if (commandName == QStringLiteral("stroke"))
             {
                 commandList.emplace_back(new BatchCommandStroke(commandObject));
-
+            }
+            else if (commandName == QStringLiteral("rotate"))
+            {
+                commandList.emplace_back(new BatchCommandRotate(commandObject));
+            }
+            else if (commandName == QStringLiteral("scale"))
+            {
+                commandList.emplace_back(new BatchCommandScale(commandObject));
             }
             else if (commandName == QStringLiteral("export"))
             {
