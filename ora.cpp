@@ -224,7 +224,7 @@ void writeStack(QXmlStreamWriter &stackXML,
             if (png_error)
                 qDebug() << "lodepng error:" << lodepng_error_text(png_error);
 
-            QString layerFileName = QString().sprintf("data/layer%03d.png", layerNum++);
+            QString layerFileName = QString::asprintf("data/layer%03d.png", layerNum++);
 
             oraZipWriter.addFile(layerFileName, QByteArray::fromRawData((const char *)pngData, pngDataSize));
 
@@ -241,9 +241,9 @@ void writeStack(QXmlStreamWriter &stackXML,
             if (!currentLayer->editable)
                 stackXML.writeAttribute("edit-locked", "true");
             stackXML.writeAttribute("composite-op", blendModeToOraOp(currentLayer->mode));
-            stackXML.writeAttribute("opacity", QString().sprintf("%f", currentLayer->opacity));
-            stackXML.writeAttribute("x", QString().sprintf("%d", bounds.x() - imageX));
-            stackXML.writeAttribute("y", QString().sprintf("%d", bounds.y() - imageY));
+            stackXML.writeAttribute("opacity", QString::number(currentLayer->opacity, 'f'));
+            stackXML.writeAttribute("x", QString::number(bounds.x() - imageX));
+            stackXML.writeAttribute("y", QString::number(bounds.y() - imageY));
             stackXML.writeEndElement(); // layer
         }
         else
@@ -258,7 +258,7 @@ void writeStack(QXmlStreamWriter &stackXML,
             if (!currentLayer->editable)
                 stackXML.writeAttribute("edit-locked", "true");
             stackXML.writeAttribute("composite-op", blendModeToOraOp(currentLayer->mode));
-            stackXML.writeAttribute("opacity", QString().sprintf("%f", currentLayer->opacity));
+            stackXML.writeAttribute("opacity", QString::number(currentLayer->opacity, 'f'));
             writeStack(stackXML, oraZipWriter,
                        imageX, imageY,
                        currentLayer->children, layerNum,
@@ -307,8 +307,8 @@ void saveStackAs(CanvasStack *stack, QRect frame, QString path, std::function<vo
         imageTileBounds = boundingTiles(frame).united(imageTileBounds);
     }
 
-    stackXML.writeAttribute("w", QString().sprintf("%d", frame.width()));
-    stackXML.writeAttribute("h", QString().sprintf("%d", frame.height()));
+    stackXML.writeAttribute("w", QString::number(frame.width()));
+    stackXML.writeAttribute("h", QString::number(frame.height()));
 
     stackXML.writeStartElement("stack");
 
