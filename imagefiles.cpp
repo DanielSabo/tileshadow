@@ -4,9 +4,16 @@
 #include <QImage>
 #include <QDebug>
 
-QImage stackToImage(CanvasStack *stack)
+QImage stackToImage(CanvasStack *stack, QRect frame)
 {
-    QRect tileBounds = tileSetBounds(stack->getTileSet());
+    QRect tileBounds;
+    frame = frame.normalized();
+
+    if (!frame.isEmpty())
+        tileBounds = boundingTiles(frame);
+    else
+        tileBounds = tileSetBounds(stack->getTileSet());
+
     if (tileBounds.isEmpty())
         return QImage();
 
@@ -44,6 +51,14 @@ QImage stackToImage(CanvasStack *stack)
                 tileData += TILE_PIXEL_WIDTH * 4;
             }
         }
+
+    if (!frame.isEmpty() && (bounds.size() != frame.size()))
+    {
+        // Crop the rendered image to the frame
+        int x = frame.x() - bounds.x();
+        int y = frame.y() - bounds.y();
+        result = result.copy(x, y, frame.width(), frame.height());
+    }
 
     return result;
 }

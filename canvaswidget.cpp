@@ -2630,10 +2630,12 @@ void CanvasWidget::saveAsORA(QString path)
 
 QImage CanvasWidget::asImage()
 {
+    Q_D(CanvasWidget);
+
     if (action != CanvasAction::None)
         cancelCanvasAction();
 
     CanvasContext *ctx = getContext();
 
-    return stackToImage(&ctx->layers);
+    return stackToImage(&ctx->layers, d->canvasFrame);
 }

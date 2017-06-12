@@ -4,7 +4,7 @@
 #include "canvasstack.h"
 #include <QImage>
 
-QImage stackToImage(CanvasStack *stack);
+QImage stackToImage(CanvasStack *stack, QRect frame = {});
 QImage layerToImage(CanvasLayer *layer);
 std::unique_ptr<CanvasLayer> layerFromImage(QImage image);
 
