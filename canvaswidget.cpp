@@ -2548,12 +2548,12 @@ void CanvasWidget::openORA(QString path)
     ctx->clearUndoHistory();
     ctx->clearRedoHistory();
     render->clearTiles();
-    loadStackFromORA(&ctx->layers, path);
+    loadStackFromORA(&ctx->layers, &newFrame, path);
     ctx->resetQuickmask();
     lastNewLayerNumber = findHighestLayerNumber(ctx->layers.layers, layerNameReg);
     setActiveLayer(0); // Sync up the undo layer
     d->inactiveFrame = {};
-    d->canvasFrame = {};
+    d->canvasFrame = newFrame;
     canvasOrigin = QPoint(0, 0);
     ctx->dirtyTiles = ctx->layers.getTileSet();
     render->updateBackgroundTile(ctx);
@@ -2600,6 +2600,8 @@ void CanvasWidget::openImage(QImage image)
 
 void CanvasWidget::saveAsORA(QString path)
 {
+    Q_D(CanvasWidget);
+
     if (action != CanvasAction::None)
         cancelCanvasAction();
 
@@ -2618,7 +2620,7 @@ void CanvasWidget::saveAsORA(QString path)
         dialog.setValue(qBound<int>(1, percent, 99));
     };
 
-    saveStackAs(&ctx->layers, path, callback);
+    saveStackAs(&ctx->layers, d->canvasFrame, path, callback);
 
     dialog.close();
 

@@ -181,7 +181,7 @@ void BatchCommandOpen::apply(BatchProcessorContext *ctx)
 {
     if (path.endsWith(".ora"))
     {
-        loadStackFromORA(&ctx->layers, path);
+        loadStackFromORA(&ctx->layers, nullptr, path);
     }
     else
     {

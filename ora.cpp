@@ -269,7 +269,7 @@ void writeStack(QXmlStreamWriter &stackXML,
 }
 }
 
-void saveStackAs(CanvasStack *stack, QString path, std::function<void(QString const &, float)> progressCallback)
+void saveStackAs(CanvasStack *stack, QRect frame, QString path, std::function<void(QString const &, float)> progressCallback)
 {
     int progressStep = 1;
     float progressStepTotal = (stack->layers.size() + 2) / 100.0f;
@@ -293,18 +293,27 @@ void saveStackAs(CanvasStack *stack, QString path, std::function<void(QString co
     if (imageTileBounds.isEmpty())
         imageTileBounds = QRect(0, 0, 1, 1);
 
-    int imageWidth = imageTileBounds.width() * TILE_PIXEL_WIDTH;
-    int imageHeight = imageTileBounds.height() * TILE_PIXEL_HEIGHT;
-    int imageX = imageTileBounds.x() * TILE_PIXEL_WIDTH;
-    int imageY = imageTileBounds.y() * TILE_PIXEL_HEIGHT;
+    if (frame.isEmpty())
+    {
+        frame = QRect(imageTileBounds.x() * TILE_PIXEL_WIDTH,
+                      imageTileBounds.y() * TILE_PIXEL_HEIGHT,
+                      imageTileBounds.width() * TILE_PIXEL_WIDTH,
+                      imageTileBounds.height() * TILE_PIXEL_HEIGHT);
+    }
+    else
+    {
+        stackXML.writeAttribute("http://mypaint.org/ns/openraster", "frame-active", "true");
 
-    stackXML.writeAttribute("w", QString().sprintf("%d", imageWidth));
-    stackXML.writeAttribute("h", QString().sprintf("%d", imageHeight));
+        imageTileBounds = boundingTiles(frame).united(imageTileBounds);
+    }
+
+    stackXML.writeAttribute("w", QString().sprintf("%d", frame.width()));
+    stackXML.writeAttribute("h", QString().sprintf("%d", frame.height()));
 
     stackXML.writeStartElement("stack");
 
     writeStack(stackXML, oraZipWriter,
-               imageX, imageY,
+               frame.x(), frame.y(),
                stack->layers, layerNum,
                progressStep, progressStepTotal, progressCallback);
 
@@ -318,6 +327,8 @@ void saveStackAs(CanvasStack *stack, QString path, std::function<void(QString co
 
         stackXML.writeStartElement("layer");
         stackXML.writeAttribute("src", backgroundLayerPath);
+        stackXML.writeAttribute("x", QString::number(imageTileBounds.x() * TILE_PIXEL_WIDTH - frame.x()));
+        stackXML.writeAttribute("y", QString::number(imageTileBounds.y() * TILE_PIXEL_HEIGHT - frame.y()));
         stackXML.writeAttribute("name", "background");
         stackXML.writeAttribute("visibility", "visible");
         stackXML.writeAttribute("composite-op", blendModeToOraOp(BlendMode::Over));
@@ -598,9 +609,39 @@ QList<CanvasLayer *> readStack(QXmlStreamReader &stackXML,
     qDebug() << "Unclosed layer stack!";
     return resultLayers;
 }
+
+bool readXMLPreamble(QXmlStreamReader &stackXML, QRect &frame)
+{
+    while(!stackXML.atEnd() && !stackXML.hasError())
+    {
+        if (stackXML.name() == "stack")
+            return true;
+
+        if (stackXML.name() == "image")
+        {
+            QXmlStreamAttributes attributes = stackXML.attributes();
+
+            if (attributes.value("http://mypaint.org/ns/openraster", "frame-active").toString() == QStringLiteral("true"))
+            {
+                int w = attributes.value("w").toDouble();
+                int h = attributes.value("h").toDouble();
+
+                if (w && h)
+                {
+                    frame.setWidth(w);
+                    frame.setHeight(h);
+                }
+            }
+        }
+
+        stackXML.readNextStartElement();
+    }
+
+    return false;
+}
 }
 
-void loadStackFromORA(CanvasStack *stack, QString path)
+void loadStackFromORA(CanvasStack *stack, QRect *frame,  QString path)
 {
     QZipReader oraZipReader(path, QIODevice::ReadOnly);
 
@@ -625,10 +666,13 @@ void loadStackFromORA(CanvasStack *stack, QString path)
     }
 
     QXmlStreamReader stackXML(stackData);
+    QRect resultFrame;
 
-    //FIXME: Error check
-    while (stackXML.name() != "stack")
-        stackXML.readNextStartElement();
+    if (!readXMLPreamble(stackXML, resultFrame))
+    {
+        qDebug() << "Failed to parse stack.xml, no stack element";
+        return;
+    }
 
     std::unique_ptr<CanvasTile> resultBackgroundTile;
     QList<CanvasLayer *> resultLayers = readStack(stackXML, resultBackgroundTile, oraZipReader);
@@ -647,5 +691,8 @@ void loadStackFromORA(CanvasStack *stack, QString path)
 
         if (resultBackgroundTile)
             stack->setBackground(std::move(resultBackgroundTile));
+
+        if (frame)
+            *frame = resultFrame;
     }
 }
