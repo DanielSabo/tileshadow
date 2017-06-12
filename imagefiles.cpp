@@ -105,16 +105,7 @@ std::unique_ptr<CanvasLayer> layerFromImage(QImage image)
 {
     image = image.convertToFormat(QImage::Format_ARGB32);
     QRect bounds = QRect(QPoint(0, 0), image.size());
-
-    QRect tileBounds;
-    {
-        int tileX1 = tile_indice(bounds.x(), TILE_PIXEL_WIDTH);
-        int tileX2 = tile_indice(bounds.x() + bounds.width(), TILE_PIXEL_WIDTH) + 1;
-        int tileY1 = tile_indice(bounds.y(), TILE_PIXEL_HEIGHT);
-        int tileY2 = tile_indice(bounds.y() + bounds.height(), TILE_PIXEL_HEIGHT) + 1;
-
-        tileBounds = QRect(tileX1, tileY1, tileX2 - tileX1, tileY2 - tileY1);
-    }
+    QRect tileBounds = boundingTiles(bounds);
 
     std::unique_ptr<float[]> newTileData(new float[TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT * 4]);
     std::unique_ptr<CanvasLayer> result(new CanvasLayer(""));
