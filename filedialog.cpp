@@ -25,29 +25,29 @@ QStringList showFileDialog(QWidget                 *parent,
                            QFileDialog::AcceptMode  acceptMode,
                            QFileDialog::FileMode    fileMode)
 {
-    std::unique_ptr<QFileDialog> dialog{new QFileDialog{parent, caption, dir, filter}};
-    dialog->setAcceptMode(acceptMode);
-    dialog->setFileMode(fileMode);
+    QFileDialog dialog{parent, caption, dir, filter};
+    dialog.setAcceptMode(acceptMode);
+    dialog.setFileMode(fileMode);
 #ifdef Q_OS_LINUX
     // Disable native file dialogs due to KDE Bug 357684
-    dialog->setOptions(options | QFileDialog::DontUseNativeDialog);
+    dialog.setOptions(options | QFileDialog::DontUseNativeDialog);
     IconProvider iconProvider;
-    dialog->setIconProvider(&iconProvider);
+    dialog.setIconProvider(&iconProvider);
 
     QSettings settings;
     QByteArray geometry = settings.value("FileDialog/geometry").toByteArray();
     if (!geometry.isEmpty())
-        dialog->restoreGeometry(geometry);
+        dialog.restoreGeometry(geometry);
 #else
-    dialog->setOptions(options);
+    dialog.setOptions(options);
 #endif
 
     QStringList result;
-    if (dialog->exec() == QDialog::Accepted)
-        result = dialog->selectedFiles();
+    if (dialog.exec() == QDialog::Accepted)
+        result = dialog.selectedFiles();
 
 #ifdef Q_OS_LINUX
-    settings.setValue("FileDialog/geometry", dialog->saveGeometry());
+    settings.setValue("FileDialog/geometry", dialog.saveGeometry());
 #endif
 
     return result;
