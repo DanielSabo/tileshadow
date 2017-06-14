@@ -9,6 +9,7 @@
 #include "mypainttool.h"
 #include "gradienttool.h"
 #include <QDebug>
+#include <QSettings>
 
 namespace {
 void asciiTitleCase(QString &instr)
@@ -89,7 +90,10 @@ struct SortKey
 
 void addFilesInPath(std::map<SortKey, QString> &index, QString const &path)
 {
-    const int prefixLength = path.length();
+    int prefixLength = path.length();
+
+    if (!path.endsWith(QDir::separator()))
+        prefixLength += 1;
 
     for (QString const &brushFile: findBrushFiles(QDir(path)))
     {
@@ -125,6 +129,9 @@ ToolList ToolFactory::listTools()
 
     addFilesInPath(items, QStringLiteral(":/mypaint-tools/"));
     addFilesInPath(items, ToolFactory::getUserToolsPath());
+
+    for (QString path: QSettings().value("Paths/UserTools").toStringList())
+        addFilesInPath(items, path);
 
     for (auto const &iter: items)
     {
@@ -163,6 +170,9 @@ std::unique_ptr<BaseTool> ToolFactory::loadTool(QString toolName)
             QStringLiteral(":/patterns/"),
             QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/patterns/")
         };
+
+        directories << QSettings().value("Paths/UserPatterns").toStringList();
+
         result = new PatternFillTool(directories);
     }
 
