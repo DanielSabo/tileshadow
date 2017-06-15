@@ -1,6 +1,5 @@
 #include "hsvcolordial.h"
 #include <QDebug>
-#include <QApplication>
 #include <QPainter>
 #include <QImage>
 #include <QRgb>
@@ -137,6 +136,7 @@ void HSVColorDial::paintEvent(QPaintEvent *event)
     Q_D(HSVColorDial);
 
     const auto metrics = ColorDialMetrics(width(), height());
+    const int pixelRatio = devicePixelRatio();
 
 //    QRgb widgetBackgroundPixel = QWidget::palette().color(QWidget::backgroundRole()).rgba();
     QRgb widgetBackgroundPixel = qRgba(0, 0, 0, 0);
@@ -145,12 +145,12 @@ void HSVColorDial::paintEvent(QPaintEvent *event)
     {
         int dialSize = metrics.size;
         float rFactor = 1.0f;
-        if (qApp->devicePixelRatio() > 1.0)
+        if (pixelRatio > 1)
         {
-            dialSize *= 2;
-            rFactor = 0.5f;
+            dialSize *= pixelRatio;
+            rFactor = 1.0f / pixelRatio;
             d->renderedDial = QImage(dialSize, dialSize, QImage::Format_ARGB32);
-            d->renderedDial.setDevicePixelRatio(2.0f);
+            d->renderedDial.setDevicePixelRatio(pixelRatio);
         }
         else
         {
@@ -195,11 +195,11 @@ void HSVColorDial::paintEvent(QPaintEvent *event)
         int boxSize = boxInnerRadius * 2;
         d->boxRect = QRect(boxOrigin, boxOrigin, boxSize, boxSize);
 
-        if (qApp->devicePixelRatio() > 1.0)
+        if (pixelRatio > 1)
         {
-            boxSize *= 2;
+            boxSize *= pixelRatio;
             d->renderedInnerBox = QImage(boxSize, boxSize, QImage::Format_ARGB32);
-            d->renderedInnerBox.setDevicePixelRatio(2.0f);
+            d->renderedInnerBox.setDevicePixelRatio(pixelRatio);
         }
         else
         {
