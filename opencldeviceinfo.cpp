@@ -23,15 +23,7 @@ OpenCLDeviceInfo::~OpenCLDeviceInfo()
 const QString &OpenCLDeviceInfo::getDeviceName()
 {
     if (deviceName.isEmpty())
-    {
-        size_t deviceNameSize = 0;
-        clGetDeviceInfo(device, CL_DEVICE_NAME, 0, nullptr, &deviceNameSize);
-
-        vector<char> deviceNameBuffer(deviceNameSize);
-        clGetDeviceInfo(device, CL_DEVICE_NAME, deviceNameSize, deviceNameBuffer.data(), nullptr);
-
-        deviceName = QString(deviceNameBuffer.data());
-    }
+        deviceName = getDeviceInfoString(CL_DEVICE_NAME);
 
     return deviceName;
 }
@@ -39,15 +31,7 @@ const QString &OpenCLDeviceInfo::getDeviceName()
 const QString &OpenCLDeviceInfo::getPlatformName()
 {
     if (platformName.isEmpty())
-    {
-        size_t platformNameSize = 0;
-        clGetPlatformInfo(platform, CL_PLATFORM_NAME, 0, nullptr, &platformNameSize);
-
-        vector<char> platformNameBuffer(platformNameSize);
-        clGetPlatformInfo(platform, CL_PLATFORM_NAME, platformNameSize, platformNameBuffer.data(), nullptr);
-
-        platformName = QString(platformNameBuffer.data());
-    }
+        platformName = getPlatformInfoString(CL_PLATFORM_NAME);
 
     return platformName;
 }
@@ -58,6 +42,28 @@ cl_device_type OpenCLDeviceInfo::getType()
     clGetDeviceInfo(device, CL_DEVICE_TYPE, sizeof(devType), &devType, nullptr);
 
     return devType;
+}
+
+QString OpenCLDeviceInfo::getDeviceInfoString(cl_device_info info) const
+{
+    size_t size;
+    if (clGetDeviceInfo(device, info, 0, nullptr, &size) != CL_SUCCESS)
+        return {};
+    QByteArray bytes(size, '\0');
+    if (clGetDeviceInfo(device, info, bytes.size(), bytes.data(), nullptr) != CL_SUCCESS)
+        return {};
+    return bytes;
+}
+
+QString OpenCLDeviceInfo::getPlatformInfoString(cl_device_info info) const
+{
+    size_t size;
+    if (clGetPlatformInfo(platform, info, 0, nullptr, &size) != CL_SUCCESS)
+        return {};
+    QByteArray bytes(size, '\0');
+    if (clGetPlatformInfo(platform, info, bytes.size(), bytes.data(), nullptr) != CL_SUCCESS)
+        return {};
+    return bytes;
 }
 
 std::list<OpenCLDeviceInfo> enumerateOpenCLDevices()

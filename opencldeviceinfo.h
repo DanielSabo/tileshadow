@@ -24,12 +24,16 @@ public:
   const QString  &getDeviceName();
   const QString  &getPlatformName();
   cl_device_type  getType();
+
   template <typename T> T getDeviceInfo(cl_device_info info) const
   {
       T value;
       clGetDeviceInfo(device, info, sizeof(T), &value, nullptr);
       return value;
   }
+
+  QString getDeviceInfoString(cl_device_info info) const;
+  QString getPlatformInfoString(cl_device_info info) const;
 
 private:
   QString deviceName;
