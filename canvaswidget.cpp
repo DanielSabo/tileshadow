@@ -321,26 +321,23 @@ CanvasWidget::~CanvasWidget()
 {
     Q_D(CanvasWidget);
     d->eventThread.stop();
-
-    delete render;
-    delete context;
 }
 
 void CanvasWidget::initializeGL()
 {
     Q_D(CanvasWidget);
 
-    context = new CanvasContext();
-    render = new CanvasRender();
+    context.reset(new CanvasContext());
+    render.reset(new CanvasRender());
 
     SharedOpenCL::getSharedOpenCL();
 
-    render->updateBackgroundTile(context);
+    render->updateBackgroundTile(context.get());
 
     if (window() && window()->windowHandle())
         render->viewPixelRatio = window()->windowHandle()->devicePixelRatio();
 
-    d->eventThread.ctx = context;
+    d->eventThread.ctx = context.get();
     d->eventThread.start();
 
     newDrawing();
@@ -1252,7 +1249,7 @@ CanvasContext *CanvasWidget::getContext()
 
     d->eventThread.sync();
 
-    return context;
+    return context.get();
 }
 
 CanvasContext *CanvasWidget::getContextMaybe()
@@ -1260,7 +1257,7 @@ CanvasContext *CanvasWidget::getContextMaybe()
     Q_D(CanvasWidget);
 
     if (d->eventThread.checkSync())
-        return context;
+        return context.get();
     return nullptr;
 }
 

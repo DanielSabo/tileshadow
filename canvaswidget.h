@@ -155,8 +155,8 @@ private:
     QScopedPointer<CanvasWidgetPrivate> const d_ptr;
     Q_DECLARE_PRIVATE(CanvasWidget)
 
-    CanvasRender *render;
-    CanvasContext *context;
+    std::unique_ptr<CanvasRender> render;
+    std::unique_ptr<CanvasContext> context;
 
     CanvasAction::Action action;
     QColor toolColor;
