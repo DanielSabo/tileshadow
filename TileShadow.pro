@@ -98,7 +98,9 @@ SOURCES += main.cpp\
     patternfilltool.cpp \
     canvasstrokepoint.cpp \
     gbrfile.cpp \
-    filedialog.cpp
+    filedialog.cpp \
+    userpathsdialog.cpp \
+    pathlistwidget.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -146,12 +148,15 @@ HEADERS  += mainwindow.h \
     patternfilltool.h \
     canvasstrokepoint.h \
     gbrfile.h \
-    filedialog.h
+    filedialog.h \
+    userpathsdialog.h \
+    pathlistwidget.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \
     benchmarkdialog.ui \
-    layerlistwidget.ui
+    layerlistwidget.ui \
+    userpathsdialog.ui
 
 win32 {
     win32-msvc* {

@@ -25,6 +25,7 @@
 #include "toollistwidget.h"
 #include "layerlistwidget.h"
 #include "deviceselectdialog.h"
+#include "userpathsdialog.h"
 #include "filedialog.h"
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -147,6 +148,7 @@ void MainWindow::connectActions()
     connect(ui->actionSelect_OpenCL_Device, &QAction::triggered, this, &MainWindow::showDeviceSelect);
     connect(ui->actionShow_OpenCL_Information, &QAction::triggered, this, &MainWindow::showOpenCLInfo);
     connect(ui->actionStatus_Bar, &QAction::toggled, this, &MainWindow::showStatusBar);
+    connect(ui->actionResource_Paths, &QAction::triggered, this, &MainWindow::showResourcePaths);
 }
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event)
@@ -403,6 +405,11 @@ void MainWindow::showToolsFolder()
     {
         qWarning() << "Failed to create path:" << path;
     }
+}
+
+void MainWindow::showResourcePaths()
+{
+    UserPathsDialog().exec();
 }
 
 void MainWindow::actionQuit()

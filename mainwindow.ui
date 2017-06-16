@@ -87,7 +87,7 @@
      <x>0</x>
      <y>0</y>
      <width>561</width>
-     <height>34</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -114,6 +114,8 @@
     <addaction name="actionSelect_OpenCL_Device"/>
     <addaction name="actionShow_OpenCL_Information"/>
     <addaction name="actionStatus_Bar"/>
+    <addaction name="separator"/>
+    <addaction name="actionResource_Paths"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -451,6 +453,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+E</string>
+   </property>
+  </action>
+  <action name="actionResource_Paths">
+   <property name="text">
+    <string>Resource Paths...</string>
    </property>
   </action>
  </widget>
