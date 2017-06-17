@@ -116,6 +116,11 @@ QString ToolFactory::getUserToolsPath()
     return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/mypaint-tools/");
 }
 
+QString ToolFactory::getUserPatternPath()
+{
+    return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/patterns/");
+}
+
 ToolList ToolFactory::listTools()
 {
     ToolList toolList;
@@ -168,7 +173,7 @@ std::unique_ptr<BaseTool> ToolFactory::loadTool(QString toolName)
     {
         QStringList directories = {
             QStringLiteral(":/patterns/"),
-            QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/patterns/")
+            ToolFactory::getUserPatternPath()
         };
 
         directories << QSettings().value("Paths/UserPatterns").toStringList();

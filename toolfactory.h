@@ -14,6 +14,7 @@ namespace ToolFactory {
     std::unique_ptr<BaseTool> loadTool(QString toolName);
     void initializeUserPaths();
     QString getUserToolsPath();
+    QString getUserPatternPath();
     QString defaultToolName();
     QString defaultEraserName();
     QString savePathForExtension(QString extension);
