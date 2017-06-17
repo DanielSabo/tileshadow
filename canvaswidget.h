@@ -9,6 +9,7 @@
 #include "boxcartimer.h"
 #include "blendmodes.h"
 #include "layertype.h"
+#include "layershuffletype.h"
 #include "toolsettinginfo.h"
 #include "canvasstrokepoint.h"
 
@@ -96,6 +97,7 @@ public:
     void duplicateLayer(int layerIndex);
     void moveLayerUp(int layerIndex);
     void moveLayerDown(int layerIndex);
+    void shuffleLayer(int layerIndex, int targetIndex, LayerShuffle::Type op);
     void renameLayer(int layerIndex, QString name);
     void mergeLayerDown(int layerIndex);
     void setLayerVisible(int layerIndex, bool visible);

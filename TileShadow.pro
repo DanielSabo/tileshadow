@@ -150,7 +150,8 @@ HEADERS  += mainwindow.h \
     gbrfile.h \
     filedialog.h \
     userpathsdialog.h \
-    pathlistwidget.h
+    pathlistwidget.h \
+    layershuffletype.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \

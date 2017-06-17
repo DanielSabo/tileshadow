@@ -927,6 +927,98 @@ void CanvasWidget::moveLayerDown(int layerIndex)
     emit updateLayers();
 }
 
+namespace {
+    // True if targetIndex is a descendant of layerIndex
+    bool isDescendant(CanvasStack *stack, int layerIndex, int targetIndex)
+    {
+        auto path = pathFromAbsoluteIndex(stack, targetIndex);
+        CanvasLayer *query = layerFromAbsoluteIndex(stack, layerIndex);
+        QList<CanvasLayer *> *container = &stack->layers;
+
+        for (auto const i: path)
+        {
+            CanvasLayer *layer = container->at(i);
+            container = &layer->children;
+            if (layer == query)
+                return true;
+        }
+
+        return false;
+    }
+}
+
+void CanvasWidget::shuffleLayer(int layerIndex, int targetIndex, LayerShuffle::Type op)
+{
+    if (action != CanvasAction::None)
+        return;
+
+    if (layerIndex == targetIndex)
+        return;
+
+    CanvasContext *ctx = getContext();
+
+    // Refuse to move a layer group inside of itself
+    if (isDescendant(&ctx->layers, layerIndex, targetIndex))
+        return;
+
+    auto parentInfo = parentFromAbsoluteIndex(&ctx->layers, layerIndex);
+    auto targetInfo = parentFromAbsoluteIndex(&ctx->layers, targetIndex);
+
+    if (!parentInfo.element || !targetInfo.element)
+        return;
+
+    // Bail out on operations that will not change the layer order
+    if (op == LayerShuffle::Above)
+    {
+        if (parentInfo.container == targetInfo.container && parentInfo.index == targetInfo.index + 1)
+            return;
+    }
+    else if (op == LayerShuffle::Below)
+    {
+        if (parentInfo.container == targetInfo.container && parentInfo.index == targetInfo.index - 1)
+            return;
+    }
+    else if (op == LayerShuffle::Into)
+    {
+        if (parentInfo.container == &(targetInfo.element->children) && parentInfo.index == targetInfo.element->children.size() - 1)
+            return;
+
+        // Refuse "Into" for a target that is not a layer group
+        if (targetInfo.element->type != LayerType::Group)
+            return;
+    }
+    else
+    {
+        qCritical() << "Invalid layer shuffle operation";
+        return;
+    }
+
+    auto undoEvent = std::unique_ptr<CanvasUndoLayers>(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
+
+    tileSetInsert(ctx->dirtyTiles, dirtyTilesForLayer(&ctx->layers, ctx->currentLayer));
+
+    CanvasLayer *srcLayer = nullptr;
+    std::swap(srcLayer, (*parentInfo.container)[parentInfo.index]);
+
+    if (op == LayerShuffle::Into)
+        targetInfo.element->children.append(srcLayer);
+    else if (op == LayerShuffle::Below)
+        targetInfo.container->insert(targetInfo.index, srcLayer);
+    else // (op == LayerShuffle::Above)
+        targetInfo.container->insert(targetInfo.index + 1, srcLayer);
+
+    parentInfo.container->removeOne(nullptr);
+
+    ctx->addUndoEvent(undoEvent.release());
+    resetCurrentLayer(ctx, absoluteIndexOfLayer(&ctx->layers, srcLayer));
+
+    tileSetInsert(ctx->dirtyTiles, dirtyTilesForLayer(&ctx->layers, ctx->currentLayer));
+
+    update();
+    modified = true;
+    emit updateLayers();
+}
+
 void CanvasWidget::renameLayer(int layerIndex, QString name)
 {
     if (action != CanvasAction::None)
