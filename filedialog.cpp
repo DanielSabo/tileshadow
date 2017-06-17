@@ -84,3 +84,8 @@ QStringList FileDialog::getOpenFileNames(QWidget              *parent,
 {
     return showFileDialog(parent, caption, dir, filter, options, QFileDialog::AcceptOpen, QFileDialog::ExistingFiles);
 }
+
+QString FileDialog::getExistingDirectory(QWidget *parent, const QString &caption, const QString &dir, QFileDialog::Options options)
+{
+    return showFileDialog(parent, caption, dir, QString(), options, QFileDialog::AcceptOpen, QFileDialog::Directory).value(0);
+}
