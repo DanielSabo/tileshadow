@@ -27,6 +27,7 @@ SystemInfoDialog::SystemInfoDialog(QWidget *parent) :
     ui->setupUi(this);
 }
 
+namespace {
 void addSectionHeader(QString &str, QString const &name)
 {
    str.append("<div class=\"sectionHeader\">");
@@ -50,13 +51,13 @@ void addPlatformValue(QString &str, QString const &name, QString const &value)
     str.append("</div>\n");
 
 }
+}
 
 void SystemInfoDialog::showEvent(QShowEvent *event)
 {
     QString queryResultString;
 
     QOpenGLFunctions_3_2_Core gl = QOpenGLFunctions_3_2_Core();
-    gl.initializeOpenGLFunctions();
 
     queryResultString.append("<html><head>\n");
 
@@ -69,15 +70,18 @@ void SystemInfoDialog::showEvent(QShowEvent *event)
 
     queryResultString.append("</head><body><div class=\"queryContent\">\n");
 
-    addSectionHeader(queryResultString, "OpenGL");
+    //FIXME: This isn't safe because we don't know which context is bound
+    if (gl.initializeOpenGLFunctions())
+    {
+        addSectionHeader(queryResultString, "OpenGL");
 
-    addPlatformHeader(queryResultString, (const char *)gl.glGetString(GL_VENDOR));
-    addPlatformValue(queryResultString, "Renderer", (const char *)gl.glGetString(GL_RENDERER));
-    addPlatformValue(queryResultString, "GL Version", (const char *)gl.glGetString(GL_VERSION));
-    addPlatformValue(queryResultString, "GLSL Version", (const char *)gl.glGetString(GL_SHADING_LANGUAGE_VERSION));
+        addPlatformHeader(queryResultString, (const char *)gl.glGetString(GL_VENDOR));
+        addPlatformValue(queryResultString, "Renderer", (const char *)gl.glGetString(GL_RENDERER));
+        addPlatformValue(queryResultString, "GL Version", (const char *)gl.glGetString(GL_VERSION));
+        addPlatformValue(queryResultString, "GLSL Version", (const char *)gl.glGetString(GL_SHADING_LANGUAGE_VERSION));
+    }
 
     addSectionHeader(queryResultString, "OpenCL");
-
 
     cl_platform_id activePlatform = 0;
     cl_device_id activeDevice = 0;
@@ -90,7 +94,7 @@ void SystemInfoDialog::showEvent(QShowEvent *event)
         activeDeviceShared = context->gl_sharing;
     }
 
-    for (auto &deviceInfo: enumerateOpenCLDevices())
+    for (OpenCLDeviceInfo &deviceInfo: enumerateOpenCLDevices())
     {
         QString devStr;
 
@@ -108,33 +112,25 @@ void SystemInfoDialog::showEvent(QShowEvent *event)
 
         addPlatformHeader(queryResultString, devStr);
 
-        char infoReturnStr[1024];
-        cl_uint infoReturnInt = 0;
-        clGetDeviceInfo(deviceInfo.device, CL_DEVICE_VERSION, sizeof(infoReturnStr), infoReturnStr, nullptr);
-        addPlatformValue(queryResultString, nullptr, infoReturnStr);
+        QString deviceVersionString = deviceInfo.getDeviceInfoString(CL_DEVICE_VERSION);
+        addPlatformValue(queryResultString, QString(), deviceVersionString);
+
+        cl_uint nvComputeMajor = deviceInfo.getDeviceInfo<cl_uint>(CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV);
+        cl_uint nvComputeMinor = deviceInfo.getDeviceInfo<cl_uint>(CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV);;
+
+        if (nvComputeMajor != 0)
+            addPlatformValue(queryResultString, "NVIDIA Compute Capability", QStringLiteral("%1.%2").arg(nvComputeMajor).arg(nvComputeMinor));
+
+        cl_uint nvWarpSize = deviceInfo.getDeviceInfo<cl_uint>(CL_DEVICE_WARP_SIZE_NV);
+
+        if (nvWarpSize != 0)
+            addPlatformValue(queryResultString, "NVIDIA Warp Size", QString::number(nvWarpSize));
+
+        cl_uint maxComputeUnits = deviceInfo.getDeviceInfo<cl_uint>(CL_DEVICE_MAX_COMPUTE_UNITS);
+        addPlatformValue(queryResultString, "Compute Units", QString::number(maxComputeUnits));
 
         {
-            cl_uint nvComputeMajor = 0;
-            cl_uint nvComputeMinor = 0;
-            if (CL_SUCCESS == clGetDeviceInfo(deviceInfo.device, CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV, sizeof(nvComputeMajor), &nvComputeMajor, nullptr)
-                &&
-                CL_SUCCESS == clGetDeviceInfo(deviceInfo.device, CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV, sizeof(nvComputeMinor), &nvComputeMinor, nullptr))
-            {
-                addPlatformValue(queryResultString, "NVIDIA Compute Capability", QStringLiteral("%1.%2").arg(nvComputeMajor).arg(nvComputeMinor));
-            }
-        }
-
-        clGetDeviceInfo(deviceInfo.device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(infoReturnInt), &infoReturnInt, nullptr);
-        addPlatformValue(queryResultString, "CL_DEVICE_MAX_COMPUTE_UNITS", QString::number(infoReturnInt));
-
-        if (CL_SUCCESS == clGetDeviceInfo(deviceInfo.device, CL_DEVICE_WARP_SIZE_NV, sizeof(infoReturnInt), &infoReturnInt, nullptr))
-        {
-            addPlatformValue(queryResultString, "CL_DEVICE_WARP_SIZE_NV", QString::number(infoReturnInt));
-        }
-
-        {
-            cl_ulong byteSize;
-            clGetDeviceInfo(deviceInfo.device, CL_DEVICE_GLOBAL_MEM_SIZE, sizeof(byteSize), &byteSize, nullptr);
+            cl_ulong byteSize = deviceInfo.getDeviceInfo<cl_ulong>(CL_DEVICE_GLOBAL_MEM_SIZE);
             QString format = QStringLiteral("%1 bytes");
 
             if (byteSize > 1024)
@@ -149,14 +145,11 @@ void SystemInfoDialog::showEvent(QShowEvent *event)
                 format = QStringLiteral("%1 MB");
             }
 
-            addPlatformValue(queryResultString, "CL_DEVICE_GLOBAL_MEM_SIZE", format.arg(byteSize));
+            addPlatformValue(queryResultString, "Global Memory Size", format.arg(byteSize));
         }
 
-        {
-            cl_bool infoReturnBool;
-            clGetDeviceInfo(deviceInfo.device, CL_DEVICE_HOST_UNIFIED_MEMORY, sizeof(infoReturnBool), &infoReturnBool, nullptr);
-            addPlatformValue(queryResultString, "CL_DEVICE_HOST_UNIFIED_MEMORY", infoReturnBool ? "True" : "False");
-        }
+        cl_bool hostUnifiedMemory = deviceInfo.getDeviceInfo<cl_bool>(CL_DEVICE_HOST_UNIFIED_MEMORY);
+        addPlatformValue(queryResultString, "Host Unified Memory", hostUnifiedMemory ? "Yes" : "No");
     }
 
     queryResultString.append("</div>\n");
