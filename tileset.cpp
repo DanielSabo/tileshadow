@@ -1,6 +1,4 @@
 #include "tileset.h"
-#include "canvaswidget-opencl.h"
-#include "canvastile.h"
 #include <QDebug>
 
 bool _tilePointCompare::operator ()(const QPoint &a, const QPoint &b) const
