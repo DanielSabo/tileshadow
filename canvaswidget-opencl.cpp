@@ -345,27 +345,17 @@ static cl_context createSharedContext()
     vector<cl_platform_id> platforms(numPlatforms);
     clGetPlatformIDs (numPlatforms, platforms.data(), nullptr);
 
-    clGetGLContextInfoKHR_fn clGetGLContextInfoKHR = (clGetGLContextInfoKHR_fn)clGetExtensionFunctionAddress ("clGetGLContextInfoKHR");
-
-    if (!clGetGLContextInfoKHR)
-    {
-        qWarning() << "Could not find shared devices becuase clGetGLContextInfoKHR is unavailable.";
-        return 0;
-    }
-
     for (cl_platform_id platform: platforms)
     {
-        size_t resultSize;
-        clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, 0, nullptr, &resultSize);
-        vector<char> resultStr(resultSize);
-        clGetPlatformInfo(platform, CL_PLATFORM_EXTENSIONS, resultSize, resultStr.data(), nullptr);
-        QStringList platform_extensions = QString(resultStr.data()).split(' ');
+        OpenCLPlatformInfo platformInfo(platform);
 
-        if (platform_extensions.indexOf(QString("cl_khr_gl_sharing")) != -1)
+        if (platformInfo.hasExtension("cl_khr_gl_sharing"))
         {
             cl_int err = CL_SUCCESS;
             cl_device_id device = 0;
             size_t resultSize = 0;
+
+            auto clGetGLContextInfoKHR = (clGetGLContextInfoKHR_fn)platformInfo.getExtensionFunction("clGetGLContextInfoKHR");
 
 #if defined(Q_OS_WIN32)
             cl_context_properties properties[] = {
@@ -385,7 +375,7 @@ static cl_context createSharedContext()
             #error Missing properties
 #endif
 
-            err = clGetGLContextInfoKHR (properties, CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR, sizeof(device), &device, &resultSize);
+            err = clGetGLContextInfoKHR(properties, CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR, sizeof(device), &device, &resultSize);
             check_cl_error(err);
 
             if (err == CL_SUCCESS && resultSize > 0 && device)
