@@ -34,7 +34,7 @@ public:
   }
 
   QString getDeviceInfoString(cl_device_info info) const;
-  QString getPlatformInfoString(cl_device_info info) const;
+  QString getPlatformInfoString(cl_platform_info info) const;
 
 private:
   QString deviceName;

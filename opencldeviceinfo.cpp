@@ -55,7 +55,7 @@ QString OpenCLDeviceInfo::getDeviceInfoString(cl_device_info info) const
     return bytes;
 }
 
-QString OpenCLDeviceInfo::getPlatformInfoString(cl_device_info info) const
+QString OpenCLDeviceInfo::getPlatformInfoString(cl_platform_info info) const
 {
     size_t size;
     if (clGetPlatformInfo(platform, info, 0, nullptr, &size) != CL_SUCCESS)
