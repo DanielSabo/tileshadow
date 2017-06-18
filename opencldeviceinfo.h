@@ -28,7 +28,8 @@ public:
   template <typename T> T getDeviceInfo(cl_device_info info) const
   {
       T value;
-      clGetDeviceInfo(device, info, sizeof(T), &value, nullptr);
+      if (CL_SUCCESS != clGetDeviceInfo(device, info, sizeof(T), &value, nullptr))
+        return {};
       return value;
   }
 
