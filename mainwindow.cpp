@@ -16,7 +16,6 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QClipboard>
-#include <QDesktopServices>
 #include <QMimeData>
 #include "canvastile.h"
 #include "hsvcolordial.h"
@@ -144,7 +143,6 @@ void MainWindow::connectActions()
     // System
     connect(ui->actionCircle_Benchmark, &QAction::triggered, this, &MainWindow::runCircleBenchmark);
     connect(ui->actionCopy_Stroke_Data, &QAction::triggered, this, &MainWindow::actionCopyStrokeData);
-    connect(ui->actionShow_Tools_Folder, &QAction::triggered, this, &MainWindow::showToolsFolder);
     connect(ui->actionSelect_OpenCL_Device, &QAction::triggered, this, &MainWindow::showDeviceSelect);
     connect(ui->actionShow_OpenCL_Information, &QAction::triggered, this, &MainWindow::showOpenCLInfo);
     connect(ui->actionStatus_Bar, &QAction::toggled, this, &MainWindow::showStatusBar);
@@ -392,19 +390,6 @@ void MainWindow::showOpenCLInfo()
 void MainWindow::showDeviceSelect()
 {
     DeviceSelectDialog().exec();
-}
-
-void MainWindow::showToolsFolder()
-{
-    QString path = ToolFactory::getUserToolsPath();
-    if (QDir().mkpath(path))
-    {
-        QDesktopServices::openUrl(QUrl::fromLocalFile(path));
-    }
-    else
-    {
-        qWarning() << "Failed to create path:" << path;
-    }
 }
 
 void MainWindow::showResourcePaths()

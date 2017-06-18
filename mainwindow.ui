@@ -87,7 +87,7 @@
      <x>0</x>
      <y>0</y>
      <width>561</width>
-     <height>22</height>
+     <height>34</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -110,7 +110,6 @@
     <addaction name="actionCircle_Benchmark"/>
     <addaction name="actionCopy_Stroke_Data"/>
     <addaction name="separator"/>
-    <addaction name="actionShow_Tools_Folder"/>
     <addaction name="actionSelect_OpenCL_Device"/>
     <addaction name="actionShow_OpenCL_Information"/>
     <addaction name="actionStatus_Bar"/>
@@ -330,11 +329,6 @@
     <string>Copy Stroke &amp;Data</string>
    </property>
   </action>
-  <action name="actionShow_Tools_Folder">
-   <property name="text">
-    <string>&amp;Show Tools Folder</string>
-   </property>
-  </action>
   <action name="actionOpen_As_Layer">
    <property name="text">
     <string>Open As &amp;Layer...</string>
@@ -363,7 +357,7 @@
   </action>
   <action name="actionDuplicate_Layer">
    <property name="text">
-    <string>Duplicate Layer</string>
+    <string>&amp;Duplicate Layer</string>
    </property>
    <property name="shortcut">
     <string>Shift+D</string>
@@ -371,7 +365,7 @@
   </action>
   <action name="actionToggle_Quickmask">
    <property name="text">
-    <string>Toggle Quickmask</string>
+    <string>Toggle &amp;Quickmask</string>
    </property>
    <property name="shortcut">
     <string>Q</string>
@@ -379,22 +373,22 @@
   </action>
   <action name="actionQuickmask_Cut">
    <property name="text">
-    <string>Quickmask Cut</string>
+    <string>Quic&amp;kmask Cut</string>
    </property>
   </action>
   <action name="actionQuickmask_Copy">
    <property name="text">
-    <string>Quickmask Copy</string>
+    <string>Quickmask C&amp;opy</string>
    </property>
   </action>
   <action name="actionQuickmask_Erase">
    <property name="text">
-    <string>Quickmask Erase</string>
+    <string>Quickmas&amp;k Erase</string>
    </property>
   </action>
   <action name="actionClear_Quickmask">
    <property name="text">
-    <string>Discard Quickmask</string>
+    <string>D&amp;iscard Quickmask</string>
    </property>
    <property name="toolTip">
     <string>Discard Quickmask</string>
@@ -405,7 +399,7 @@
   </action>
   <action name="actionCut">
    <property name="text">
-    <string>Cut</string>
+    <string>Cu&amp;t</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+X</string>
@@ -416,7 +410,7 @@
   </action>
   <action name="actionCopy">
    <property name="text">
-    <string>Copy</string>
+    <string>&amp;Copy</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+C</string>
@@ -427,7 +421,7 @@
   </action>
   <action name="actionPaste">
    <property name="text">
-    <string>Paste</string>
+    <string>&amp;Paste</string>
    </property>
    <property name="toolTip">
     <string>Paste</string>
@@ -441,7 +435,7 @@
   </action>
   <action name="actionEdit_Frame">
    <property name="text">
-    <string>Edit Canvas Frame</string>
+    <string>&amp;Edit Canvas Frame</string>
    </property>
    <property name="shortcut">
     <string>E</string>
@@ -449,7 +443,7 @@
   </action>
   <action name="actionToggle_Frame">
    <property name="text">
-    <string>Toggle Canvas Frame</string>
+    <string>Toggle Canvas &amp;Frame</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+E</string>
@@ -457,7 +451,7 @@
   </action>
   <action name="actionResource_Paths">
    <property name="text">
-    <string>Resource Paths...</string>
+    <string>&amp;Resource Paths...</string>
    </property>
   </action>
  </widget>
