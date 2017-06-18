@@ -3,12 +3,33 @@
 
 #include <list>
 #include <QString>
+#include <QStringList>
 
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
 #else
 #include <CL/cl.h>
 #endif
+
+class OpenCLPlatformInfo
+{
+public:
+    OpenCLPlatformInfo();
+    OpenCLPlatformInfo(cl_platform_id platform);
+
+    cl_platform_id platform;
+
+    bool isNull() { return !platform; }
+    bool is1_2() { return isOpenCL1_2; }
+    bool hasExtension(QString name);
+    void *getExtensionFunction(const char *name);
+
+    QString getPlatformInfoString(cl_platform_info info) const;
+
+private:
+    QStringList extensions;
+    bool isOpenCL1_2;
+};
 
 class OpenCLDeviceInfo
 {
