@@ -302,10 +302,9 @@ void LayerListView::mousePressEvent(QMouseEvent *event)
         d->selectedThing = clickedRow;
         d->nameEditor->setText(d->things[clickedRow].name);
         d->nameEditor->selectAll();
-        int leadingWidth = d->iconSize * 2 + d->vPad * 2;
-        d->nameEditor->move(d->iconSize * 2 + d->vPad * 2,
-                            d->rowSize.height() * d->selectedThing);
-        d->nameEditor->setFixedWidth(width() - leadingWidth - d->vPad);
+        int leadingWidth = d->iconSize * 2 + d->hPad * 2;
+        d->nameEditor->move(leadingWidth, d->rowSize.height() * d->selectedThing);
+        d->nameEditor->setFixedWidth(width() - leadingWidth - d->hPad);
         d->nameEditor->show();
         d->nameEditor->setFocus(Qt::MouseFocusReason);
     }
