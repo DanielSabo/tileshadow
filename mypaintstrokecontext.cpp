@@ -177,7 +177,7 @@ void MyPaintStrokeContext::setMasks(const QList<MaskBuffer> &masks)
         }
 
         if (!clMips.mips.empty())
-        priv->masks.push_back(std::move(clMips));
+            priv->masks.push_back(std::move(clMips));
     }
 }
 
