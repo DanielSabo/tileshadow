@@ -82,4 +82,42 @@ private:
     SharedOpenCL();
 };
 
+namespace cl {
+    static inline cl_mem createImage2D(SharedOpenCL          *opencl,
+                                       cl_mem_flags           flags,
+                                       const cl_image_format *fmt,
+                                       size_t                 width,
+                                       size_t                 height,
+                                       size_t                 row_pitch,
+                                       void                  *host_ptr,
+                                       cl_int                *errcode_ret)
+    {
+#if defined(__APPLE__) && (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_8)
+        cl_image_desc image_desc = {CL_MEM_OBJECT_IMAGE2D, width, height, 0, 0, row_pitch};
+        return clCreateImage(opencl->ctx, flags, fmt, &image_desc, host_ptr, errcode_ret);
+#else
+        return clCreateImage2D(opencl->ctx, flags, fmt, width, height, row_pitch, host_ptr, errcode_ret);
+#endif
+    }
+
+    static inline cl_mem createImage3D(SharedOpenCL          *opencl,
+                                       cl_mem_flags           flags,
+                                       const cl_image_format *fmt,
+                                       size_t                 width,
+                                       size_t                 height,
+                                       size_t                 depth,
+                                       size_t                 row_pitch,
+                                       size_t                 slice_pitch,
+                                       void                  *host_ptr,
+                                       cl_int                *errcode_ret)
+    {
+#if defined(__APPLE__) && (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_8)
+        cl_image_desc image_desc = {CL_MEM_OBJECT_IMAGE3D, width, height, depth, 0, row_pitch, slice_pitch};
+        return clCreateImage(opencl->ctx, flags, fmt, &image_desc, host_ptr, errcode_ret);
+#else
+        return clCreateImage3D(opencl->ctx, flags, fmt, width, height, depth, row_pitch, slice_pitch, host_ptr, errcode_ret);
+#endif
+    }
+}
+
 #endif // CANVASWIDGETOPENCL_H
