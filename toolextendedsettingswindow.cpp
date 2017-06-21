@@ -11,6 +11,7 @@
 #include <QCloseEvent>
 #include <QSettings>
 #include <QDebug>
+#include <QPainter>
 #include <QPushButton>
 #include <QLineEdit>
 #include <QFormLayout>
