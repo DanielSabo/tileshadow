@@ -36,6 +36,7 @@ LayerListWidget::LayerListWidget(CanvasWidget *canvas, QWidget *parent) :
     connect(ui->downLayerButton, SIGNAL(clicked()), this, SLOT(layerListMoveDown()));
     connect(ui->upLayerButton,   SIGNAL(clicked()), this, SLOT(layerListMoveUp()));
 
+    connect(ui->layerList, &LayerListView::shuffleLayers, this, &LayerListWidget::layerListShuffle);
     connect(ui->layerList, &LayerListView::edited, this, &LayerListWidget::layerListItemEdited);
     connect(ui->layerList, &LayerListView::selectionChanged, this, &LayerListWidget::layerListSelectionChanged);
 
@@ -117,6 +118,11 @@ void LayerListWidget::opacitySliderReleased()
     freezeLayerList = false;
 
     updateLayers();
+}
+
+void LayerListWidget::layerListShuffle(int srcIndex, int targetIndex, LayerShuffle::Type op)
+{
+    canvas->shuffleLayer(srcIndex, targetIndex, op);
 }
 
 void LayerListWidget::layerListItemEdited(int row, int column, QVariant const &data)

@@ -8,6 +8,16 @@
 #include <QApplication>
 #include <QLineEdit>
 #include <algorithm>
+#include <QDrag>
+#include <QMimeData>
+
+namespace {
+enum class DragFocus {
+    Above,
+    Below,
+    None
+};
+}
 
 class LayerListViewPrivate
 {
@@ -20,6 +30,7 @@ public:
     bool hasFocus;
     int focusRow;
     int focusColumn;
+    QPoint clickPoint;
 
     QFont unnamedItemFont;
     QString unnamedItemText;
@@ -28,6 +39,11 @@ public:
     QSize rowSize;
 
     QLineEdit *nameEditor;
+
+    QString dragMimeType;
+    DragFocus dragFocus;
+    int dragSelection;
+    int dragIndent;
 
     struct RowEntry {
         RowEntry(CanvasWidget::LayerInfo const &entry)
@@ -52,6 +68,11 @@ public:
     QList<RowEntry> things;
     int selectedThing;
 
+    int clickedRow(int y) {
+        int row = y / rowSize.height();
+        return qBound(0, row, things.size() - 1);
+    }
+
     int clickedColumn(int x) {
         if (x <= (hPad * 2 + iconSize))
             return LayerListView::VisibleColumn;
@@ -59,6 +80,17 @@ public:
             return LayerListView::EditableColumn;
         else
             return LayerListView::NameColumn;
+    }
+
+    int parentForIndent(int target_indent, int row)
+    {
+        while (row > 0)
+        {
+            if (things[row].indent <= target_indent)
+                return row;
+            row--;
+        }
+        return row;
     }
 };
 
@@ -72,6 +104,10 @@ LayerListView::LayerListView(QWidget *parent) :
     setFont(QApplication::font("QAbstractItemView"));
     setBackgroundRole(QPalette::Base);
     setAutoFillBackground(true);
+    setAcceptDrops(true);
+
+    d->dragMimeType = QStringLiteral("application/x-%1-%2-layer-id").arg(QCoreApplication::applicationName().toLower()).arg(QCoreApplication::applicationPid());
+    d->dragFocus = DragFocus::None;
 
     d->unnamedItemFont = font();
     d->unnamedItemFont.setItalic(true);
@@ -177,6 +213,9 @@ void LayerListView::paintEvent(QPaintEvent *event)
     QPainter painter(this);
 
     QSize widgetRowSize(width(), d->rowSize.height());
+    int highlightRow = d->selectedThing;
+    if (d->dragFocus != DragFocus::None)
+        highlightRow = d->dragSelection;
 
     for (int i = 0; i < d->things.size(); ++i)
     {
@@ -187,7 +226,7 @@ void LayerListView::paintEvent(QPaintEvent *event)
 
         if (d->hasFocus && i == d->focusRow && d->focusColumn == NameColumn)
             painter.fillRect(QRect(rowOrigin, widgetRowSize), palette().brush(QPalette::Normal, QPalette::Highlight));
-        else if (i == d->selectedThing)
+        else if (i == highlightRow)
             painter.fillRect(QRect(rowOrigin, widgetRowSize), palette().brush(QPalette::Inactive, QPalette::Highlight));
 
         QRect visibleIconRect = QRect(contentOrigin, QSize(d->iconSize, d->iconSize));
@@ -265,7 +304,7 @@ void LayerListView::paintEvent(QPaintEvent *event)
         painter.save();
         if (d->hasFocus && i == d->focusRow && d->focusColumn == NameColumn)
             painter.setPen(palette().color(QPalette::Normal, QPalette::HighlightedText));
-        else if (i == d->selectedThing)
+        else if (i == highlightRow)
             painter.setPen(palette().color(QPalette::Inactive, QPalette::HighlightedText));
         else
             painter.setPen(palette().color(QPalette::Normal, QPalette::Text));
@@ -282,6 +321,23 @@ void LayerListView::paintEvent(QPaintEvent *event)
 
         painter.restore();
     }
+
+    if (d->dragFocus != DragFocus::None)
+    {
+        int paintRow = d->focusRow;
+        int paintIndent = d->dragIndent;
+
+        if (d->dragFocus == DragFocus::Below)
+            paintRow += 1;
+
+        int x = (d->iconSize + d->hPad) * 2 + d->indentSize * paintIndent;
+        int y = d->rowSize.height() * paintRow - d->vPad * 2;
+        int w = widgetRowSize.width();
+        int h = d->vPad * 4;
+
+        QRect fillRect{x, y, w, h};
+        painter.fillRect(fillRect, palette().brush(QPalette::Normal, QPalette::Highlight));
+    }
 }
 
 void LayerListView::mousePressEvent(QMouseEvent *event)
@@ -293,7 +349,7 @@ void LayerListView::mousePressEvent(QMouseEvent *event)
     if (d->nameEditor->isVisible())
         return;
 
-    int clickedRow = qMax(qMin(event->y() / d->rowSize.height(), d->things.size() - 1), 0);
+    int clickedRow = d->clickedRow(event->y());
     int clickedColumn = d->clickedColumn(event->x());
 
     if (event->type() == QEvent::MouseButtonDblClick &&
@@ -313,6 +369,7 @@ void LayerListView::mousePressEvent(QMouseEvent *event)
         d->hasFocus = true;
         d->focusRow = clickedRow;
         d->focusColumn = d->clickedColumn(event->x());
+        d->clickPoint = event->pos();
     }
     update();
 }
@@ -324,7 +381,7 @@ void LayerListView::mouseReleaseEvent(QMouseEvent *event)
     if (event->button() != Qt::LeftButton)
         return;
 
-    int clickedRow = qMax(qMin(event->y() / d->rowSize.height(), d->things.size() - 1), 0);
+    int clickedRow = d->clickedRow(event->y());
     int clickedColumn = d->clickedColumn(event->x());
 
     if (d->nameEditor->isVisible())
@@ -338,7 +395,7 @@ void LayerListView::mouseReleaseEvent(QMouseEvent *event)
             recalulateSize();
         }
     }
-    else
+    else if (d->hasFocus)
     {
         if (clickedColumn == VisibleColumn)
         {
@@ -372,12 +429,130 @@ void LayerListView::mouseMoveEvent(QMouseEvent *event)
     if (d->nameEditor->isVisible())
         return;
 
-    int clickedRow = qMax(qMin(event->y() / d->rowSize.height(), d->things.size() - 1), 0);
-    int clickedColumn = d->clickedColumn(event->x());
+    if ((d->clickPoint - event->pos()).manhattanLength() > d->rowSize.height() / 2 &&
+         d->focusColumn == LayerListView::NameColumn)
+    {
+        QDrag *drag = new QDrag(this);
+        QMimeData *mimeData = new QMimeData();
 
+        d->dragSelection = d->focusRow;
+        QByteArray layerdata;
+        QDataStream(&layerdata, QIODevice::WriteOnly) << d->things[d->dragSelection].absoluteIndex;
+        mimeData->setData(d->dragMimeType, layerdata);
+        drag->setMimeData(mimeData);
+        drag->setPixmap(QPixmap(":icons/image-x-generic.png"));
+
+        d->hasFocus = false;
+        d->dragFocus = DragFocus::None;
+
+        Qt::DropAction drop = drag->exec(Qt::MoveAction);
+        DragFocus dropFocus = d->dragFocus;
+        d->dragFocus = DragFocus::None;
+
+        if (drop == Qt::MoveAction && dropFocus != DragFocus::None)
+        {
+            int source = d->things[d->dragSelection].absoluteIndex;
+            int target = d->things[d->focusRow].absoluteIndex;
+
+            if (dropFocus == DragFocus::Above)
+            {
+                shuffleLayers(source, target, LayerShuffle::Above);
+            }
+            else if (dropFocus == DragFocus::Below)
+            {
+                if ((d->things[d->focusRow].type == LayerType::Group) &&
+                    (d->dragIndent > d->things[d->focusRow].indent))
+                {
+                    shuffleLayers(source, target, LayerShuffle::Into);
+                }
+                else
+                {
+                    int parentRow = d->parentForIndent(d->dragIndent, d->focusRow);
+                    target = d->things[parentRow].absoluteIndex;
+                    shuffleLayers(source, target, LayerShuffle::Below);
+                }
+            }
+        }
+
+        update();
+
+        // The drag consumes the mouse release event
+    }
+    else
+    {
+        int clickedRow = d->clickedRow(event->y());
+        int clickedColumn = d->clickedColumn(event->x());
+
+        d->hasFocus = (d->focusRow == clickedRow && d->focusColumn == clickedColumn && rect().contains(event->pos()));
+        update();
+    }
+}
+
+void LayerListView::dragEnterEvent(QDragEnterEvent *event)
+{
+    Q_D(LayerListView);
+
+    if (event->mimeData()->hasFormat(d->dragMimeType))
+    {
+        event->acceptProposedAction();
+    }
+}
+
+void LayerListView::dragMoveEvent(QDragMoveEvent *event)
+{
+    Q_D(LayerListView);
+
+    QPoint pos = event->pos();
+
+    int clickedRow = d->clickedRow(pos.y());
+    int clickedColumn = d->clickedColumn(pos.x());
     d->focusRow = clickedRow;
     d->focusColumn = clickedColumn;
+    if (pos.y() - clickedRow * d->rowSize.height() < d->rowSize.height() / 2)
+        d->dragFocus = DragFocus::Above;
+    else
+        d->dragFocus = DragFocus::Below;
+
+    int maxIndent = d->things[d->focusRow].indent;
+    int minIndent = 0;
+    if (d->dragFocus == DragFocus::Below)
+    {
+        if (d->things[d->focusRow].type == LayerType::Group)
+            maxIndent += 1;
+
+        if (d->focusRow < d->things.size() - 1)
+            minIndent = qMin(d->things[d->focusRow + 1].indent, maxIndent);
+        else
+            minIndent = 0;
+    }
+    else
+    {
+        minIndent = maxIndent;
+    }
+
+    d->dragIndent = qBound(minIndent, (pos.x() - (d->iconSize + d->hPad) * 2) / d->indentSize, maxIndent);
+
+    QWidget::dragMoveEvent(event);
     update();
+}
+
+void LayerListView::dragLeaveEvent(QDragLeaveEvent *event)
+{
+    Q_D(LayerListView);
+    d->dragFocus = DragFocus::None;
+
+    QWidget::dragLeaveEvent(event);
+    update();
+}
+
+void LayerListView::dropEvent(QDropEvent *event)
+{
+    Q_D(LayerListView);
+
+    if (event->mimeData()->hasFormat(d->dragMimeType))
+    {
+        event->acceptProposedAction();
+    }
 }
 
 bool LayerListView::eventFilter(QObject *watched, QEvent *event)

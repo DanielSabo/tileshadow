@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <memory>
+#include "layershuffletype.h"
 
 namespace Ui {
 class LayerListWidget;
@@ -37,6 +38,7 @@ private slots:
     void opacitySliderMoved(int value);
     void opacitySliderReleased();
 
+    void layerListShuffle(int srcIndex, int targetIndex, LayerShuffle::Type op);
     void layerListItemEdited(int row, int column, QVariant const &data);
     void layerListSelectionChanged(int row);
 };
