@@ -145,6 +145,7 @@ void MyPaintStrokeContext::setMasks(const QList<MaskBuffer> &masks)
 {
     priv->masks.clear();
     priv->activeMask = 0;
+    auto opencl = SharedOpenCL::getSharedOpenCL();
 
     for (auto const &baseMask: masks)
     {
@@ -158,11 +159,9 @@ void MyPaintStrokeContext::setMasks(const QList<MaskBuffer> &masks)
             cl_int err = CL_SUCCESS;
             cl_image_format fmt = {CL_INTENSITY, CL_UNORM_INT8};
 
-            cl_mem maskImage = clCreateImage2D(SharedOpenCL::getSharedOpenCL()->ctx,
-                                              CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                                              &fmt,
-                                              mask.width(), mask.height(), 0,
-                                              (void *)mask.constData(), &err);
+            cl_mem maskImage = cl::createImage2D(opencl, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, &fmt,
+                                                 mask.width(), mask.height(), 0,
+                                                 (void *)mask.constData(), &err);
             check_cl_error(err);
 
             if (err == CL_SUCCESS)
@@ -194,11 +193,10 @@ void MyPaintStrokeContext::setTexture(const MaskBuffer &texture, float textureOp
         cl_int err = CL_SUCCESS;
         cl_image_format fmt = {CL_INTENSITY, CL_UNORM_INT8};
 
-        cl_mem maskImage = clCreateImage2D(SharedOpenCL::getSharedOpenCL()->ctx,
-                                          CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                                          &fmt,
-                                          texture.width(), texture.height(), 0,
-                                          (void *)texture.constData(), &err);
+        cl_mem maskImage = cl::createImage2D(SharedOpenCL::getSharedOpenCL(),
+                                             CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, &fmt,
+                                             texture.width(), texture.height(), 0,
+                                             (void *)texture.constData(), &err);
         check_cl_error(err);
 
         if (err == CL_SUCCESS)

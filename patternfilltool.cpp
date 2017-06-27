@@ -31,11 +31,10 @@ PatternFillStrokeContext::PatternFillStrokeContext(CanvasLayer *layer, float rad
         cl_int err = CL_SUCCESS;
         cl_image_format fmt = {CL_RGBA, CL_UNORM_INT8};
 
-        pattern = clCreateImage2D(SharedOpenCL::getSharedOpenCL()->ctx,
-                                  CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                                  &fmt,
-                                  image.width(), image.height(), image.bytesPerLine(),
-                                  (void *)image.bits(), &err);
+        pattern = cl::createImage2D(SharedOpenCL::getSharedOpenCL(),
+                                    CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, &fmt,
+                                    image.width(), image.height(), image.bytesPerLine(),
+                                    (void *)image.bits(), &err);
         check_cl_error(err);
 
         if (err != CL_SUCCESS)
