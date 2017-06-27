@@ -2620,7 +2620,7 @@ void CanvasWidget::newDrawing()
     ctx->layers.clearLayers();
     ctx->resetQuickmask();
     ctx->layers.layers.append(new CanvasLayer(QString().sprintf("Layer %02d", ++lastNewLayerNumber)));
-    setActiveLayer(0); // Sync up the undo layer
+    resetCurrentLayer(ctx, 0); // Sync up the undo layer
     d->inactiveFrame = {};
     d->canvasFrame = {};
     canvasOrigin = QPoint(0, 0);
@@ -2660,7 +2660,7 @@ void CanvasWidget::openORA(QString path)
     loadStackFromORA(&ctx->layers, &newFrame, path);
     ctx->resetQuickmask();
     lastNewLayerNumber = findHighestLayerNumber(ctx->layers.layers, layerNameReg);
-    setActiveLayer(0); // Sync up the undo layer
+    resetCurrentLayer(ctx, 0); // Sync up the undo layer
     d->inactiveFrame = {};
     d->canvasFrame = newFrame;
     canvasOrigin = QPoint(0, 0);
@@ -2697,7 +2697,7 @@ void CanvasWidget::openImage(QImage image)
         std::unique_ptr<CanvasLayer> imported = layerFromImage(image);
         imageLayer->takeTiles(imported.get());
     }
-    setActiveLayer(0); // Sync up the undo layer
+    resetCurrentLayer(ctx, 0); // Sync up the undo layer
     d->inactiveFrame = QRect(QPoint(0, 0), image.size());
     d->canvasFrame = {};
     canvasOrigin = QPoint(0, 0);
