@@ -1,13 +1,9 @@
 #include "layerlistview.h"
-#include <QStyle>
-#include <QStyleOption>
-#include <QStylePainter>
 #include <QPainter>
 #include <QDebug>
 #include <QMouseEvent>
 #include <QApplication>
 #include <QLineEdit>
-#include <algorithm>
 #include <QDrag>
 #include <QMimeData>
 
