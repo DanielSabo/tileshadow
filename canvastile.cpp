@@ -1,5 +1,6 @@
 #include "canvaswidget-opencl.h"
 #include "canvastile.h"
+#include <QAtomicInt>
 
 static QAtomicInt privAllocatedTileCount;
 static QAtomicInt privDeviceTileCount;

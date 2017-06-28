@@ -1,9 +1,6 @@
 #ifndef CANVASWIDGETOPENCL_H
 #define CANVASWIDGETOPENCL_H
 
-#include <list>
-#include <QString>
-
 #ifdef __APPLE__
 #include <OpenCL/cl.h>
 #else
