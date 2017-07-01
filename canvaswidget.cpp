@@ -1835,6 +1835,8 @@ void CanvasWidget::endLayerFlash()
         CanvasContext *ctx = getContext();
         ctx->flashStack.reset();
         ctx->dirtyTiles = ctx->layers.getTileSet();
+        if (ctx->quickmask->visible)
+            tileSetInsert(ctx->dirtyTiles, ctx->quickmask->getTileSet());
         d->renderMode = RenderMode::Normal;
         update();
     }
