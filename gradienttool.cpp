@@ -4,7 +4,7 @@
 class GradientToolPrivate
 {
 public:
-    QColor color;
+    QColor color = Qt::red;
 };
 
 class GradientStrokeContext : public StrokeContext
@@ -26,7 +26,6 @@ public:
 GradientTool::GradientTool()
     : priv(new GradientToolPrivate())
 {
-    reset();
 }
 
 GradientTool::~GradientTool()
@@ -43,11 +42,6 @@ BaseTool *GradientTool::clone()
 StrokeContext *GradientTool::newStroke(const StrokeContextArgs &args)
 {
     return new GradientStrokeContext(args.layer, args.unmodifiedLayer, priv->color);
-}
-
-void GradientTool::reset()
-{
-    priv->color = QColor("red");
 }
 
 float GradientTool::getPixelRadius()

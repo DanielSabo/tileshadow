@@ -204,19 +204,18 @@ TileSet RoundBrushStrokeContext::strokeTo(QPointF point, float pressure, float d
 class RoundBrushToolPrivate
 {
 public:
-    float radius;
-    float r;
-    float g;
-    float b;
-    float a;
+    float radius = 10.0f;
+    float r = 0.0f;
+    float g = 0.0f;
+    float b = 0.0f;
+    float a = 1.0f;
 
-    float minRadiusCoef;
-    float minAlphaCoef;
+    float minRadiusCoef = 0.4f;
+    float minAlphaCoef = 1.0f;
 };
 
 RoundBrushTool::RoundBrushTool() : priv(new RoundBrushToolPrivate())
 {
-    reset();
 }
 
 RoundBrushTool::~RoundBrushTool()
@@ -229,18 +228,6 @@ BaseTool *RoundBrushTool::clone()
     *result->priv = *priv;
 
     return result;
-}
-
-
-void RoundBrushTool::reset()
-{
-    priv->radius = 10.0f;
-    priv->r = 0.0f;
-    priv->g = 0.0f;
-    priv->b = 0.0f;
-    priv->a = 1.0f;
-    priv->minRadiusCoef = 0.4f;
-    priv->minAlphaCoef = 1.0f;
 }
 
 float RoundBrushTool::getPixelRadius()

@@ -13,7 +13,6 @@ public:
     ~PatternFillTool() override;
     BaseTool *clone() override;
 
-    void reset() override;
     float getPixelRadius() override;
     void setColor(const QColor &color) override;
 

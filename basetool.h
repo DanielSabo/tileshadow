@@ -24,7 +24,6 @@ public:
     virtual BaseTool *clone() = 0;
     virtual StrokeContext *newStroke(StrokeContextArgs const &args) = 0;
 
-    virtual void reset() = 0;
     virtual float getPixelRadius() = 0;
     virtual void setColor(QColor const &color);
     virtual bool coalesceMovement();

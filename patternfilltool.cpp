@@ -159,7 +159,12 @@ PatternFillTool::PatternFillTool(QStringList const &patternPaths) :
         }
     }
 
-    reset();
+    if (priv->patterns.empty())
+        priv->selectedPattern = QString();
+    else
+        priv->selectedPattern = priv->patterns.first();
+    priv->radiusExp = 3.0f;
+    priv->loadImage();
 }
 
 
@@ -176,16 +181,6 @@ PatternFillTool::~PatternFillTool()
 BaseTool *PatternFillTool::clone()
 {
     return new PatternFillTool(*this);
-}
-
-void PatternFillTool::reset()
-{
-    if (priv->patterns.empty())
-        priv->selectedPattern = QString();
-    else
-        priv->selectedPattern = priv->patterns.first();
-    priv->radiusExp = 3.0f;
-    priv->loadImage();
 }
 
 void PatternFillTool::setToolSetting(QString const &name, QVariant const &value)

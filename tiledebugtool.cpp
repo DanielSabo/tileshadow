@@ -3,7 +3,6 @@
 #include "canvastile.h"
 #include "paintutils.h"
 #include <qmath.h>
-#include <QColor>
 #include <QVariant>
 
 class TileDebugStrokeContext : public StrokeContext
@@ -104,14 +103,12 @@ class TileDebugToolPrivate
 {
 public:
 
-    float radius;
-    QColor color;
+    float radius = 10.0f;
 };
 
 TileDebugTool::TileDebugTool() :
     priv(new TileDebugToolPrivate)
 {
-    reset();
 }
 
 TileDebugTool::~TileDebugTool()
@@ -124,12 +121,6 @@ BaseTool *TileDebugTool::clone()
     *result->priv = *priv;
 
     return result;
-}
-
-void TileDebugTool::reset()
-{
-    priv->color = QColor::fromRgbF(0.0, 0.0, 0.0);
-    priv->radius = 10.0f;
 }
 
 void TileDebugTool::setToolSetting(QString const &name, QVariant const &value)

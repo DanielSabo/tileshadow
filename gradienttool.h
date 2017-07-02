@@ -13,7 +13,6 @@ public:
     BaseTool *clone() override;
     StrokeContext *newStroke(StrokeContextArgs const &args) override;
 
-    void reset() override;
     float getPixelRadius() override;
     void setColor(QColor const &color) override;
     bool coalesceMovement() override;

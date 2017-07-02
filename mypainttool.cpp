@@ -44,14 +44,10 @@ typedef QMap<QString, QList<QPointF>> BrushValueMapping;
 class MyPaintToolPrivate
 {
 public:
-    MyPaintToolSettings originalSettings;
-    MyPaintToolSettings currentSettings;
-    QList<MaskBuffer> currentMaskImages;
-    QList<MaskBuffer> originalMaskImages;
-    MaskBuffer originalTexture;
-    MaskBuffer currentTexture;
-    float originalTextureOpacity = 1.0f;
-    float currentTextureOpacity = 1.0f;
+    MyPaintToolSettings settings;
+    QList<MaskBuffer> maskImages;
+    MaskBuffer texture;
+    float textureOpacity = 1.0f;
 
     float cursorRadius;
 
@@ -66,27 +62,22 @@ public:
 
 void MyPaintToolPrivate::setBrushValue(QString name, float value)
 {
-    currentSettings[name].first = value;
-}
-
-float MyPaintToolPrivate::getOriginalBrushValue(QString name)
-{
-    return originalSettings[name].first;
+    settings[name].first = value;
 }
 
 float MyPaintToolPrivate::getBrushValue(QString name)
 {
-    return currentSettings[name].first;
+    return settings[name].first;
 }
 
 QMap<QString, QList<QPointF> > MyPaintToolPrivate::getBrushMapping(QString name)
 {
-    return currentSettings[name].second;
+    return settings[name].second;
 }
 
 void MyPaintToolPrivate::setBrushMapping(QString name, BrushValueMapping &&mapping)
 {
-    currentSettings[name].second = mapping;
+    settings[name].second = mapping;
 }
 
 void MyPaintToolPrivate::updateRadius()
@@ -205,7 +196,7 @@ MyPaintTool::MyPaintTool(const QString &path) : priv(new MyPaintToolPrivate())
                 else
                     throw QString("MBI brush error, empty mask");
             }
-            priv->originalMaskImages = masks;
+            priv->maskImages = masks;
 
             QString textureStr = settingsObj.value("texture").toString();
             if (!textureStr.isEmpty())
@@ -215,24 +206,20 @@ MyPaintTool::MyPaintTool(const QString &path) : priv(new MyPaintToolPrivate())
                 mask.loadFromData(decoded);
                 if (mask.isNull())
                     throw QString("MBI brush error, failed to decode texture");
-                priv->originalTexture = MaskBuffer(mask);
+                priv->texture = MaskBuffer(mask);
             }
 
-            priv->originalTextureOpacity = settingsObj.value("texture_opacity").toDouble(1.0);
+            priv->textureOpacity = settingsObj.value("texture_opacity").toDouble(1.0);
         }
 
-        priv->originalSettings = settings;
+        priv->settings = settings;
     }
     catch (QString err)
     {
         qWarning() << (path + ":") << err;
-        priv->originalSettings = MyPaintToolSettings();
+        priv->settings = MyPaintToolSettings();
     }
 
-    priv->currentSettings = priv->originalSettings;
-    priv->currentMaskImages = priv->originalMaskImages;
-    priv->currentTexture = priv->originalTexture;
-    priv->currentTextureOpacity = priv->originalTextureOpacity;
     priv->updateRadius();
 }
 
@@ -248,15 +235,6 @@ MyPaintTool::~MyPaintTool()
 BaseTool *MyPaintTool::clone()
 {
     return new MyPaintTool(*this);
-}
-
-void MyPaintTool::reset()
-{
-    priv->currentSettings = priv->originalSettings;
-    priv->currentMaskImages = priv->originalMaskImages;
-    priv->currentTexture = priv->originalTexture;
-    priv->currentTextureOpacity = priv->originalTextureOpacity;
-    priv->updateRadius();
 }
 
 namespace {
@@ -285,23 +263,23 @@ void MyPaintTool::setToolSetting(QString const &inName, QVariant const &value)
 
     if (name == QStringLiteral("masks"))
     {
-        priv->currentMaskImages = value.value<QList<MaskBuffer>>();
+        priv->maskImages = value.value<QList<MaskBuffer>>();
         return;
     }
     else if (name == QStringLiteral("texture"))
     {
-        priv->currentTexture = value.value<MaskBuffer>();
+        priv->texture = value.value<MaskBuffer>();
         return;
     }
     else if (name == QStringLiteral("texture_opacity"))
     {
-        priv->currentTextureOpacity = qBound<float>(0.0f, value.toFloat(), 1.0f);
+        priv->textureOpacity = qBound<float>(0.0f, value.toFloat(), 1.0f);
         return;
     }
     else if (isMapping)
     {
-        auto iter = priv->currentSettings.find(name);
-        if (iter != priv->currentSettings.end())
+        auto iter = priv->settings.find(name);
+        if (iter != priv->settings.end())
         {
             BrushValueMapping mappingSet = value.value<BrushValueMapping>();
             for (auto const &mapping: mappingSet)
@@ -348,18 +326,18 @@ QVariant MyPaintTool::getToolSetting(const QString &inName)
         name.chop(MAPPING_SUFFIX.length());
 
     if (name == QStringLiteral("masks"))
-        return QVariant::fromValue(priv->currentMaskImages);
+        return QVariant::fromValue(priv->maskImages);
     else if (name == QStringLiteral("texture"))
-        return QVariant::fromValue(priv->currentTexture);
+        return QVariant::fromValue(priv->texture);
     else if (name == QStringLiteral("texture_opacity"))
-        return QVariant::fromValue(priv->currentTextureOpacity);
+        return QVariant::fromValue(priv->textureOpacity);
     else if (name == QStringLiteral("size"))
         name = QStringLiteral("radius_logarithmic");
     else if (BOOL_SETTING_NAMES.contains(name))
         isBoolean = true;
 
-    auto iter = priv->currentSettings.find(name);
-    if (iter != priv->currentSettings.end())
+    auto iter = priv->settings.find(name);
+    if (iter != priv->settings.end())
     {
         if (isMapping)
             return QVariant::fromValue<BrushValueMapping>(iter.value().second);
@@ -387,7 +365,7 @@ QList<ToolSettingInfo> MyPaintTool::listToolSettings()
 
     result.append(ToolSettingInfo::exponentSlider("size", "SizeExp", -2.0f, 6.0f));
     result.append(ToolSettingInfo::linearSlider("opaque", "Opacity", 0.0f, 1.0f));
-    if (priv->currentMaskImages.isEmpty())
+    if (priv->maskImages.isEmpty())
         result.append(ToolSettingInfo::linearSlider("hardness", "Hardness", 0.0f, 1.0f));
     result.append(ToolSettingInfo::checkbox("lock_alpha", "Lock Alpha"));
     result.append(ToolSettingInfo::checkbox("eraser", "Erase"));
@@ -491,7 +469,7 @@ QByteArray MyPaintTool::serialize()
     document["parent_brush_name"] = "";
 
     QVariantMap settingsMap;
-    for (auto iter = priv->currentSettings.cbegin(); iter != priv->currentSettings.cend(); ++iter)
+    for (auto iter = priv->settings.cbegin(); iter != priv->settings.cend(); ++iter)
     {
         QVariantMap settingMap;
         QVariantMap inputMap;
@@ -515,10 +493,10 @@ QByteArray MyPaintTool::serialize()
     document["settings"] = settingsMap;
 
     QVariantMap imageSettingsMap;
-    if (!priv->currentMaskImages.isEmpty())
+    if (!priv->maskImages.isEmpty())
     {
         QVariantList maskList;
-        for (auto const &mask: priv->currentMaskImages)
+        for (auto const &mask: priv->maskImages)
         {
             MaskBuffer inverted = mask.invert();
             maskList.append(QString(inverted.toPNG().toBase64()));
@@ -526,11 +504,11 @@ QByteArray MyPaintTool::serialize()
         imageSettingsMap["masks"] = maskList;
     }
 
-    if (!priv->currentTexture.isNull())
-        imageSettingsMap["texture"] = QString(priv->currentTexture.toPNG().toBase64());
+    if (!priv->texture.isNull())
+        imageSettingsMap["texture"] = QString(priv->texture.toPNG().toBase64());
 
-    if (priv->currentTextureOpacity != 1.0f)
-        imageSettingsMap["texture_opacity"] = priv->currentTextureOpacity;
+    if (priv->textureOpacity != 1.0f)
+        imageSettingsMap["texture_opacity"] = priv->textureOpacity;
 
     if (!imageSettingsMap.empty())
         document["image_settings"] = imageSettingsMap;
@@ -554,11 +532,11 @@ StrokeContext *MyPaintTool::newStroke(const StrokeContextArgs &args)
 {
     MyPaintStrokeContext *stroke = new MyPaintStrokeContext(args.layer);
 
-    stroke->fromSettings(priv->currentSettings);
-    stroke->setMasks(priv->currentMaskImages);
+    stroke->fromSettings(priv->settings);
+    stroke->setMasks(priv->maskImages);
 
-    if (!priv->currentTexture.isNull())
-        stroke->setTexture(priv->currentTexture, priv->currentTextureOpacity);
+    if (!priv->texture.isNull())
+        stroke->setTexture(priv->texture, priv->textureOpacity);
 
     return stroke;
 }
