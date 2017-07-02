@@ -32,16 +32,16 @@ GradientTool::~GradientTool()
 {
 }
 
-BaseTool *GradientTool::clone()
+std::unique_ptr<BaseTool> GradientTool::clone()
 {
-    GradientTool *clone = new GradientTool();
+    std::unique_ptr<GradientTool> clone(new GradientTool);
     *clone->priv = *priv;
-    return clone;
+    return std::move(clone);
 }
 
-StrokeContext *GradientTool::newStroke(const StrokeContextArgs &args)
+std::unique_ptr<StrokeContext> GradientTool::newStroke(StrokeContextArgs const &args)
 {
-    return new GradientStrokeContext(args.layer, args.unmodifiedLayer, priv->color);
+    return std::unique_ptr<GradientStrokeContext>(new GradientStrokeContext(args.layer, args.unmodifiedLayer, priv->color));
 }
 
 float GradientTool::getPixelRadius()

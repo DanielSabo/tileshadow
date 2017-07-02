@@ -115,12 +115,12 @@ TileDebugTool::~TileDebugTool()
 {
 }
 
-BaseTool *TileDebugTool::clone()
+std::unique_ptr<BaseTool> TileDebugTool::clone()
 {
-    TileDebugTool *result = new TileDebugTool();
+    std::unique_ptr<TileDebugTool> result(new TileDebugTool);
     *result->priv = *priv;
 
-    return result;
+    return std::move(result);
 }
 
 void TileDebugTool::setToolSetting(QString const &name, QVariant const &value)
@@ -168,9 +168,9 @@ void TileDebugTool::setColor(const QColor &color)
 
 }
 
-StrokeContext *TileDebugTool::newStroke(const StrokeContextArgs &args)
+std::unique_ptr<StrokeContext> TileDebugTool::newStroke(const StrokeContextArgs &args)
 {
-    TileDebugStrokeContext *result = new TileDebugStrokeContext(args.layer, priv->radius);
+    std::unique_ptr<TileDebugStrokeContext> result(new TileDebugStrokeContext(args.layer, priv->radius));
 
-    return result;
+    return std::move(result);
 }

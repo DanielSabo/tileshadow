@@ -232,9 +232,9 @@ MyPaintTool::~MyPaintTool()
 {
 }
 
-BaseTool *MyPaintTool::clone()
+std::unique_ptr<BaseTool> MyPaintTool::clone()
 {
-    return new MyPaintTool(*this);
+    return std::unique_ptr<MyPaintTool>(new MyPaintTool(*this));
 }
 
 namespace {
@@ -528,9 +528,9 @@ void MyPaintTool::setColor(const QColor &color)
     priv->setBrushValue("color_v", color.valueF());
 }
 
-StrokeContext *MyPaintTool::newStroke(const StrokeContextArgs &args)
+std::unique_ptr<StrokeContext> MyPaintTool::newStroke(const StrokeContextArgs &args)
 {
-    MyPaintStrokeContext *stroke = new MyPaintStrokeContext(args.layer);
+    std::unique_ptr<MyPaintStrokeContext> stroke(new MyPaintStrokeContext(args.layer));
 
     stroke->fromSettings(priv->settings);
     stroke->setMasks(priv->maskImages);
@@ -538,5 +538,5 @@ StrokeContext *MyPaintTool::newStroke(const StrokeContextArgs &args)
     if (!priv->texture.isNull())
         stroke->setTexture(priv->texture, priv->textureOpacity);
 
-    return stroke;
+    return std::move(stroke);
 }

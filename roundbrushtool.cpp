@@ -222,12 +222,12 @@ RoundBrushTool::~RoundBrushTool()
 {
 }
 
-BaseTool *RoundBrushTool::clone()
+std::unique_ptr<BaseTool> RoundBrushTool::clone()
 {
-    RoundBrushTool *result = new RoundBrushTool();
+    std::unique_ptr<RoundBrushTool> result(new RoundBrushTool);
     *result->priv = *priv;
 
-    return result;
+    return std::move(result);
 }
 
 float RoundBrushTool::getPixelRadius()
@@ -302,9 +302,9 @@ QList<ToolSettingInfo> RoundBrushTool::listToolSettings()
     return result;
 }
 
-StrokeContext *RoundBrushTool::newStroke(const StrokeContextArgs &args)
+std::unique_ptr<StrokeContext> RoundBrushTool::newStroke(const StrokeContextArgs &args)
 {
-    RoundBrushStrokeContext *result = new RoundBrushStrokeContext(args.layer, args.unmodifiedLayer);
+    std::unique_ptr<RoundBrushStrokeContext> result(new RoundBrushStrokeContext(args.layer, args.unmodifiedLayer));
     result->radius = priv->radius;
     result->r = priv->r;
     result->g = priv->g;
@@ -314,5 +314,5 @@ StrokeContext *RoundBrushTool::newStroke(const StrokeContextArgs &args)
     result->minRadiusCoef = priv->minRadiusCoef;
     result->minAlphaCoef  = priv->minAlphaCoef;
 
-    return result;
+    return std::move(result);
 }

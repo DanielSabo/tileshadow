@@ -265,9 +265,8 @@ std::shared_ptr<BaseTool> CanvasWidgetPrivate::loadToolMaybe(const QString &tool
         if (!loaded)
             return nullptr;
 
-        //FIXME: Should not require an explicit constructor because clone should return a C++11 style pointer
-        std::shared_ptr<BaseTool> current = std::shared_ptr<BaseTool>(loaded->clone());
-        ToolListEntry entry = {current, std::move(loaded)};
+        std::shared_ptr<BaseTool> current = loaded->clone();
+        ToolListEntry entry = {std::move(current), std::move(loaded)};
         iter = tools.emplace(toolName, std::move(entry)).first;
     }
 
@@ -478,7 +477,8 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
     if (!d->currentLayerEditable)
         return;
 
-    BaseTool *strokeTool = d->activeTool->clone();
+    //FIXME: This should be a unique_ptr but C++14 is required to capture that in the lambda
+    BaseTool *strokeTool = d->activeTool->clone().release();
 
     if (strokeTool->coalesceMovement())
         d->motionCoalesceToken.reset(new QAtomicInt(0));
@@ -498,7 +498,7 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
             return;
 
         StrokeContextArgs args = {targetLayer, undoLayer};
-        ctx->stroke.reset(strokeTool->newStroke(args));
+        ctx->stroke = strokeTool->newStroke(args);
 
         TileSet changedTiles = ctx->stroke->startStroke(pos, pressure);
 
@@ -600,10 +600,11 @@ void CanvasWidget::startLine()
 {
     Q_D(CanvasWidget);
 
+    //FIXME: This should be a unique_ptr but C++14 is required to capture that in the lambda
     BaseTool *strokeTool = nullptr;
 
     if (d->activeTool && d->currentLayerEditable)
-        strokeTool = d->activeTool->clone();
+        strokeTool = d->activeTool->clone().release();
 
     d->motionCoalesceToken.reset(new QAtomicInt(0));
 
@@ -2553,8 +2554,7 @@ void CanvasWidget::resetToolSettings()
         return;
 
     auto &entry = d->tools[d->activeToolPath];
-    //FIXME: Should not require an explicit constructor because clone should return a C++11 style pointer
-    entry.current = std::shared_ptr<BaseTool>(entry.original->clone());
+    entry.current = entry.original->clone();
     d->activeTool = entry.current;
     d->activeTool->setColor(toolColor);
 

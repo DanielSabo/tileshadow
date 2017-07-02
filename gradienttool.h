@@ -10,8 +10,8 @@ public:
     GradientTool();
     ~GradientTool() override;
 
-    BaseTool *clone() override;
-    StrokeContext *newStroke(StrokeContextArgs const &args) override;
+    std::unique_ptr<BaseTool> clone() override;
+    std::unique_ptr<StrokeContext> newStroke(StrokeContextArgs const &args) override;
 
     float getPixelRadius() override;
     void setColor(QColor const &color) override;

@@ -9,7 +9,7 @@ class RoundBrushTool : public BaseTool
 public:
     RoundBrushTool();
     ~RoundBrushTool() override;
-    BaseTool *clone() override;
+    std::unique_ptr<BaseTool> clone() override;
 
     float getPixelRadius() override;
     void setColor(const QColor &color) override;
@@ -18,7 +18,7 @@ public:
     virtual QVariant getToolSetting(QString const &name) override;
     virtual QList<ToolSettingInfo> listToolSettings() override;
 
-    StrokeContext *newStroke(StrokeContextArgs const &args) override;
+    std::unique_ptr<StrokeContext> newStroke(StrokeContextArgs const &args) override;
 
 private:
     std::unique_ptr<RoundBrushToolPrivate> priv;

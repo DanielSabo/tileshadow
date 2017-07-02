@@ -178,9 +178,9 @@ PatternFillTool::~PatternFillTool()
 {
 }
 
-BaseTool *PatternFillTool::clone()
+std::unique_ptr<BaseTool> PatternFillTool::clone()
 {
-    return new PatternFillTool(*this);
+    return std::unique_ptr<PatternFillTool>(new PatternFillTool(*this));
 }
 
 void PatternFillTool::setToolSetting(QString const &name, QVariant const &value)
@@ -239,10 +239,10 @@ void PatternFillTool::setColor(const QColor &color)
 
 }
 
-StrokeContext *PatternFillTool::newStroke(const StrokeContextArgs &args)
+std::unique_ptr<StrokeContext> PatternFillTool::newStroke(const StrokeContextArgs &args)
 {
-    PatternFillStrokeContext *result = new PatternFillStrokeContext(args.layer, exp(priv->radiusExp), priv->image);
+    std::unique_ptr<PatternFillStrokeContext> result(new PatternFillStrokeContext(args.layer, exp(priv->radiusExp), priv->image));
 
-    return result;
+    return std::move(result);
 }
 

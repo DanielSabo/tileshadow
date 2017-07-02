@@ -10,7 +10,7 @@ class MyPaintTool : public BaseTool
 public:
     explicit MyPaintTool(const QString &path);
     ~MyPaintTool() override;
-    BaseTool *clone() override;
+    std::unique_ptr<BaseTool> clone() override;
 
     float getPixelRadius() override;
     void setColor(const QColor &color) override;
@@ -22,7 +22,7 @@ public:
     virtual QString saveExtension() override;
     virtual QByteArray serialize() override;
 
-    StrokeContext *newStroke(StrokeContextArgs const &args) override;
+    std::unique_ptr<StrokeContext> newStroke(StrokeContextArgs const &args) override;
 
 private:
     MyPaintTool(const MyPaintTool &tool);

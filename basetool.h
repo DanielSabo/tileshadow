@@ -21,8 +21,8 @@ class BaseTool
 public:
     BaseTool();
     virtual ~BaseTool();
-    virtual BaseTool *clone() = 0;
-    virtual StrokeContext *newStroke(StrokeContextArgs const &args) = 0;
+    virtual std::unique_ptr<BaseTool> clone() = 0;
+    virtual std::unique_ptr<StrokeContext> newStroke(StrokeContextArgs const &args) = 0;
 
     virtual float getPixelRadius() = 0;
     virtual void setColor(QColor const &color);
