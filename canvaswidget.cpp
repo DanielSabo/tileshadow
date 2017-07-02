@@ -105,7 +105,13 @@ public:
 
     QString activeToolPath;
     std::shared_ptr<BaseTool> activeTool;
-    std::map<QString, std::shared_ptr<BaseTool>> tools;
+
+    struct ToolListEntry {
+        std::shared_ptr<BaseTool> current;
+        std::unique_ptr<BaseTool> original;
+    };
+
+    std::map<QString, ToolListEntry> tools;
 
     CanvasEventThread eventThread;
 
@@ -142,6 +148,7 @@ public:
     RectHandle::Handle frameRectHandle(QPoint pos);
     CanvasAction::Action actionForMouseEvent(int button, Qt::KeyboardModifiers modifiers);
     void updateEditable(CanvasContext *ctx);
+    std::shared_ptr<BaseTool> loadToolMaybe(QString const &toolName);
 };
 
 CanvasWidgetPrivate::CanvasWidgetPrivate()
@@ -247,6 +254,24 @@ void CanvasWidgetPrivate::updateEditable(CanvasContext *ctx)
         currentLayerEditable = currentLayerMoveable;
     else
         currentLayerEditable = false;
+}
+
+std::shared_ptr<BaseTool> CanvasWidgetPrivate::loadToolMaybe(const QString &toolName)
+{
+    auto iter = tools.find(toolName);
+    if (iter == tools.end())
+    {
+        std::unique_ptr<BaseTool> loaded = ToolFactory::loadTool(toolName);
+        if (!loaded)
+            return nullptr;
+
+        //FIXME: Should not require an explicit constructor because clone should return a C++11 style pointer
+        std::shared_ptr<BaseTool> current = std::shared_ptr<BaseTool>(loaded->clone());
+        ToolListEntry entry = {current, std::move(loaded)};
+        iter = tools.emplace(toolName, std::move(entry)).first;
+    }
+
+    return iter->second.current;
 }
 
 CanvasWidget::CanvasWidget(QWidget *parent) :
@@ -2405,28 +2430,12 @@ void CanvasWidget::setActiveTool(const QString &toolName)
         return;
 
     d->activeToolPath = toolName;
-
-    auto found = d->tools.find(toolName);
-
-    if (found != d->tools.end())
+    d->activeTool = d->loadToolMaybe(d->activeToolPath);
+    if (!d->activeTool)
     {
-        d->activeTool = found->second;
-    }
-    else if ((d->activeTool = ToolFactory::loadTool(toolName)) != nullptr)
-    {
-        d->tools[toolName] = d->activeTool;
-    }
-    else
-    {
-        qWarning() << "Unknown tool set \'" << toolName << "\', using debug";
+        qWarning() << "Unknown tool set \'" << d->activeToolPath << "\', using debug";
         d->activeToolPath = QStringLiteral("debug");
-        d->activeTool = d->tools[d->activeToolPath];
-
-        if (!d->activeTool)
-        {
-            d->activeTool = ToolFactory::loadTool(d->activeToolPath);
-            d->tools[d->activeToolPath] = d->activeTool;
-        }
+        d->activeTool = d->loadToolMaybe(d->activeToolPath);
     }
 
     if (d->activeTool)
@@ -2543,7 +2552,10 @@ void CanvasWidget::resetToolSettings()
     if (!d->activeTool)
         return;
 
-    d->activeTool->reset();
+    auto &entry = d->tools[d->activeToolPath];
+    //FIXME: Should not require an explicit constructor because clone should return a C++11 style pointer
+    entry.current = std::shared_ptr<BaseTool>(entry.original->clone());
+    d->activeTool = entry.current;
     d->activeTool->setColor(toolColor);
 
     emit updateTool();
