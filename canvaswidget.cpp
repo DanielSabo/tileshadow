@@ -115,27 +115,27 @@ public:
 
     CanvasEventThread eventThread;
 
-    bool showToolCursor;
-    bool currentLayerEditable;
-    bool currentLayerMoveable;
-    bool quickmaskActive;
+    bool showToolCursor = false;
+    bool currentLayerEditable = false;
+    bool currentLayerMoveable = false;
+    bool quickmaskActive = false;
 
-    bool deviceIsEraser;
-    CanvasAction::Action primaryAction;
-    Qt::KeyboardModifiers keyModifiers;
-    SavedTabletEvent lastTabletEvent;
-    ulong strokeEventTimestamp; // last stroke event time, in milliseconds
+    bool deviceIsEraser = false;
+    CanvasAction::Action primaryAction = CanvasAction::MouseStroke;
+    Qt::KeyboardModifiers keyModifiers = Qt::NoModifier;
+    SavedTabletEvent lastTabletEvent = {0, };
+    ulong strokeEventTimestamp = 0; // last stroke event time, in milliseconds
     std::list<CanvasStrokePoint> savedStrokePoints;
 
-    int nextFrameDelay;
+    int nextFrameDelay = 15;
     QTimer frameTickTrigger;
     QElapsedTimer lastFrameTimer;
-    RenderMode::Mode renderMode;
+    RenderMode::Mode renderMode = RenderMode::Normal;
     QTimer layerFlashTimeout;
     QColor dotPreviewColor;
     QRect inactiveFrame;
     QRect canvasFrame;
-    RectHandle::Handle canvasFrameHandle;
+    RectHandle::Handle canvasFrameHandle = RectHandle::None;
     std::shared_ptr<QAtomicInt> motionCoalesceToken;
 
     struct {
@@ -154,21 +154,7 @@ public:
 CanvasWidgetPrivate::CanvasWidgetPrivate()
 {
     lastFrameTimer.invalidate();
-    nextFrameDelay = 15;
-    activeTool = nullptr;
-    quickmaskActive = false;
-    deviceIsEraser = false;
-    primaryAction = CanvasAction::MouseStroke;
-    keyModifiers = 0;
-    lastTabletEvent = {0, };
-    strokeEventTimestamp = 0;
-    showToolCursor = false;
-    currentLayerEditable = false;
-    currentLayerMoveable = false;
-    renderMode = RenderMode::Normal;
     layerFlashTimeout.setSingleShot(true);
-    dotPreviewColor = QColor();
-    canvasFrameHandle = RectHandle::None;
 }
 
 CanvasWidgetPrivate::~CanvasWidgetPrivate()
