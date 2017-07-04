@@ -1957,6 +1957,15 @@ bool CanvasWidget::eventFilter(QObject *obj, QEvent *event)
     return QGLWidget::eventFilter(obj, event);
 }
 
+namespace {
+QPoint snapPoint(QPoint p)
+{
+    if (abs(p.x()) > abs(p.y()))
+        return {p.x(), 0};
+    return {0, p.y()};
+}
+}
+
 void CanvasWidget::mousePressEvent(QMouseEvent *event)
 {
     Q_D(CanvasWidget);
@@ -2081,6 +2090,8 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
             action = CanvasAction::None;
             actionButton = Qt::NoButton;
 
+            if (event->modifiers().testFlag(Qt::ShiftModifier))
+                offset = snapPoint(offset);
             translateCurrentLayer(offset.x(), offset.y());
         }
         else if (action == CanvasAction::EditFrame)
@@ -2126,6 +2137,8 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
         QPoint offset = event->pos() - actionOrigin;
         offset /= viewScale;
 
+        if (event->modifiers().testFlag(Qt::ShiftModifier))
+            offset = snapPoint(offset);
         updateLayerTranslate(offset.x(), offset.y());
     }
     else if (action == CanvasAction::EditFrame)
