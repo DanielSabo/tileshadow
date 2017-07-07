@@ -457,23 +457,23 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
 {
     Q_D(CanvasWidget);
 
-    if (!d->activeTool)
+    if (!d->activeTool || !d->currentLayerEditable)
         return;
 
-    if (!d->currentLayerEditable)
-        return;
+    auto strokeTool = std::make_shared<std::unique_ptr<BaseTool>>();
+    *strokeTool = d->activeTool->clone();
 
-    //FIXME: This should be a unique_ptr but C++14 is required to capture that in the lambda
-    BaseTool *strokeTool = d->activeTool->clone().release();
-
-    if (strokeTool->coalesceMovement())
+    if ((*strokeTool)->coalesceMovement())
         d->motionCoalesceToken.reset(new QAtomicInt(0));
     else
         d->motionCoalesceToken.reset();
 
     auto msg = [strokeTool, pos, pressure](CanvasContext *ctx) {
-        ctx->strokeTool.reset(strokeTool);
-        ctx->stroke.reset(nullptr);
+        ctx->strokeTool = std::move(*strokeTool);
+        ctx->stroke.reset();
+
+        if (!ctx->strokeTool)
+            return;
 
         CanvasLayer *targetLayer, *undoLayer;
         getPaintingTargets(ctx, targetLayer, undoLayer);
@@ -484,7 +484,7 @@ void CanvasWidget::startStroke(QPointF pos, float pressure)
             return;
 
         StrokeContextArgs args = {targetLayer, undoLayer};
-        ctx->stroke = strokeTool->newStroke(args);
+        ctx->stroke = ctx->strokeTool->newStroke(args);
 
         TileSet changedTiles = ctx->stroke->startStroke(pos, pressure);
 
@@ -586,16 +586,15 @@ void CanvasWidget::startLine()
 {
     Q_D(CanvasWidget);
 
-    //FIXME: This should be a unique_ptr but C++14 is required to capture that in the lambda
-    BaseTool *strokeTool = nullptr;
+    auto strokeTool = std::make_shared<std::unique_ptr<BaseTool>>();
 
     if (d->activeTool && d->currentLayerEditable)
-        strokeTool = d->activeTool->clone().release();
+        *strokeTool = d->activeTool->clone();
 
     d->motionCoalesceToken.reset(new QAtomicInt(0));
 
     auto msg = [strokeTool](CanvasContext *ctx) {
-        ctx->strokeTool.reset(strokeTool);
+        ctx->strokeTool = std::move(*strokeTool);
         ctx->stroke.reset();
         ctx->strokeModifiedTiles.clear();
 
