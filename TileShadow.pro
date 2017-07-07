@@ -159,6 +159,11 @@ FORMS    += mainwindow.ui \
     layerlistwidget.ui \
     userpathsdialog.ui
 
+mac {
+    HEADERS += machelpers.h
+    OBJECTIVE_SOURCES = machelpers.mm
+}
+
 win32 {
     win32-msvc* {
         INCLUDEPATH += "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v5.5\include"
@@ -172,7 +177,7 @@ win32 {
     RC_FILE = tileshadow.rc
 } mac {
     QMAKE_CXXFLAGS += -framework OpenCL -Qunused-arguments
-    LIBS += -framework OpenCL
+    LIBS += -framework OpenCL -framework AppKit
     ICON = TileShadow.icns
     QMAKE_INFO_PLIST = Info.plist
 } unix:!mac {

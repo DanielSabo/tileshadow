@@ -8,6 +8,9 @@
 #include "nativeeventfilter.h"
 #include "deviceselectdialog.h"
 #include "batchprocessor.h"
+#ifdef Q_OS_MAC
+#include "machelpers.h"
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -22,6 +25,7 @@ int main(int argc, char *argv[])
 
 #ifdef Q_OS_MAC
     QSettings::setDefaultFormat(QSettings::NativeFormat);
+    disableAutoTabBar();
 #else
     QSettings::setDefaultFormat(QSettings::IniFormat);
 #endif
