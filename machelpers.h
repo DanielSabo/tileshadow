@@ -1,6 +1,8 @@
 #ifndef MACHELPERS_H
 #define MACHELPERS_H
 
-void disableAutoTabBar();
+namespace PlatformHelpers {
+    void macDisableAutoTabBar();
+}
 
-#endif
+#endif // MACHELPERS_H
