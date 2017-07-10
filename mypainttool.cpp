@@ -432,6 +432,7 @@ QList<ToolSettingInfo> MyPaintTool::listAdvancedSettings()
         {"random", "Random"},
         {"stroke", "Stroke"},
         {"direction", "Direction"},
+        {"direction_angle", "Direction 360"},
         {"tilt_declination", "Declination"},
         {"tilt_ascension", "Ascension"},
         {"custom", "Custom"}
