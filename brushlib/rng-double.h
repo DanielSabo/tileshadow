@@ -1,11 +1,18 @@
 #ifndef RNGDOUBLE_H
 #define RNGDOUBLE_H
 
+#include "mypaint-config.h"
+
+#if MYPAINT_CONFIG_USE_GLIB
+#include <glib.h>
+#else // not MYPAINT_CONFIG_USE_GLIB
 #include <mypaint-glib-compat.h>
+#endif
+
 
 G_BEGIN_DECLS
 
-typedef struct _RngDouble RngDouble;
+typedef struct RngDouble RngDouble;
 
 RngDouble* rng_double_new(long seed);
 void rng_double_free(RngDouble *self);

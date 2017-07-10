@@ -1,7 +1,7 @@
 #ifndef MYPAINTBRUSH_H
 #define MYPAINTBRUSH_H
 
-/* brushlib - The MyPaint Brush Library
+/* libmypaint - The MyPaint Brush Library
  * Copyright (C) 2008 Martin Renold <martinxyz@gmx.ch>
  * Copyright (C) 2012 Jon Nordby <jononor@gmail.com>
  *
@@ -18,17 +18,13 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <mypaint-glib-compat.h>
+#include <mypaint-config.h>
 #include <mypaint-surface.h>
 #include <mypaint-brush-settings.h>
 
 G_BEGIN_DECLS
 
-typedef struct _MyPaintBrush MyPaintBrush;
-
-#if MYPAINT_CONFIG_USE_GLIB
-#include <glib/mypaint-brush.h>
-#endif // MYPAINT_CONFIG_USE_GLIB
+typedef struct MyPaintBrush MyPaintBrush;
 
 MyPaintBrush *
 mypaint_brush_new(void);

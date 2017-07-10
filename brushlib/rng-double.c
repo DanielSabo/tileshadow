@@ -21,6 +21,8 @@
  * independent generator objects. All changes made to this file are considered
  * to be in the public domain. */
 
+
+
 #include "rng-double.h"
 
 #include <stdlib.h>
@@ -49,7 +51,7 @@
 const double ranf_arr_dummy=-1.0;
 const double ranf_arr_started=-1.0;
 
-struct _RngDouble {
+struct RngDouble {
     double ran_u[KK];           /* the generator state */
     double ranf_arr_buf[QUALITY];
     double *ranf_arr_ptr; /* the next random fraction, or -1 */

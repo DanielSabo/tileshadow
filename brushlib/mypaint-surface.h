@@ -1,7 +1,7 @@
 #ifndef MYPAINTSURFACE_H
 #define MYPAINTSURFACE_H
 
-/* brushlib - The MyPaint Brush Library
+/* libmypaint - The MyPaint Brush Library
  * Copyright (C) 2008 Martin Renold <martinxyz@gmx.ch>
  * Copyright (C) 2012 Jon Nordby <jononor@gmail.com>
  *
@@ -18,21 +18,19 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <mypaint-glib-compat.h>
+#include <mypaint-config.h>
 #include <mypaint-rectangle.h>
 
 G_BEGIN_DECLS
 
-typedef struct _MyPaintSurface MyPaintSurface;
+typedef struct MyPaintSurface MyPaintSurface;
 
-struct _MyPaintSurface;
-
-typedef void (*MyPaintSurfaceGetColorFunction) (struct _MyPaintSurface *self,
+typedef void (*MyPaintSurfaceGetColorFunction) (MyPaintSurface *self,
                                                 float x, float y,
                                                 float radius,
                                                 float * color_r, float * color_g, float * color_b, float * color_a
                                                 );
-typedef int (*MyPaintSurfaceDrawDabFunction) (struct _MyPaintSurface *self,
+typedef int (*MyPaintSurfaceDrawDabFunction) (MyPaintSurface *self,
                        float x, float y,
                        float radius,
                        float color_r, float color_g, float color_b,
@@ -42,13 +40,13 @@ typedef int (*MyPaintSurfaceDrawDabFunction) (struct _MyPaintSurface *self,
                        float lock_alpha,
                        float colorize);
 
-typedef void (*MyPaintSurfaceDestroyFunction) (struct _MyPaintSurface *self);
+typedef void (*MyPaintSurfaceDestroyFunction) (MyPaintSurface *self);
 
-typedef void (*MyPaintSurfaceSavePngFunction) (struct _MyPaintSurface *self, const char *path, int x, int y, int width, int height);
+typedef void (*MyPaintSurfaceSavePngFunction) (MyPaintSurface *self, const char *path, int x, int y, int width, int height);
 
-typedef void (*MyPaintSurfaceBeginAtomicFunction) (struct _MyPaintSurface *self);
+typedef void (*MyPaintSurfaceBeginAtomicFunction) (MyPaintSurface *self);
 
-typedef void (*MyPaintSurfaceEndAtomicFunction) (struct _MyPaintSurface *self, MyPaintRectangle *roi);
+typedef void (*MyPaintSurfaceEndAtomicFunction) (MyPaintSurface *self, MyPaintRectangle *roi);
 
 /**
   * MyPaintSurface:
@@ -56,7 +54,7 @@ typedef void (*MyPaintSurfaceEndAtomicFunction) (struct _MyPaintSurface *self, M
   * Abstract surface type for the MyPaint brush engine. The surface interface
   * lets the brush engine specify dabs to render, and to pick color.
   */
-struct _MyPaintSurface {
+struct MyPaintSurface {
     MyPaintSurfaceDrawDabFunction draw_dab;
     MyPaintSurfaceGetColorFunction get_color;
     MyPaintSurfaceBeginAtomicFunction begin_atomic;

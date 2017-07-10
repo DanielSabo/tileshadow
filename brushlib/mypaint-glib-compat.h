@@ -3,13 +3,7 @@
 
 #include <mypaint-config.h>
 
-#if MYPAINT_CONFIG_USE_GLIB
-
-#include <glib.h>
-
-#else // not MYPAINT_CONFIG_USE_GLIB
-
-#ifndef __G_LIB_H_
+#ifndef __G_LIB_H__
 
 /* From $INCLUDEPATH/glib-2.0/glib/gmacros.h */
 #ifdef  __cplusplus
@@ -20,13 +14,8 @@
 # define G_END_DECLS
 #endif
 
-#ifndef	FALSE
 #define	FALSE	(0)
-#endif
-
-#ifndef	TRUE
 #define	TRUE	(!FALSE)
-#endif
 
 typedef void * gpointer;
 
@@ -38,8 +27,6 @@ typedef gint gboolean;
 /* From $LIBPATH/glib-2.0/include/glibconfig.h */
 typedef unsigned short guint16;
 
-#endif // __G_LIB_H_
-
-#endif // MYPAINT_CONFIG_USE_GLIB
+#endif // __G_LIB_H__
 
 #endif // MYPAINTGLIBCOMPAT_H

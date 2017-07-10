@@ -1,4 +1,4 @@
-/* brushlib - The MyPaint Brush Library
+/* libmypaint - The MyPaint Brush Library
  * Copyright (C) 2012 Jon Nordby <jononor@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
@@ -14,6 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+
+
 #include "mypaint-brush-settings.h"
 
 #include <string.h>
@@ -26,7 +28,7 @@
   #define N_(String) (String)
   #define  _(String) gettext (String)
 #else
-  #define dgettext(a,b) (a)
+  #define dgettext(Domain,String) (String)
   #define N_(String) (String)
   #define  _(String) (String)
 #endif // HAVE_GETTEXT
@@ -78,13 +80,13 @@ mypaint_brush_input_info(MyPaintBrushInput id)
 const gchar *
 mypaint_brush_input_info_get_name(const MyPaintBrushInputInfo *self)
 {
-    return dgettext(self->name, GETTEXT_PACKAGE);
+    return dgettext(GETTEXT_PACKAGE, self->name);
 }
 
 const gchar *
 mypaint_brush_input_info_get_tooltip(const MyPaintBrushInputInfo *self)
 {
-    return dgettext(self->tooltip, GETTEXT_PACKAGE);
+    return dgettext(GETTEXT_PACKAGE, self->tooltip);
 }
 
 MyPaintBrushInput

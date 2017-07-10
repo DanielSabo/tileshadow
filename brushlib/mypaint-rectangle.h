@@ -1,7 +1,7 @@
 #ifndef MYPAINTRECTANGLE_H
 #define MYPAINTRECTANGLE_H
 
-/* brushlib - The MyPaint Brush Library
+/* libmypaint - The MyPaint Brush Library
  * Copyright (C) 2008 Martin Renold <martinxyz@gmx.ch>
  * Copyright (C) 2012 Jon Nordby <jononor@gmail.com>
  *
@@ -18,6 +18,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <mypaint-config.h>
 #include <mypaint-glib-compat.h>
 
 G_BEGIN_DECLS

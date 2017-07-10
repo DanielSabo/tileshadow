@@ -1,7 +1,7 @@
 #ifndef MYPAINTBRUSHSETTINGS_H
 #define MYPAINTBRUSHSETTINGS_H
 
-/* brushlib - The MyPaint Brush Library
+/* libmypaint - The MyPaint Brush Library
  * Copyright (C) 2012 Jon Nordby <jononor@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
@@ -17,8 +17,11 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <mypaint-config.h>
 #include <mypaint-glib-compat.h>
 #include <mypaint-brush-settings-gen.h>
+
+G_BEGIN_DECLS
 
 typedef struct {
     const gchar *cname;
@@ -62,5 +65,7 @@ mypaint_brush_input_info_get_tooltip(const MyPaintBrushInputInfo *self);
 
 MyPaintBrushInput
 mypaint_brush_input_from_cname(const char *cname);
+
+G_END_DECLS
 
 #endif // MYPAINTBRUSHSETTINGS_H
