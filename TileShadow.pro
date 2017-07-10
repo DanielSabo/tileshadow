@@ -53,6 +53,9 @@ DEFINES += CL_USE_DEPRECATED_OPENCL_2_1_APIS
 DEFINES += CL_USE_DEPRECATED_OPENCL_2_2_APIS
 # Disable lodepng's file operations, which have deprecation warnings on Win32
 DEFINES += LODEPNG_NO_COMPILE_DISK
+# zlib configuration
+unix: DEFINES += Z_HAVE_UNISTD_H
+DEFINES += Z_HAVE_STDARG_H
 
 SOURCES += main.cpp\
         mainwindow.cpp \
