@@ -1963,6 +1963,13 @@ QPoint snapPoint(QPoint p)
         return {p.x(), 0};
     return {0, p.y()};
 }
+
+QPointF snapPoint(QPointF p)
+{
+    if (fabs(p.x()) > fabs(p.y()))
+        return {p.x(), 0};
+    return {0, p.y()};
+}
 }
 
 void CanvasWidget::mousePressEvent(QMouseEvent *event)
@@ -2089,7 +2096,7 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
             action = CanvasAction::None;
             actionButton = Qt::NoButton;
 
-            if (event->modifiers().testFlag(Qt::ShiftModifier))
+            if (event->modifiers() & Qt::ShiftModifier)
                 offset = snapPoint(offset);
             translateCurrentLayer(offset.x(), offset.y());
         }
@@ -2123,6 +2130,8 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
     {
         QPointF start = (actionOrigin + canvasOrigin) / viewScale;
         QPointF end = (event->localPos() + canvasOrigin) / viewScale;
+        if (event->modifiers() & Qt::ShiftModifier)
+            end = snapPoint(end - start) + start;
         lineTo(start, end);
     }
     else if (action == CanvasAction::MoveView)
@@ -2136,7 +2145,7 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
         QPoint offset = event->pos() - actionOrigin;
         offset /= viewScale;
 
-        if (event->modifiers().testFlag(Qt::ShiftModifier))
+        if (event->modifiers() & Qt::ShiftModifier)
             offset = snapPoint(offset);
         updateLayerTranslate(offset.x(), offset.y());
     }
