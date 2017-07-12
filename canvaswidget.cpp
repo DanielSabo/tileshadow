@@ -190,23 +190,24 @@ RectHandle::Handle CanvasWidgetPrivate::frameRectHandle(QPoint pos)
 
 CanvasAction::Action CanvasWidgetPrivate::actionForMouseEvent(int button, Qt::KeyboardModifiers modifiers)
 {
+    bool modShift = modifiers & Qt::ShiftModifier;
 #ifdef Q_OS_MAC
     // If Meta is active button 1 will becomes button 2 when clicked
     if (button == 1 && modifiers.testFlag(Qt::MetaModifier))
         button = 2;
-    modifiers &= Qt::ShiftModifier | Qt::ControlModifier;
+    modifiers &= Qt::ControlModifier;
 #else
-    modifiers &= Qt::ShiftModifier | Qt::ControlModifier | Qt::MetaModifier;
+    modifiers &= Qt::ControlModifier | Qt::MetaModifier;
 #endif
 
     if (button == 1)
     {
         if (modifiers == 0)
             return primaryAction;
+        else if (modifiers == Qt::ControlModifier && modShift)
+            return CanvasAction::ColorPickMerged;
         else if (modifiers == Qt::ControlModifier)
             return CanvasAction::ColorPick;
-        else if (modifiers == (Qt::ControlModifier | Qt::ShiftModifier))
-            return CanvasAction::ColorPickMerged;
     }
     else if (button == 2)
     {
