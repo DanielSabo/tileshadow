@@ -542,16 +542,22 @@ SharedOpenCL::SharedOpenCL()
     {
         mypaintDabKernel = buildOrWarn(myPaintKernelsProg, "mypaint_dab");
         mypaintDabLockedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_dab_locked");
+        mypaintDabIsolateKernel = buildOrWarn(myPaintKernelsProg, "mypaint_dab_isolate");
         mypaintMicroDabKernel = buildOrWarn(myPaintKernelsProg, "mypaint_micro");
         mypaintMicroDabLockedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_micro_locked");
+        mypaintMicroDabIsolateKernel = buildOrWarn(myPaintKernelsProg, "mypaint_micro_isolate");
         mypaintMaskDabKernel = buildOrWarn(myPaintKernelsProg, "mypaint_mask");
         mypaintMaskDabLockedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_mask_locked");
+        mypaintMaskDabIsolateKernel = buildOrWarn(myPaintKernelsProg, "mypaint_mask_isolate");
         mypaintDabTexturedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_dab_textured");
         mypaintDabLockedTexturedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_dab_locked_textured");
+        mypaintDabIsolateTexturedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_dab_isolate_textured");
         mypaintMicroDabTexturedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_micro_textured");
         mypaintMicroDabLockedTexturedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_micro_locked_textured");
+        mypaintMicroDabIsolateTexturedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_micro_isolate_textured");
         mypaintMaskDabTexturedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_mask_textured");
         mypaintMaskDabLockedTexturedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_mask_locked_textured");
+        mypaintMaskDabIsolateTexturedKernel = buildOrWarn(myPaintKernelsProg, "mypaint_mask_isolate_textured");
         mypaintGetColorKernelPart1 = buildOrWarn(myPaintKernelsProg, "mypaint_color_query_part1");
         mypaintGetColorKernelEmptyPart1 = buildOrWarn(myPaintKernelsProg, "mypaint_color_query_empty_part1");
         mypaintGetColorKernelPart2 = buildOrWarn(myPaintKernelsProg, "mypaint_color_query_part2");

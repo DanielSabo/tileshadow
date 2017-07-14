@@ -47,6 +47,7 @@ public:
     QList<MaskBuffer> maskImages;
     MaskBuffer texture;
     float textureOpacity = 1.0f;
+    bool isolate = false;
     QString description;
     QString notes;
 
@@ -223,6 +224,12 @@ MyPaintTool::MyPaintTool(const QString &path) : priv(new MyPaintToolPrivate())
             }
 
             priv->textureOpacity = settingsObj.value("texture_opacity").toDouble(1.0);
+
+            QJsonValue isolateValue = settingsObj.value("isolate");
+            if (isolateValue.isDouble())
+                priv->isolate = settingsObj.value("isolate").toDouble(0.0);
+            else
+                priv->isolate = settingsObj.value("isolate").toBool(false);
         }
 
         priv->settings = settings;
@@ -287,6 +294,11 @@ void MyPaintTool::setToolSetting(QString const &inName, QVariant const &value)
     else if (name == QStringLiteral("texture_opacity"))
     {
         priv->textureOpacity = qBound<float>(0.0f, value.toFloat(), 1.0f);
+        return;
+    }
+    else if (name == QStringLiteral("isolate"))
+    {
+        priv->isolate = value.toBool();
         return;
     }
     else if (name == QStringLiteral("description"))
@@ -354,6 +366,8 @@ QVariant MyPaintTool::getToolSetting(const QString &inName)
         return QVariant::fromValue(priv->texture);
     else if (name == QStringLiteral("texture_opacity"))
         return QVariant::fromValue(priv->textureOpacity);
+    else if (name == QStringLiteral("isolate"))
+        return QVariant::fromValue(priv->isolate);
     else if (name == QStringLiteral("description"))
         return QVariant::fromValue(priv->description);
     else if (name == QStringLiteral("notes"))
@@ -481,6 +495,7 @@ QList<ToolSettingInfo> MyPaintTool::listAdvancedSettings()
     result.append(ToolSettingInfo::text("description", "Description", false));
     result.append(ToolSettingInfo::text("notes", "Notes", true));
 
+    result.append(ToolSettingInfo::checkbox("isolate", "Isolate Mode"));
     result.append(ToolSettingInfo::linearSlider("texture_opacity", "Texture Opacity", 0.0f, 1.0f));
 
     return result;
@@ -543,6 +558,9 @@ QByteArray MyPaintTool::serialize()
     if (priv->textureOpacity != 1.0f)
         imageSettingsMap["texture_opacity"] = priv->textureOpacity;
 
+    if (priv->isolate)
+        imageSettingsMap["isolate"] = priv->isolate;
+
     if (!imageSettingsMap.empty())
         document["image_settings"] = imageSettingsMap;
 
@@ -563,10 +581,11 @@ void MyPaintTool::setColor(const QColor &color)
 
 std::unique_ptr<StrokeContext> MyPaintTool::newStroke(const StrokeContextArgs &args)
 {
-    std::unique_ptr<MyPaintStrokeContext> stroke(new MyPaintStrokeContext(args.layer));
+    std::unique_ptr<MyPaintStrokeContext> stroke(new MyPaintStrokeContext(args.layer, args.unmodifiedLayer));
 
     stroke->fromSettings(priv->settings);
     stroke->setMasks(priv->maskImages);
+    stroke->setIsolate(priv->isolate);
 
     if (!priv->texture.isNull())
         stroke->setTexture(priv->texture, priv->textureOpacity);

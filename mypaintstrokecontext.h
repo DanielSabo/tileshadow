@@ -13,7 +13,7 @@ class MyPaintStrokeContextPrivate;
 class MyPaintStrokeContext : public StrokeContext
 {
 public:
-    MyPaintStrokeContext(CanvasLayer *layer);
+    MyPaintStrokeContext(CanvasLayer *layer, CanvasLayer const *srcLayer);
     ~MyPaintStrokeContext() override;
 
     TileSet startStroke(QPointF point, float pressure) override;
@@ -23,6 +23,7 @@ public:
     void fromDefaults();
     void setMasks(QList<MaskBuffer> const &masks = QList<MaskBuffer>());
     void setTexture(const MaskBuffer &texture, float textureOpacity);
+    void setIsolate(bool isolate);
 
     std::unique_ptr<MyPaintStrokeContextPrivate> priv;
 };

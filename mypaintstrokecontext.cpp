@@ -76,13 +76,19 @@ CLMaskImage::~CLMaskImage()
 class MyPaintStrokeContextPrivate
 {
 public:
-    MyPaintBrush            *brush;
-    int                      activeMask;
+    MyPaintBrush            *brush = nullptr;
+    int                      activeMask = 0;
     std::vector<MipSet<CLMaskImage>> masks;
     CLMaskImage              texture;
-    float                    textureOpacity;
+    float                    textureOpacity = 0.0f;
     CanvasMyPaintSurface     surface;
     TileSet                  modTiles;
+    const CanvasLayer       *srcLayer = nullptr;
+    std::unique_ptr<CanvasLayer> isolateLayer;
+    bool                     isolateLockAlpha = false;
+    bool                     isolateErase = false;
+
+    void renderIsolate(CanvasLayer *layer, QPoint p);
 };
 
 bool MyPaintStrokeContext::fromSettings(const MyPaintToolSettings &settings)
@@ -206,7 +212,15 @@ void MyPaintStrokeContext::setTexture(const MaskBuffer &texture, float textureOp
     }
 }
 
-MyPaintStrokeContext::MyPaintStrokeContext(CanvasLayer *layer)
+void MyPaintStrokeContext::setIsolate(bool isolate)
+{
+    if (isolate)
+        priv->isolateLayer.reset(new CanvasLayer);
+    else
+        priv->isolateLayer.reset();
+}
+
+MyPaintStrokeContext::MyPaintStrokeContext(CanvasLayer *layer, const CanvasLayer *srcLayer)
     : StrokeContext(layer), priv(new MyPaintStrokeContextPrivate())
 {
     priv->brush = mypaint_brush_new();
@@ -215,6 +229,7 @@ MyPaintStrokeContext::MyPaintStrokeContext(CanvasLayer *layer)
     priv->surface.strokeContext = this;
     priv->surface.draw_dab = drawDabFunction;
     priv->surface.get_color = getColorFunction;
+    priv->srcLayer = srcLayer;
 }
 
 MyPaintStrokeContext::~MyPaintStrokeContext()
@@ -228,6 +243,17 @@ TileSet MyPaintStrokeContext::startStroke(QPointF point, float pressure)
     mypaint_brush_reset (priv->brush);
     mypaint_brush_new_stroke(priv->brush);
 
+    if (priv->isolateLayer)
+    {
+        priv->isolateLockAlpha = mypaint_brush_get_base_value(priv->brush, MYPAINT_BRUSH_SETTING_LOCK_ALPHA) > 0.0f;
+        priv->isolateErase = mypaint_brush_get_base_value(priv->brush, MYPAINT_BRUSH_SETTING_ERASER) > 0.0f;
+    }
+    else
+    {
+        priv->isolateLockAlpha = false;
+        priv->isolateErase = false;
+    }
+
     priv->modTiles.clear();
     mypaint_brush_stroke_to(priv->brush, &priv->surface,
                             point.x(), point.y(),
@@ -238,6 +264,11 @@ TileSet MyPaintStrokeContext::startStroke(QPointF point, float pressure)
                             point.x(), point.y(),
                             pressure /* pressure */, 0.0f /* xtilt */, 0.0f /* ytilt */,
                             1.0f / 60.0f /* deltaTime in seconds */);
+
+    if (priv->isolateLayer)
+        for (auto const &p: priv->modTiles)
+            priv->renderIsolate(layer, p);
+
     return priv->modTiles;
 }
 
@@ -249,7 +280,45 @@ TileSet MyPaintStrokeContext::strokeTo(QPointF point, float pressure, float dt)
                             point.x(), point.y(),
                             pressure /* pressure */, 0.0f /* xtilt */, 0.0f /* ytilt */,
                             dt / 1000.0f /* deltaTime in seconds */);
+
+    if (priv->isolateLayer)
+        for (auto const &p: priv->modTiles)
+            priv->renderIsolate(layer, p);
+
     return priv->modTiles;
+}
+
+void MyPaintStrokeContextPrivate::renderIsolate(CanvasLayer *layer, QPoint p)
+{
+    if (isolateErase && isolateLockAlpha)
+        return;
+
+    CanvasTile *isolateTile = isolateLayer->getTileMaybe(p.x(), p.y());
+    CanvasTile *srcTile = srcLayer->getTileMaybe(p.x(), p.y());
+
+    if (isolateTile)
+    {
+        if (srcTile)
+        {
+            std::unique_ptr<CanvasTile> dstTile = srcTile->copy();
+
+            if (isolateErase)
+                isolateTile->blendOnto(dstTile.get(), BlendMode::DestinationOut, 1.0f);
+            else if (isolateLockAlpha)
+                isolateTile->blendOnto(dstTile.get(), BlendMode::SourceAtop, 1.0f);
+            else
+                isolateTile->blendOnto(dstTile.get(), BlendMode::Over, 1.0f);
+            (*layer->tiles)[p] = std::move(dstTile);
+        }
+        else if (!(isolateLockAlpha || isolateErase))
+        {
+            (*layer->tiles)[p] = isolateTile->copy();
+        }
+    }
+    else if (srcTile && !(isolateLockAlpha || isolateErase))
+    {
+        (*layer->tiles)[p] = srcTile->copy();
+    }
 }
 
 static void getColorFunction (MyPaintSurface *base_surface,
@@ -258,6 +327,7 @@ static void getColorFunction (MyPaintSurface *base_surface,
                               float * color_r, float * color_g, float * color_b, float * color_a)
 {
     CanvasMyPaintSurface *surface = static_cast<CanvasMyPaintSurface *>(base_surface);
+    MyPaintStrokeContextPrivate *priv = surface->strokeContext->priv.get();
     CanvasLayer *layer = surface->strokeContext->layer;
 
     if (radius < 1.0f)
@@ -320,6 +390,8 @@ static void getColorFunction (MyPaintSurface *base_surface,
             size_t global_work_size[1] = CL_DIM1(height);
             size_t local_work_size[1] = CL_DIM1(1);
 
+            if (priv->isolateLayer)
+                priv->renderIsolate(layer, {ix, iy});
             CanvasTile *srcTile = layer->getTileMaybe(ix, iy);
 
             if (srcTile)
@@ -422,13 +494,25 @@ static int drawDabFunction (MyPaintSurface *base_surface,
         qWarning() << "drawDab called with unsupported values colorize = " << colorize << endl;
 
     CanvasMyPaintSurface *surface = static_cast<CanvasMyPaintSurface *>(base_surface);
-    CanvasLayer *layer = surface->strokeContext->layer;
     MyPaintStrokeContextPrivate *priv = surface->strokeContext->priv.get();
+    CanvasLayer *layer = priv->isolateLayer ? priv->isolateLayer.get() : surface->strokeContext->layer;
     QRectF boundRect;
     cl_kernel kernel;
     cl_int err = CL_SUCCESS;
     (void)err; /* Ignore the fact that err is unused, it's helpful for debugging */
     int argIndex = 4;
+
+    if (priv->isolateLayer)
+    {
+        lock_alpha = 0.0f;
+        if (!priv->isolateErase)
+        {
+            opaque *= color_a;
+            if (opaque <= 0.0f)
+                return 1; // Pretend that something was erased
+        }
+        color_a = 1.0f;
+    }
 
     if (priv->masks.empty())
     {
@@ -445,25 +529,51 @@ static int drawDabFunction (MyPaintSurface *base_surface,
 
         if (radius < 1.0f)
         {
-            if ((lock_alpha > 0.0f) && priv->texture.isNull())
-                kernel = SharedOpenCL::getSharedOpenCL()->mypaintMicroDabLockedKernel;
-            else if (lock_alpha > 0.0f)
-                kernel = SharedOpenCL::getSharedOpenCL()->mypaintMicroDabLockedTexturedKernel;
-            else if (priv->texture.isNull())
-                kernel = SharedOpenCL::getSharedOpenCL()->mypaintMicroDabKernel;
+            if (lock_alpha > 0.0f)
+            {
+                if (priv->texture.isNull())
+                    kernel = SharedOpenCL::getSharedOpenCL()->mypaintMicroDabLockedKernel;
+                else
+                    kernel = SharedOpenCL::getSharedOpenCL()->mypaintMicroDabLockedTexturedKernel;
+            }
+            else if (priv->isolateLayer)
+            {
+                if (priv->texture.isNull())
+                    kernel = SharedOpenCL::getSharedOpenCL()->mypaintMicroDabIsolateKernel;
+                else
+                    kernel = SharedOpenCL::getSharedOpenCL()->mypaintMicroDabIsolateTexturedKernel;
+            }
             else
-                kernel = SharedOpenCL::getSharedOpenCL()->mypaintMicroDabTexturedKernel;
+            {
+                if (priv->texture.isNull())
+                    kernel = SharedOpenCL::getSharedOpenCL()->mypaintMicroDabKernel;
+                else
+                    kernel = SharedOpenCL::getSharedOpenCL()->mypaintMicroDabTexturedKernel;
+            }
         }
         else
         {
-            if ((lock_alpha > 0.0f) && priv->texture.isNull())
-                kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabLockedKernel;
-            else if (lock_alpha > 0.0f)
-                kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabLockedTexturedKernel;
-            else if (priv->texture.isNull())
-                kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabKernel;
+            if (lock_alpha > 0.0f)
+            {
+                if (priv->texture.isNull())
+                    kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabLockedKernel;
+                else
+                    kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabLockedTexturedKernel;
+            }
+            else if (priv->isolateLayer)
+            {
+                if (priv->texture.isNull())
+                    kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabIsolateKernel;
+                else
+                    kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabIsolateTexturedKernel;
+            }
             else
-                kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabTexturedKernel;
+            {
+                if (priv->texture.isNull())
+                    kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabKernel;
+                else
+                    kernel = SharedOpenCL::getSharedOpenCL()->mypaintDabTexturedKernel;
+            }
         }
 
         cl_float4 transformMatrix;
@@ -501,14 +611,27 @@ static int drawDabFunction (MyPaintSurface *base_surface,
         boundRect.setRect(-0.5f, -0.5f, 1.0f, 1.0f);
         boundRect = transform.inverted().mapRect(boundRect).adjusted(-1.0, -1.0, 1.0, 1.0);
 
-        if ((lock_alpha > 0.0f) && priv->texture.isNull())
-            kernel = SharedOpenCL::getSharedOpenCL()->mypaintMaskDabLockedKernel;
-        else if (lock_alpha > 0.0f)
-            kernel = SharedOpenCL::getSharedOpenCL()->mypaintMaskDabLockedTexturedKernel;
-        else if (priv->texture.isNull())
-            kernel = SharedOpenCL::getSharedOpenCL()->mypaintMaskDabKernel;
+        if (lock_alpha > 0.0f)
+        {
+            if (priv->texture.isNull())
+                kernel = SharedOpenCL::getSharedOpenCL()->mypaintMaskDabLockedKernel;
+            else
+                kernel = SharedOpenCL::getSharedOpenCL()->mypaintMaskDabLockedTexturedKernel;
+        }
+        else if (priv->isolateLayer)
+        {
+            if (priv->texture.isNull())
+                kernel = SharedOpenCL::getSharedOpenCL()->mypaintMaskDabIsolateKernel;
+            else
+                kernel = SharedOpenCL::getSharedOpenCL()->mypaintMaskDabIsolateTexturedKernel;
+        }
         else
-            kernel = SharedOpenCL::getSharedOpenCL()->mypaintMaskDabTexturedKernel;
+        {
+            if (priv->texture.isNull())
+                kernel = SharedOpenCL::getSharedOpenCL()->mypaintMaskDabKernel;
+            else
+                kernel = SharedOpenCL::getSharedOpenCL()->mypaintMaskDabTexturedKernel;
+        }
 
         cl_float4 transformMatrix;
         transformMatrix.s[0] = transform.m11();

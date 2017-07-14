@@ -55,16 +55,22 @@ public:
 
     cl_kernel mypaintDabKernel;
     cl_kernel mypaintDabLockedKernel;
+    cl_kernel mypaintDabIsolateKernel;
     cl_kernel mypaintMicroDabKernel;
     cl_kernel mypaintMicroDabLockedKernel;
+    cl_kernel mypaintMicroDabIsolateKernel;
     cl_kernel mypaintMaskDabKernel;
     cl_kernel mypaintMaskDabLockedKernel;
+    cl_kernel mypaintMaskDabIsolateKernel;
     cl_kernel mypaintDabTexturedKernel;
     cl_kernel mypaintDabLockedTexturedKernel;
+    cl_kernel mypaintDabIsolateTexturedKernel;
     cl_kernel mypaintMicroDabTexturedKernel;
     cl_kernel mypaintMicroDabLockedTexturedKernel;
+    cl_kernel mypaintMicroDabIsolateTexturedKernel;
     cl_kernel mypaintMaskDabTexturedKernel;
     cl_kernel mypaintMaskDabLockedTexturedKernel;
+    cl_kernel mypaintMaskDabIsolateTexturedKernel;
     cl_kernel mypaintGetColorKernelPart1;
     cl_kernel mypaintGetColorKernelEmptyPart1;
     cl_kernel mypaintGetColorKernelPart2;

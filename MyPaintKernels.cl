@@ -16,6 +16,7 @@ float alpha_from_mask(float x, float y, float4 matrix, image2d_t stamp);
 
 inline float4 apply_normal_mode (float4 pixel, float4 color, float alpha, float color_alpha);
 inline float4 apply_locked_normal_mode (float4 pixel, float4 color, float alpha);
+inline float4 apply_isolate_mode (float4 pixel, float4 color, float alpha);
 
 float apply_texture(float alpha, float x, float y, image2d_t texture, float tex_strength);
 
@@ -234,6 +235,21 @@ inline float4 apply_locked_normal_mode(float4 pixel, float4 color, float alpha)
 
       pixel.s012 = color.s012 * alpha + pixel.s012 * a_term;
     }
+
+  return pixel;
+}
+
+inline float4 apply_isolate_mode(float4 pixel, float4 color, float alpha)
+{
+  alpha = alpha * color.s3;
+  float dst_alpha = pixel.s3;
+
+  float a_term = dst_alpha - dst_alpha * alpha;
+  float a = alpha + a_term;
+
+  pixel.s012 = (color.s012 * alpha + pixel.s012 * a_term) / a;
+
+  pixel.s3 = max(min(a, color.s3), dst_alpha);
 
   return pixel;
 }

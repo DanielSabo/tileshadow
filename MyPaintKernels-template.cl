@@ -25,6 +25,8 @@ float alpha = alpha_from_mask(gidx - x, gidy - y, matrix, stamp);
 buf[idx] = apply_normal_mode(buf[idx], color, alpha, color_alpha);
 #pragma template APPLY_ALPHA locked
 buf[idx] = apply_locked_normal_mode(buf[idx], color, alpha);
+#pragma template APPLY_ALPHA isolate
+buf[idx] = apply_isolate_mode(buf[idx], color, alpha);
 #pragma template
 
 #pragma template TEXTURE_ARGS
@@ -37,6 +39,7 @@ buf[idx] = apply_locked_normal_mode(buf[idx], color, alpha);
 
 #pragma template TEXTURE
 #pragma template TEXTURE textured
+  if (alpha > 0.0f)
     alpha = apply_texture(alpha, gidx + tex_offset_x - x, gidy + tex_offset_y - y, texture, tex_strength);
 #pragma template
 
@@ -55,11 +58,11 @@ __kernel void mypaintFUNCTION_SUFFIX(
   int gidy = get_global_id(1);
 
   #pragma template DAB
+  #pragma template TEXTURE
 
   if (alpha > 0.0f)
     {
       const int idx = gidx + gidy * TILE_PIXEL_WIDTH + offset;
-      #pragma template TEXTURE
       #pragma template APPLY_ALPHA
     }
 }
