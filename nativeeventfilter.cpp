@@ -157,28 +157,45 @@ namespace {
     }
 
     int xinputOpcode;
+    bool useSourceDevice = false;
+    bool generateMouseEvents = false;
 }
 
 void NativeEventFilter::install(QGuiApplication *app)
 {
-    if (app->platformName() == "xcb" && !checkQtVersionGreaterOrEqual(5, 5, 0))
+    if (app->platformName() != "xcb")
+        return;
+
+    if (!checkQtVersionGreaterOrEqual(5, 5, 0))
     {
-        display = QX11Info::display();
-        int eventBase, errorBase; // Unused values
-
-        if(!XQueryExtension(display, "XInputExtension", &xinputOpcode, &eventBase, &errorBase))
-        {
-            std::cout << "No XInput extension detected" << std::endl;
-            return;
-        }
-
-        /*FIXME: In theory we should also check the XInput version, but the XIQueryVersion()
-         *       also modifies the "client supported version" and doing that here may conflict
-         *       with Qt XInput code. */
-
-        app->installNativeEventFilter(new NativeEventFilter);
-        std::cout << "XInput2 event handler installed" << std::endl;
+        useSourceDevice = false;
+        generateMouseEvents = false;
     }
+    else if (checkQtVersionGreaterOrEqual(5, 7, 0) && !checkQtVersionGreaterOrEqual(5, 9, 0))
+    {
+        useSourceDevice = true;
+        generateMouseEvents = true;
+    }
+    else
+    {
+        return;
+    }
+
+    display = QX11Info::display();
+    int eventBase, errorBase; // Unused values
+
+    if(!XQueryExtension(display, "XInputExtension", &xinputOpcode, &eventBase, &errorBase))
+    {
+        std::cout << "No XInput extension detected" << std::endl;
+        return;
+    }
+
+    /*FIXME: In theory we should also check the XInput version, but the XIQueryVersion()
+     *       also modifies the "client supported version" and doing that here may conflict
+     *       with Qt XInput code. */
+
+    app->installNativeEventFilter(new NativeEventFilter);
+    std::cout << "XInput2 event handler installed" << std::endl;
 }
 
 NativeEventFilter::NativeEventFilter()
@@ -204,7 +221,7 @@ bool NativeEventFilter::nativeEventFilter(const QByteArray &eventType, void *mes
         return false;
 
     bool process = false;
-    QEvent::Type type = QEvent::TabletMove;
+    QEvent::Type type = QEvent::Type(0); // This is QEvent::None but there is a conflicting X11 define for None
     Qt::MouseButtons buttons = Qt::NoButton;
     Qt::MouseButton clickButton = Qt::NoButton;
 
@@ -222,6 +239,7 @@ bool NativeEventFilter::nativeEventFilter(const QByteArray &eventType, void *mes
     }
     else if (XI_Motion == xiEvent->evtype)
     {
+        type = QEvent::TabletMove;
         process = true;
     }
     else if (XI_HierarchyChanged == xiEvent->evtype)
@@ -232,14 +250,16 @@ bool NativeEventFilter::nativeEventFilter(const QByteArray &eventType, void *mes
     if (!process)
         return false;
 
-    auto devIter = deviceMap.find(xiEvent->deviceid);
+    int deviceID = useSourceDevice ? xiEvent->sourceid : xiEvent->deviceid;
+
+    auto devIter = deviceMap.find(deviceID);
     if (devIter == deviceMap.end())
     {
         DeviceInfo devInfo;
         devInfo.isTablet = false;
 
         int deviceCount = 1;
-        XIDeviceInfo *xDevInfo = XIQueryDevice(display, xiEvent->deviceid, &deviceCount);
+        XIDeviceInfo *xDevInfo = XIQueryDevice(display, deviceID, &deviceCount);
 
         if (xDevInfo)
         {
@@ -285,7 +305,7 @@ bool NativeEventFilter::nativeEventFilter(const QByteArray &eventType, void *mes
             XIFreeDeviceInfo(xDevInfo);
         }
 
-        devIter = deviceMap.insert(xiEvent->deviceid, devInfo);
+        devIter = deviceMap.insert(deviceID, devInfo);
     }
 
     DeviceInfo &devInfo = *devIter;
@@ -334,29 +354,58 @@ bool NativeEventFilter::nativeEventFilter(const QByteArray &eventType, void *mes
     result[0] *= desktop.width();
     result[1] *= desktop.height();
 
-    QWidget *targetWidget = QWidget::find(xiEvent->event);
 
-    // Qt does not report tablet hover motion
-    if (type == QEvent::TabletMove && buttons == Qt::NoButton)
-        return true;
+    if (type == QEvent::Type(0))
+        return false;
+
+    QWidget *targetWidget = QWidget::find(xiEvent->event);
+    QWidget *modalWidget = QApplication::activeModalWidget();
+
+    if (modalWidget && modalWidget != targetWidget)
+        return false;
 
     if (targetWidget)
     {
+        if (targetWidget->objectName() != "mainCanvas")
+            return false;
+
         QPoint global(result[0], result[1]);
         QPoint local = targetWidget->mapFromGlobal(global);
         QPointF globalF(result[0], result[1]);
         QPointF localF = globalF - (global - local);
 
-        /* Evil secrets: The Tool and PointerType values don't matter because we only use them on the ProxIn/Out events.
-         * SerialId and Buttons are also never used, and key modifiers are not set by the official Qt tablet events.
-         */
-        QTabletEvent ev(type, localF, globalF,
-                        QTabletEvent::Stylus, QTabletEvent::Pen,
-                        result[2], result[3], result[4],
-                        0 /* tangentialPressure */, 0 /* rotation */, 0 /* z */,
-                        QGuiApplication::keyboardModifiers(), 0 /* uid */, clickButton, buttons);
-        ev.setTimestamp(ulong{xiEvent->time});
-        QGuiApplication::sendEvent(targetWidget, &ev);
+        if (type == QEvent::TabletMove && buttons == Qt::NoButton)
+        {
+            // Qt does not report tablet hover motion but we may need to generate mouse motion
+
+            if (generateMouseEvents)
+            {
+                QMouseEvent mev(QEvent::MouseMove, localF, globalF, clickButton, buttons, QGuiApplication::keyboardModifiers());
+                mev.setTimestamp(ulong{xiEvent->time});
+                QGuiApplication::sendEvent(targetWidget, &mev);
+            }
+        }
+        else
+        {
+            /* Evil secrets: The Tool and PointerType values don't matter because we only use them on the ProxIn/Out events.
+             * SerialId and Buttons are also never used, and key modifiers are not set by the official Qt tablet events.
+             */
+            QTabletEvent ev(type, localF, globalF,
+                            QTabletEvent::Stylus, QTabletEvent::Pen,
+                            result[2], result[3], result[4],
+                            0 /* tangentialPressure */, 0 /* rotation */, 0 /* z */,
+                            QGuiApplication::keyboardModifiers(), 0 /* uid */, clickButton, buttons);
+            ev.setTimestamp(ulong{xiEvent->time});
+            QGuiApplication::sendEvent(targetWidget, &ev);
+
+            if (generateMouseEvents && (type == QEvent::TabletPress || type == QEvent::TabletRelease))
+            {
+                QEvent::Type mouseEventType = type == QEvent::TabletPress ? QEvent::MouseButtonPress : QEvent::MouseButtonRelease;
+                QMouseEvent mev(mouseEventType, localF, globalF, clickButton, buttons, QGuiApplication::keyboardModifiers());
+                mev.setTimestamp(ulong{xiEvent->time});
+                QGuiApplication::sendEvent(targetWidget, &mev);
+            }
+        }
     }
 
     return true;
