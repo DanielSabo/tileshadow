@@ -103,7 +103,8 @@ SOURCES += main.cpp\
     gbrfile.cpp \
     filedialog.cpp \
     userpathsdialog.cpp \
-    pathlistwidget.cpp
+    pathlistwidget.cpp \
+    imagepreviewwidget.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -154,13 +155,15 @@ HEADERS  += mainwindow.h \
     filedialog.h \
     userpathsdialog.h \
     pathlistwidget.h \
-    layershuffletype.h
+    layershuffletype.h \
+    imagepreviewwidget.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \
     benchmarkdialog.ui \
     layerlistwidget.ui \
-    userpathsdialog.ui
+    userpathsdialog.ui \
+    toolextendedsettingswindow.ui
 
 mac {
     HEADERS += machelpers.h

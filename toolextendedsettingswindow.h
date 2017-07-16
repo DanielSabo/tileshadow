@@ -3,6 +3,11 @@
 
 #include <QWidget>
 #include <QImage>
+#include <memory>
+
+namespace Ui {
+class ToolExtendedSettingsWindow;
+}
 
 class CanvasWidget;
 class ToolExtendedSettingsWindowPrivate;
@@ -19,6 +24,7 @@ protected:
     bool event(QEvent *);
 
 private:
+    std::unique_ptr<Ui::ToolExtendedSettingsWindow> ui;
     QScopedPointer<ToolExtendedSettingsWindowPrivate> const d_ptr;
     Q_DECLARE_PRIVATE(ToolExtendedSettingsWindow)
 
@@ -26,22 +32,6 @@ signals:
 
 public slots:
     void updateTool();
-};
-
-class PreviewWidget : public QWidget
-{
-    Q_OBJECT
-
-public:
-    PreviewWidget(QWidget *parent = 0);
-    QSize sizeHint() const;
-    void setImage(QImage const &image, QColor const &background);
-
-protected:
-    void paintEvent(QPaintEvent *event);
-
-    QColor background;
-    QImage image;
 };
 
 #endif // TOOLEXTENDEDSETTINGSWINDOW_H
