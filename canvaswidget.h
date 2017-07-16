@@ -66,7 +66,7 @@ public:
     QString getActiveTool();
     QList<ToolSettingInfo> getToolSettings();
     QList<ToolSettingInfo> getAdvancedToolSettings();
-    void setToolSetting(const QString &settingName, const QVariant &value);
+    void setToolSetting(const QString &settingName, const QVariant &value, bool quiet = false);
     QVariant getToolSetting(const QString &settingName);
     bool getToolSaveable();
     ToolSaveInfo serializeTool();

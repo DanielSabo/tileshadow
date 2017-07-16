@@ -2486,7 +2486,7 @@ QList<ToolSettingInfo> CanvasWidget::getAdvancedToolSettings()
         return QList<ToolSettingInfo>();
 }
 
-void CanvasWidget::setToolSetting(const QString &settingName, const QVariant &value)
+void CanvasWidget::setToolSetting(const QString &settingName, const QVariant &value, bool quiet)
 {
     Q_D(CanvasWidget);
 
@@ -2495,8 +2495,11 @@ void CanvasWidget::setToolSetting(const QString &settingName, const QVariant &va
 
     d->activeTool->setToolSetting(settingName, value);
 
-    emit updateTool();
-    update();
+    if (!quiet)
+    {
+        emit updateTool();
+        update();
+    }
 }
 
 QVariant CanvasWidget::getToolSetting(const QString &settingName)
