@@ -21,6 +21,15 @@
 #include <QMessageBox>
 #include <QDir>
 #include <QMenu>
+#include <QPlainTextEdit>
+
+namespace {
+enum class SecondaryEditorMode {
+    None,
+    Mappings,
+    Metadata
+};
+}
 
 class ToolExtendedSettingsWindowPrivate
 {
@@ -34,9 +43,8 @@ public:
     CanvasWidget *canvas = nullptr;
 
     QPointer<QWidget> settingsAreaSettings = nullptr;
-
-    QString           inputEditorSettingID;
-    QPointer<QWidget> inputEditorSettings = nullptr;
+    QPointer<QWidget> secondaryEditor = nullptr;
+    SecondaryEditorMode secondaryEditorMode = SecondaryEditorMode::None;
 
     bool needsPreview = false;
 
@@ -55,6 +63,8 @@ public:
     QPoint previewStrokeCenter;
     bool freezeUpdates = false;
 
+    QList<ToolSettingInfo> metadataSettings;
+
     struct SettingItem
     {
         QString settingID;
@@ -72,9 +82,11 @@ public:
         QLineEdit *text;
     };
 
+    QString inputEditorSettingID;
     QList<InputEditorItem> inputEditorItems;
 
-    void hideMappings();
+    void hideSecondaryEditor();
+    void showMetadataEditor();
     void showMappingsFor(ToolSettingInfo const &info);
     void applyMappings();
 
@@ -133,6 +145,12 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
         "color: red;"
         "}"
     ));
+
+    connect(ui->showMetadataButton, &QPushButton::clicked, this, [this](bool) {
+        Q_D(ToolExtendedSettingsWindow);
+        if (d->canvas)
+            d->showMetadataEditor();
+    });
 
     connect(ui->saveButton, &QPushButton::clicked, this, [this](bool) {
         Q_D(ToolExtendedSettingsWindow);
@@ -238,6 +256,7 @@ void ToolExtendedSettingsWindow::updateTool(bool pathChangeOrReset)
         bool keepInputEditor = false;
         d->maskSettingName = QString();
         d->textureSettingName = QString();
+        d->metadataSettings = {};
 
         ui->saveButton->setDisabled(d->canvas->getToolSaveable() == false);
 
@@ -304,6 +323,10 @@ void ToolExtendedSettingsWindow::updateTool(bool pathChangeOrReset)
             {
                 d->textureSettingName = info.settingID;
             }
+            else if (info.type == ToolSettingInfoType::Text)
+            {
+                d->metadataSettings.append(info);
+            }
         }
 
         d->settingsAreaSettings = settingsBox;
@@ -312,8 +335,10 @@ void ToolExtendedSettingsWindow::updateTool(bool pathChangeOrReset)
         ui->scrollArea->setMinimumWidth(ui->scrollArea->widget()->minimumSizeHint().width() +
                                         ui->scrollArea->verticalScrollBar()->width());
 
-        if (!keepInputEditor)
-            d->hideMappings();
+        if (d->secondaryEditorMode == SecondaryEditorMode::Metadata && !d->metadataSettings.empty())
+            d->showMetadataEditor();
+        else if (!keepInputEditor)
+            d->hideSecondaryEditor();
     }
 
     for (auto &iter: d->items)
@@ -370,6 +395,15 @@ void ToolExtendedSettingsWindow::updateTool(bool pathChangeOrReset)
         d->exportTextureAction->setEnabled(false);
     }
 
+    if (!d->metadataSettings.isEmpty())
+    {
+        ui->showMetadataButton->setEnabled(true);
+    }
+    else
+    {
+        ui->showMetadataButton->setEnabled(false);
+    }
+
     if (isActiveWindow())
         d->updatePreview();
     else
@@ -378,26 +412,72 @@ void ToolExtendedSettingsWindow::updateTool(bool pathChangeOrReset)
     d->freezeUpdates = false;
 }
 
-void ToolExtendedSettingsWindowPrivate::hideMappings()
+void ToolExtendedSettingsWindowPrivate::hideSecondaryEditor()
 {
     Q_Q(ToolExtendedSettingsWindow);
 
-    if (!inputEditorSettings.isNull())
-        delete inputEditorSettings.data();
+    if (!secondaryEditor.isNull())
+        delete secondaryEditor.data();
     inputEditorItems.clear();
+    inputEditorSettingID = QString();
+    secondaryEditorMode = SecondaryEditorMode::None;
     q->ui->inputEditorApplyButton->hide();
+}
+
+void ToolExtendedSettingsWindowPrivate::showMetadataEditor()
+{
+    Q_Q(ToolExtendedSettingsWindow);
+
+    hideSecondaryEditor();
+    secondaryEditorMode = SecondaryEditorMode::Metadata;
+
+    secondaryEditor = new QWidget();
+    auto layout = new QVBoxLayout(secondaryEditor);
+    layout->setContentsMargins(QMargins());
+
+    for (auto const &iter: metadataSettings)
+    {
+        QString settingID = iter.settingID;
+
+        QLabel *label = new QLabel(ToolExtendedSettingsWindow::tr("%1:").arg(iter.name));
+        layout->addWidget(label);
+
+        QString text = canvas->getToolSetting(iter.settingID).toString();
+        if (iter.multiline)
+        {
+            QPlainTextEdit *textEditor = new QPlainTextEdit(text);
+            layout->addWidget(textEditor, 1);
+
+            QObject::connect(textEditor, &QPlainTextEdit::textChanged, secondaryEditor, [this, textEditor, settingID]() {
+                QString value = textEditor->document()->toPlainText();
+                canvas->setToolSetting(settingID, value, true);
+            });
+        }
+        else
+        {
+            QLineEdit *textEditor = new QLineEdit(text);
+            layout->addWidget(textEditor, 0);
+
+            QObject::connect(textEditor, &QLineEdit::textEdited, secondaryEditor, [this, textEditor, settingID](QString const &value) {
+                canvas->setToolSetting(settingID, value, true);
+            });
+        }
+    }
+
+    layout->addStretch(0);
+
+    q->ui->inputEditorBodyLayout->addWidget(secondaryEditor);
 }
 
 void ToolExtendedSettingsWindowPrivate::showMappingsFor(ToolSettingInfo const &info)
 {
     Q_Q(ToolExtendedSettingsWindow);
 
-    if (!inputEditorSettings.isNull())
-        delete inputEditorSettings.data();
-    inputEditorItems.clear();
+    hideSecondaryEditor();
+    secondaryEditorMode = SecondaryEditorMode::Mappings;
 
-    inputEditorSettings = new QWidget();
-    auto layout = new QFormLayout(inputEditorSettings);
+    secondaryEditor = new QWidget();
+    auto layout = new QFormLayout(secondaryEditor);
     layout->setContentsMargins(QMargins());
     layout->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
 
@@ -421,7 +501,7 @@ void ToolExtendedSettingsWindowPrivate::showMappingsFor(ToolSettingInfo const &i
         inputEditorItems.push_back({iter.first, mappingEdit});
     }
 
-    q->ui->inputEditorBodyLayout->addWidget(inputEditorSettings);
+    q->ui->inputEditorBodyLayout->addWidget(secondaryEditor);
     q->ui->inputEditorApplyButton->show();
 }
 

@@ -54,7 +54,7 @@
           <x>0</x>
           <y>0</y>
           <width>171</width>
-          <height>324</height>
+          <height>313</height>
          </rect>
         </property>
         <layout class="QVBoxLayout" name="settingsAreaBodyLayout">
@@ -122,8 +122,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>596</width>
-               <height>125</height>
+               <width>594</width>
+               <height>105</height>
               </rect>
              </property>
             </widget>
@@ -291,6 +291,13 @@
         </size>
        </property>
       </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="showMetadataButton">
+       <property name="text">
+        <string>Edit Metadata</string>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QPushButton" name="textureButton">
