@@ -17,7 +17,7 @@ private:
     Q_DECLARE_PRIVATE(ToolSettingsWidget)
 
 private slots:
-    void updateTool();
+    void updateTool(bool pathChangeOrReset);
 };
 
 #endif // TOOLSETTINGSWIDGET_H

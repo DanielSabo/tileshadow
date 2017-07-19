@@ -2455,7 +2455,7 @@ void CanvasWidget::setActiveTool(const QString &toolName)
     else
         d->penToolPath = d->activeToolPath;
 
-    emit updateTool();
+    emit updateTool(true);
     update();
 }
 
@@ -2567,7 +2567,7 @@ void CanvasWidget::resetToolSettings()
     d->activeTool = entry.current;
     d->activeTool->setColor(toolColor);
 
-    emit updateTool();
+    emit updateTool(true);
     update();
 }
 

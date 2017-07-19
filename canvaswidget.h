@@ -195,7 +195,7 @@ private:
 signals:
     void updateStats();
     void updateLayers();
-    void updateTool();
+    void updateTool(bool pathChangeOrReset = false);
     void canvasModified();
 
 public slots:

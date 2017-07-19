@@ -53,7 +53,6 @@ public:
 
     std::vector<CanvasStrokePoint> previewStrokeData;
     QPoint previewStrokeCenter;
-    QString activeToolpath;
     bool freezeUpdates = false;
 
     struct SettingItem
@@ -198,7 +197,7 @@ ToolExtendedSettingsWindow::ToolExtendedSettingsWindow(CanvasWidget *canvas, QWi
         restoreGeometry(appSettings.value("ToolExtendedSettingsWindow/geometry").toByteArray());
 
     connect(d->canvas, &CanvasWidget::updateTool, this, &ToolExtendedSettingsWindow::updateTool);
-    updateTool();
+    updateTool(true);
 }
 
 ToolExtendedSettingsWindow::~ToolExtendedSettingsWindow()
@@ -229,20 +228,16 @@ bool ToolExtendedSettingsWindow::event(QEvent *event)
     return QWidget::event(event);
 }
 
-void ToolExtendedSettingsWindow::updateTool()
+void ToolExtendedSettingsWindow::updateTool(bool pathChangeOrReset)
 {
     Q_D(ToolExtendedSettingsWindow);
     d->freezeUpdates = true;
 
-    QString canvasActiveTool = d->canvas->getActiveTool();
-
-    if (d->activeToolpath != canvasActiveTool)
+    if (pathChangeOrReset)
     {
         bool keepInputEditor = false;
         d->maskSettingName = QString();
         d->textureSettingName = QString();
-
-        d->activeToolpath = canvasActiveTool;
 
         ui->saveButton->setDisabled(d->canvas->getToolSaveable() == false);
 

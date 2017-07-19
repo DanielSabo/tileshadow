@@ -31,7 +31,7 @@ private:
 signals:
 
 public slots:
-    void updateTool();
+    void updateTool(bool pathChangeOrReset);
 };
 
 #endif // TOOLEXTENDEDSETTINGSWINDOW_H

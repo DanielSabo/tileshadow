@@ -21,7 +21,6 @@ public:
     Q_DECLARE_PUBLIC(ToolSettingsWidget)
 
     CanvasWidget *canvas;
-    QString activeToolpath;
     HSVColorDial *toolColorDial;
 
     bool freezeUpdates;
@@ -213,24 +212,20 @@ ToolSettingsWidget::ToolSettingsWidget(CanvasWidget *canvas, QWidget *parent) :
     layout->addWidget(dialContainer);
 
     connect(d->canvas, &CanvasWidget::updateTool, this, &ToolSettingsWidget::updateTool);
-    updateTool();
+    updateTool(true);
 }
 
 ToolSettingsWidget::~ToolSettingsWidget()
 {
 }
 
-void ToolSettingsWidget::updateTool()
+void ToolSettingsWidget::updateTool(bool pathChangeOrReset)
 {
     Q_D(ToolSettingsWidget);
     d->freezeUpdates = true;
 
-    QString canvasActiveTool = d->canvas->getActiveTool();
-
-    if (d->activeToolpath != canvasActiveTool)
+    if (pathChangeOrReset)
     {
-        d->activeToolpath = canvasActiveTool;
-
         d->removeSettings();
         for (const ToolSettingInfo &info: d->canvas->getToolSettings())
             d->addSetting(info);
