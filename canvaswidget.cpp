@@ -1917,11 +1917,9 @@ void CanvasWidget::pickColorAt(QPoint pos, bool merged)
         clEnqueueReadBuffer(SharedOpenCL::getSharedOpenCL()->cmdQueue, tile->unmapHost(), CL_TRUE,
                             offset, sizeof(float) * 4, data,
                             0, nullptr, nullptr);
+
         if (data[3] > 0.0f)
-        {
             setToolColor(QColor::fromRgbF(data[0], data[1], data[2]));
-            emit updateTool();
-        }
     }
 }
 
