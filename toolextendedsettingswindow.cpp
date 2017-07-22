@@ -271,9 +271,12 @@ void ToolExtendedSettingsWindow::updateTool(bool pathChangeOrReset)
 
         for (const ToolSettingInfo info: d->canvas->getAdvancedToolSettings())
         {
-            if (info.type == ToolSettingInfoType::ExponentSlider || info.type == ToolSettingInfoType::LinearSlider)
+            if (info.type == ToolSettingInfoType::ExponentSlider ||
+                info.type == ToolSettingInfoType::LinearSlider   ||
+                info.type == ToolSettingInfoType::Checkbox)
             {
                 QString settingID = info.settingID;
+                bool isBoolSetting = info.type == ToolSettingInfoType::Checkbox;
 
                 QLabel *label = new QLabel(info.name);
                 QPushButton *mappingButton = new QPushButton();
@@ -292,19 +295,30 @@ void ToolExtendedSettingsWindow::updateTool(bool pathChangeOrReset)
                 }
 
                 QSlider *slider = new QSlider(Qt::Horizontal);
-                slider->setMinimum(info.min * 100);
-                slider->setMaximum(info.max * 100);
+                if (isBoolSetting)
+                {
+                    slider->setMinimum(0);
+                    slider->setMaximum(1);
+                }
+                else
+                {
+                    slider->setMinimum(info.min * 100);
+                    slider->setMaximum(info.max * 100);
+                }
                 slider->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 
                 layout->addWidget(label, layout->rowCount(), 0, 1, 2, Qt::AlignLeft);
                 layout->addWidget(slider, layout->rowCount(), 0);
                 layout->addWidget(mappingButton, layout->rowCount() - 1, 1);
 
-                connect(slider, &QSlider::valueChanged, this, [d, settingID] (int value) {
+                connect(slider, &QSlider::valueChanged, this, [d, isBoolSetting, settingID] (int value) {
                     if (!d->freezeUpdates)
                     {
                         d->freezeUpdates = true;
-                        d->canvas->setToolSetting(settingID, QVariant::fromValue<float>(value / 100.0f));
+                        if (isBoolSetting)
+                            d->canvas->setToolSetting(settingID, QVariant::fromValue<bool>(value));
+                        else
+                            d->canvas->setToolSetting(settingID, QVariant::fromValue<float>(value / 100.0f));
                         d->freezeUpdates = false;
                     }
                 });
