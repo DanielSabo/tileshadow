@@ -48,6 +48,8 @@ public:
     QList<MaskBuffer> maskImages;
     MaskBuffer texture;
     float textureOpacity = 1.0f;
+    QString description;
+    QString notes;
 
     float cursorRadius;
 
@@ -121,6 +123,18 @@ MyPaintTool::MyPaintTool(const QString &path) : priv(new MyPaintToolPrivate())
         if (brushVersion != 3)
         {
             throw QString("MyPaint brush error, unknown version (") + QString(brushVersion) + ")";
+        }
+
+        val = brushObj.value("description");
+        if (val.isString())
+        {
+            priv->description = val.toString();
+        }
+
+        val = brushObj.value("notes");
+        if (val.isString())
+        {
+            priv->notes = val.toString();
         }
 
         val = brushObj.value("settings");
@@ -276,6 +290,16 @@ void MyPaintTool::setToolSetting(QString const &inName, QVariant const &value)
         priv->textureOpacity = qBound<float>(0.0f, value.toFloat(), 1.0f);
         return;
     }
+    else if (name == QStringLiteral("description"))
+    {
+        priv->description = value.toString();
+        return;
+    }
+    else if (name == QStringLiteral("notes"))
+    {
+        priv->notes = value.toString();
+        return;
+    }
     else if (isMapping)
     {
         auto iter = priv->settings.find(name);
@@ -331,6 +355,10 @@ QVariant MyPaintTool::getToolSetting(const QString &inName)
         return QVariant::fromValue(priv->texture);
     else if (name == QStringLiteral("texture_opacity"))
         return QVariant::fromValue(priv->textureOpacity);
+    else if (name == QStringLiteral("description"))
+        return QVariant::fromValue(priv->description);
+    else if (name == QStringLiteral("notes"))
+        return QVariant::fromValue(priv->notes);
     else if (name == QStringLiteral("size"))
         name = QStringLiteral("radius_logarithmic");
     else if (BOOL_SETTING_NAMES.contains(name))
@@ -451,6 +479,9 @@ QList<ToolSettingInfo> MyPaintTool::listAdvancedSettings()
 
     result.append(ToolSettingInfo::texture("texture", "Texture"));
 
+    result.append(ToolSettingInfo::text("description", "Description", false));
+    result.append(ToolSettingInfo::text("notes", "Notes", true));
+
     result.append(ToolSettingInfo::linearSlider("texture_opacity", "Texture Opacity", 0.0f, 1.0f));
 
     return result;
@@ -467,6 +498,8 @@ QByteArray MyPaintTool::serialize()
     document["version"] = 3;
     document["group"] = "";
     document["comment"] = "";
+    document["description"] = priv->description;
+    document["notes"] = priv->notes;
     document["parent_brush_name"] = "";
 
     QVariantMap settingsMap;
