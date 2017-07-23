@@ -495,6 +495,7 @@ QList<ToolSettingInfo> MyPaintTool::listAdvancedSettings()
     result.append(ToolSettingInfo::text("description", "Description", false));
     result.append(ToolSettingInfo::text("notes", "Notes", true));
 
+    result.append(ToolSettingInfo::checkbox("eraser", "Erase"));
     result.append(ToolSettingInfo::checkbox("isolate", "Isolate Mode"));
     result.append(ToolSettingInfo::linearSlider("texture_opacity", "Texture Opacity", 0.0f, 1.0f));
 
