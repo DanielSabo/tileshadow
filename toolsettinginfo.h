@@ -12,7 +12,8 @@ namespace ToolSettingInfoType {
         Checkbox,
         Listbox,
         MaskSet,
-        Texture
+        Texture,
+        Text
     } Type;
 }
 
@@ -28,6 +29,7 @@ public:
     float min;
     float max;
     QList<QPair<QString, QString>> mapping;
+    bool multiline;
 
     static ToolSettingInfo exponentSlider(QString const &settingID, QString const &name, float min, float max);
     static ToolSettingInfo linearSlider(QString const &settingID, QString const &name, float min, float max);
@@ -35,6 +37,7 @@ public:
     static ToolSettingInfo listBox(QString const &settingID, QString const &name, OptionsList const &options);
     static ToolSettingInfo maskSet(QString const &settingID, QString const &name);
     static ToolSettingInfo texture(QString const &settingID, QString const &name);
+    static ToolSettingInfo text(QString const &settingID, QString const &name, bool multiline = false);
 private:
     ToolSettingInfo(ToolSettingInfoType::Type type);
 };

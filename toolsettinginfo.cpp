@@ -59,6 +59,15 @@ ToolSettingInfo ToolSettingInfo::texture(const QString &settingID, const QString
     return result;
 }
 
+ToolSettingInfo ToolSettingInfo::text(const QString &settingID, const QString &name, bool multiline)
+{
+    ToolSettingInfo result(ToolSettingInfoType::Text);
+    result.settingID = settingID;
+    result.name = name;
+    result.multiline = multiline;
+    return result;
+}
+
 ToolSettingInfo::ToolSettingInfo(ToolSettingInfoType::Type type)
     : type(type)
 {
