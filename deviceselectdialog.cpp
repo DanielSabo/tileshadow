@@ -23,6 +23,8 @@ static QPushButton *makeButton(OpenCLDeviceInfo &dev)
 DeviceSelectDialog::DeviceSelectDialog(QWidget *parent) :
     QDialog(parent)
 {
+    setWindowTitle(tr("Select OpenCL Device"));
+
     QVBoxLayout *layout = new QVBoxLayout();
     layout->setSpacing(3);
     setLayout(layout);
