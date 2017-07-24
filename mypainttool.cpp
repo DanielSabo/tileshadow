@@ -1,6 +1,5 @@
 #include "mypainttool.h"
 #include "mypaintstrokecontext.h"
-#include "paintutils.h"
 #include <cmath>
 #include <QFile>
 #include <QDebug>
