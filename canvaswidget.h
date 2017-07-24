@@ -245,6 +245,7 @@ public slots:
     void redo();
 
 private slots:
+    void strokeTimerTick();
     void endLayerFlash();
 };
 

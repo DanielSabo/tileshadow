@@ -136,6 +136,8 @@ public:
     Qt::KeyboardModifiers keyModifiers = Qt::NoModifier;
     SavedTabletEvent lastTabletEvent = {0, };
     ulong strokeEventTimestamp = 0; // last stroke event time, in milliseconds
+    QTimer strokeTickTrigger;
+    int strokeTickTicked = 0;
     std::list<CanvasStrokePoint> savedStrokePoints;
 
     int nextFrameDelay = 15;
@@ -185,6 +187,8 @@ CanvasWidgetPrivate::CanvasWidgetPrivate()
 {
     lastFrameTimer.invalidate();
     layerFlashTimeout.setSingleShot(true);
+    strokeTickTrigger.setInterval(15);
+    strokeTickTrigger.setTimerType(Qt::PreciseTimer);
 }
 
 CanvasWidgetPrivate::~CanvasWidgetPrivate()
@@ -389,6 +393,7 @@ CanvasWidget::CanvasWidget(QWidget *parent) :
     //FIXME: (As of QT5.2) Old style connect because timeout has QPrivateSignal, this should be fixed in some newer QT version
     connect(&d->frameTickTrigger, SIGNAL(timeout()), this, SLOT(update()));
     connect(&d->layerFlashTimeout, SIGNAL(timeout()), this, SLOT(endLayerFlash()));
+    connect(&d->strokeTickTrigger, &QTimer::timeout, this, &CanvasWidget::strokeTimerTick);
 
     connect(&d->eventThread, SIGNAL(hasResultTiles()), this, SLOT(update()), Qt::QueuedConnection);
 
@@ -2290,6 +2295,8 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
                 action = CanvasAction::TabletStroke;
 
             d->strokeEventTimestamp = timestamp;
+            d->strokeTickTicked = 1; // Wait one tick
+            d->strokeTickTrigger.start();
 
             startStroke(pos, pressure);
         }
@@ -2390,10 +2397,13 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
 
 void CanvasWidget::mouseReleaseEvent(QMouseEvent *event)
 {
+    Q_D(CanvasWidget);
+
     if (event->button() == actionButton)
     {
         if (action == CanvasAction::MouseStroke)
         {
+            d->strokeTickTrigger.stop();
             endStroke();
             action = CanvasAction::None;
             actionButton = Qt::NoButton;
@@ -2449,6 +2459,7 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
         strokeTo(pos, 0.5f, float(newTimestamp - d->strokeEventTimestamp));
 
         d->strokeEventTimestamp = newTimestamp;
+        d->strokeTickTicked = 0; // Wait two ticks
     }
     else if (action == CanvasAction::DrawLine)
     {
@@ -2642,6 +2653,7 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
     else if (eventType == QEvent::TabletRelease &&
              action == CanvasAction::TabletStroke)
     {
+        d->strokeTickTrigger.stop();
         endStroke();
         action = CanvasAction::None;
         event->accept();
@@ -2651,6 +2663,7 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
     {
         ulong newTimestamp = event->timestamp();
         strokeTo(point, event->pressure(), float(newTimestamp - d->strokeEventTimestamp));
+        d->strokeTickTicked = 0; // Wait two ticks
         d->strokeEventTimestamp = newTimestamp;
         event->accept();
     }
@@ -2751,6 +2764,23 @@ void CanvasWidget::cancelCanvasAction()
     actionButton = Qt::NoButton;
     updateCursor();
     update();
+}
+
+void CanvasWidget::strokeTimerTick()
+{
+    Q_D(CanvasWidget);
+
+    // Timed painting only triggers after two full frames have passed
+    if (d->strokeTickTicked < 2)
+    {
+        d->strokeTickTicked++;
+    }
+    else if (!d->savedStrokePoints.empty())
+    {
+        CanvasStrokePoint &p = d->savedStrokePoints.back();
+        strokeTo({p.x, p.y}, p.p, 15);
+        d->strokeEventTimestamp += 15;
+    }
 }
 
 /* As of Qt 5.4 the cursor is not correctly set over OpenGL windows on OSX,
