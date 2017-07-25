@@ -1,4 +1,5 @@
-#include "canvascontext.h"
+#include "canvasstack.h"
+#include "canvaslayer.h"
 #include "canvastile.h"
 #include "ora.h"
 

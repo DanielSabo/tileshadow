@@ -1,6 +1,6 @@
 #include "canvaslayer.h"
+#include "canvasstack.h"
 #include "canvastile.h"
-#include "canvascontext.h"
 #include <QDebug>
 #include <utility>
 
