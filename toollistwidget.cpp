@@ -23,13 +23,12 @@ ToolListWidget::ToolListWidget(CanvasWidget *canvas, QWidget *parent) :
 {
     Q_D(ToolListWidget);
 
-    QVBoxLayout *layout = new QVBoxLayout();
+    QVBoxLayout *layout = new QVBoxLayout(this);
     layout->setSpacing(3);
     layout->setContentsMargins(0, 0, 0, 0);
-    setLayout(layout);
 
     d->toolPopupButton = new QPushButton("Tools...");
-    connect(d->toolPopupButton, SIGNAL(clicked()), this, SLOT(showPopup()));
+    connect(d->toolPopupButton, &QPushButton::clicked, this, &ToolListWidget::showPopup);
     layout->addWidget(d->toolPopupButton);
 
     connect(canvas, &CanvasWidget::updateTool, this, &ToolListWidget::updateTool);
