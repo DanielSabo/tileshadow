@@ -25,9 +25,8 @@ DeviceSelectDialog::DeviceSelectDialog(QWidget *parent) :
 {
     setWindowTitle(tr("Select OpenCL Device"));
 
-    QVBoxLayout *layout = new QVBoxLayout();
+    QVBoxLayout *layout = new QVBoxLayout(this);
     layout->setSpacing(3);
-    setLayout(layout);
 
 //    layout->addWidget(new QLabel("DeviceSelect", this));
 

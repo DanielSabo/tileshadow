@@ -21,10 +21,9 @@ ToolListPopup::ToolListPopup(QWidget *parent) :
 {
     Q_D(ToolListPopup);
 
-    QVBoxLayout *layout = new QVBoxLayout();
+    QVBoxLayout *layout = new QVBoxLayout(this);
     layout->setSpacing(3);
     layout->setContentsMargins(1, 1, 1, 1);
-    setLayout(layout);
 
     d->toolListView = new ToolListView(this);
     layout->addWidget(d->toolListView);

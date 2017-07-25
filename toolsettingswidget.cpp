@@ -190,16 +190,13 @@ ToolSettingsWidget::ToolSettingsWidget(CanvasWidget *canvas, QWidget *parent) :
 {
     Q_D(ToolSettingsWidget);
 
-    QVBoxLayout *layout = new QVBoxLayout();
+    QVBoxLayout *layout = new QVBoxLayout(this);
     layout->setSpacing(3);
     layout->setContentsMargins(12, 0, 12, 0);
-    setLayout(layout);
 
     QHBoxLayout *dialLayout = new QHBoxLayout();
-    QWidget *dialContainer = new QWidget();
     dialLayout->setSpacing(0);
     dialLayout->setContentsMargins(0, 0, 0, 0);
-    dialContainer->setLayout(dialLayout);
 
     d->toolColorDial = new HSVColorDial(this);
     d->toolColorDial->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
@@ -209,7 +206,7 @@ ToolSettingsWidget::ToolSettingsWidget(CanvasWidget *canvas, QWidget *parent) :
     connect(d->toolColorDial, &HSVColorDial::dragColor, [=] (const QColor &color) { d->colorDialDrag(color); });
     connect(d->toolColorDial, &HSVColorDial::releaseColor, [=] (const QColor &color) { d->colorDialChanged(color); });
     dialLayout->addWidget(d->toolColorDial);
-    layout->addWidget(dialContainer);
+    layout->addLayout(dialLayout);
 
     connect(d->canvas, &CanvasWidget::updateTool, this, &ToolSettingsWidget::updateTool);
     updateTool(true);
