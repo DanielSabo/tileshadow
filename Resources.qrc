@@ -49,6 +49,9 @@
         <file>mypaint-tools/grain_scatter.mbi</file>
         <file>mypaint-tools/stars2.mbi</file>
         <file>mypaint-tools/scratch_b.mbi</file>
+        <file>palettes/Named_Colors.gpl</file>
+        <file>palettes/Pastels.gpl</file>
+        <file>palettes/Dark_pastels.gpl</file>
         <file>icons/list-add.png</file>
         <file>icons/list-remove.png</file>
         <file>icons/edit-copy.png</file>

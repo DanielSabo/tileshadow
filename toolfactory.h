@@ -11,12 +11,19 @@ typedef QList<QPair<QString, QString> > ToolList;
 
 namespace ToolFactory {
     ToolList listTools();
+    ToolList listPalettes();
+
     std::unique_ptr<BaseTool> loadTool(QString toolName);
     void initializeUserPaths();
+
     QString getUserToolsPath();
     QString getUserPatternPath();
+    QString getUserPalettePath();
+
     QString defaultToolName();
     QString defaultEraserName();
+    QString defaultPaletteName();
+
     QString savePathForExtension(QString extension);
 }
 

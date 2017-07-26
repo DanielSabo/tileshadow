@@ -31,9 +31,9 @@ void asciiTitleCase(QString &instr)
     }
 }
 
-QStringList findBrushFiles(QDir const &path)
+QStringList findBrushFiles(QDir const &path, QStringList const &filter)
 {
-    QFileInfoList infoList = path.entryInfoList({"*.myb", "*.mbi"}, QDir::AllDirs | QDir::NoDotAndDotDot | QDir::Files);
+    QFileInfoList infoList = path.entryInfoList(filter, QDir::AllDirs | QDir::NoDotAndDotDot | QDir::Files);
     QStringList result;
 
     QFileInfoList directories;
@@ -48,7 +48,7 @@ QStringList findBrushFiles(QDir const &path)
 
     for (QFileInfo const &info: directories)
     {
-        result << findBrushFiles(info.filePath());
+        result << findBrushFiles(info.filePath(), filter);
     }
 
     return result;
@@ -96,14 +96,14 @@ struct SortKey
     }
 };
 
-void addFilesInPath(std::map<SortKey, QString> &index, QString const &path)
+void addFilesInPath(std::map<SortKey, QString> &index, QString const &path, QStringList const &filter)
 {
     int prefixLength = path.length();
 
     if (!path.endsWith(QDir::separator()))
         prefixLength += 1;
 
-    for (QString const &brushFile: findBrushFiles(QDir(path)))
+    for (QString const &brushFile: findBrushFiles(QDir(path), filter))
     {
         QString name = brushFile;
         name.remove(0, prefixLength);
@@ -117,6 +117,7 @@ void ToolFactory::initializeUserPaths()
     QDir prefix{QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)};
     prefix.mkpath(QStringLiteral("mypaint-tools"));
     prefix.mkpath(QStringLiteral("patterns"));
+    prefix.mkpath(QStringLiteral("palettes"));
 }
 
 QString ToolFactory::getUserToolsPath()
@@ -129,6 +130,11 @@ QString ToolFactory::getUserPatternPath()
     return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/patterns/");
 }
 
+QString ToolFactory::getUserPalettePath()
+{
+    return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/palettes/");
+}
+
 ToolList ToolFactory::listTools()
 {
     ToolList toolList;
@@ -138,13 +144,14 @@ ToolList ToolFactory::listTools()
     toolList.append(QPair<QString, QString>("gradient", "Apply Gradient"));
     toolList.append(QPair<QString, QString>("pattern-fill", "Pattern Fill"));
 
+    QStringList filter = {"*.myb", "*.mbi"};
     std::map<SortKey, QString> items;
 
-    addFilesInPath(items, QStringLiteral(":/mypaint-tools/"));
-    addFilesInPath(items, ToolFactory::getUserToolsPath());
+    addFilesInPath(items, QStringLiteral(":/mypaint-tools/"), filter);
+    addFilesInPath(items, ToolFactory::getUserToolsPath(), filter);
 
     for (QString path: QSettings().value("Paths/UserTools").toStringList())
-        addFilesInPath(items, path);
+        addFilesInPath(items, path, filter);
 
     for (auto const &iter: items)
     {
@@ -154,6 +161,28 @@ ToolList ToolFactory::listTools()
     }
 
     return toolList;
+}
+
+ToolList ToolFactory::listPalettes()
+{
+    ToolList paletteList;
+    std::map<SortKey, QString> items;
+
+    QStringList filter = {"*.gpl"};
+    addFilesInPath(items, QStringLiteral(":/palettes/"), filter);
+    addFilesInPath(items, ToolFactory::getUserPalettePath(), filter);
+
+    for (QString path: QSettings().value("Paths/UserPalettes").toStringList())
+        addFilesInPath(items, path, filter);
+
+    for (auto const &iter: items)
+    {
+        QString const &filename = iter.second;
+        QString const &name = iter.first.displayName;
+        paletteList.append(QPair<QString, QString>(filename, name));
+    }
+
+    return paletteList;
 }
 
 std::unique_ptr<BaseTool> ToolFactory::loadTool(QString toolName)
@@ -202,12 +231,21 @@ QString ToolFactory::defaultEraserName()
     return QStringLiteral(":/mypaint-tools/deevad/thin_hard_eraser.myb");
 }
 
+QString ToolFactory::defaultPaletteName()
+{
+    return QStringLiteral(":/palettes/Named_Colors.gpl");
+}
+
 QString ToolFactory::savePathForExtension(QString extension)
 {
     if (extension == QStringLiteral("myb") ||
         extension == QStringLiteral("mbi"))
     {
         return ToolFactory::getUserToolsPath();
+    }
+    else if (extension == QStringLiteral("gpl"))
+    {
+        return ToolFactory::getUserPalettePath();
     }
 
     return QString();
