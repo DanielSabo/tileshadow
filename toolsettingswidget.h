@@ -12,6 +12,9 @@ public:
     explicit ToolSettingsWidget(CanvasWidget *canvas, QWidget *parent);
     ~ToolSettingsWidget();
 
+protected:
+    bool eventFilter(QObject *watched, QEvent *event);
+
 private:
     QScopedPointer<ToolSettingsWidgetPrivate> const d_ptr;
     Q_DECLARE_PRIVATE(ToolSettingsWidget)

@@ -3,14 +3,19 @@
 #include "canvaswidget.h"
 #include "hsvcolordial.h"
 #include "toolsettinginfo.h"
+#include "toolfactory.h"
+#include "sidebarpopup.h"
+#include "palettepopup.h"
+#include "paletteview.h"
+#include "toollistview.h"
 #include <qmath.h>
 #include <QSlider>
 #include <QCheckBox>
 #include <QVBoxLayout>
 #include <QLabel>
-
 #include <QComboBox>
 #include <QDebug>
+#include <QPushButton>
 
 class ToolSettingsWidgetPrivate
 {
@@ -21,12 +26,17 @@ public:
     Q_DECLARE_PUBLIC(ToolSettingsWidget)
 
     CanvasWidget *canvas;
-    HSVColorDial *toolColorDial;
+    HSVColorDial *toolColorDial = nullptr;
+    PalettePopup *palettePopup = nullptr;
+    SidebarPopup *paletteListPopup = nullptr;
+    ToolListView *paletteListView = nullptr;
 
     bool freezeUpdates;
 
     void colorDialDrag(const QColor &color);
     void colorDialChanged(const QColor &color);
+
+    void setPalettePath(const QString &path);
 
     template <typename T> void updateSetting(const QString &settingID, T value);
 
@@ -61,7 +71,6 @@ void ToolSettingsWidgetPrivate::colorDialDrag(const QColor &color)
         return;
 
     freezeUpdates = true;
-    canvas->setToolColor(color);
     canvas->showColorPreview(color);
     freezeUpdates = false;
 }
@@ -75,6 +84,16 @@ void ToolSettingsWidgetPrivate::colorDialChanged(const QColor &color)
     canvas->setToolColor(color);
     canvas->hideColorPreview();
     freezeUpdates = false;
+}
+
+void ToolSettingsWidgetPrivate::setPalettePath(const QString &path)
+{
+    Q_Q(ToolSettingsWidget);
+
+    QFile file(path);
+    palettePopup->setColorList(path, readGPL(&file));
+    if (palettePopup->isVisible())
+        palettePopup->reposition(q, toolColorDial);
 }
 
 template <typename T> void ToolSettingsWidgetPrivate::updateSetting(const QString &settingID, T value)
@@ -181,10 +200,34 @@ ToolSettingsWidget::ToolSettingsWidget(CanvasWidget *canvas, QWidget *parent) :
     d->toolColorDial->setMinimumSize(QSize(80, 80));
     d->toolColorDial->setBaseSize(QSize(80, 80));
     d->toolColorDial->setMaximumSize(QSize(180, 180));
+    d->toolColorDial->installEventFilter(this);
     connect(d->toolColorDial, &HSVColorDial::dragColor, [=] (const QColor &color) { d->colorDialDrag(color); });
     connect(d->toolColorDial, &HSVColorDial::releaseColor, [=] (const QColor &color) { d->colorDialChanged(color); });
     dialLayout->addWidget(d->toolColorDial);
     layout->addLayout(dialLayout);
+
+    d->palettePopup = new PalettePopup(this);
+    d->setPalettePath(ToolFactory::defaultPaletteName());
+    connect(d->palettePopup, &PalettePopup::colorHover, this, [d] (const QColor &color) { d->colorDialDrag(color); });
+    connect(d->palettePopup, &PalettePopup::colorSelect, this, [d] (const QColor &color) { d->colorDialChanged(color); });
+    connect(d->palettePopup, &PalettePopup::promptPalette, this, [this, d] {
+        d->palettePopup->hide();
+        d->paletteListView->setToolList(ToolFactory::listPalettes());
+        d->paletteListPopup->reposition(this, d->toolColorDial);
+
+    });
+
+    d->paletteListPopup = new SidebarPopup(this);
+    QVBoxLayout *paletteListLayout = new QVBoxLayout(d->paletteListPopup);
+    paletteListLayout->setSpacing(3);
+    paletteListLayout->setContentsMargins(1, 1, 1, 1);
+    d->paletteListView = new ToolListView(d->paletteListPopup);
+    paletteListLayout->addWidget(d->paletteListView);
+    connect(d->paletteListView, &ToolListView::selectionChanged, this, [this, d] (QString const &path) {
+       d->paletteListPopup->hide();
+       d->setPalettePath(path);
+       d->palettePopup->reposition(this, d->toolColorDial);
+    });
 
     connect(d->canvas, &CanvasWidget::updateTool, this, &ToolSettingsWidget::updateTool);
     updateTool(true);
@@ -192,6 +235,37 @@ ToolSettingsWidget::ToolSettingsWidget(CanvasWidget *canvas, QWidget *parent) :
 
 ToolSettingsWidget::~ToolSettingsWidget()
 {
+}
+
+bool ToolSettingsWidget::eventFilter(QObject *watched, QEvent *event)
+{
+    Q_D(ToolSettingsWidget);
+
+    if (watched == d->toolColorDial)
+    {
+        if (event->type() == QEvent::MouseButtonPress &&
+            static_cast<QMouseEvent *>(event)->button() != Qt::LeftButton)
+        {
+            if (static_cast<QMouseEvent *>(event)->button() == Qt::RightButton)
+            {
+                d->palettePopup->reposition(this, d->toolColorDial);
+            }
+
+            return true;
+        }
+        else if (event->type() == QEvent::MouseButtonRelease &&
+                 static_cast<QMouseEvent *>(event)->button() != Qt::LeftButton)
+        {
+            return true;
+        }
+        else if (event->type() == QEvent::MouseButtonDblClick &&
+                 static_cast<QMouseEvent *>(event)->button() != Qt::LeftButton)
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void ToolSettingsWidget::updateTool(bool pathChangeOrReset)
@@ -206,7 +280,9 @@ void ToolSettingsWidget::updateTool(bool pathChangeOrReset)
             d->addSetting(info);
     }
 
-    d->toolColorDial->setColor(d->canvas->getToolColor());
+    QColor toolColor = d->canvas->getToolColor();
+    d->toolColorDial->setColor(toolColor);
+    d->palettePopup->setCurrentColor(toolColor);
 
     for (auto const &iter: d->items)
     {

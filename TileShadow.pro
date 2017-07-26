@@ -105,7 +105,10 @@ SOURCES += main.cpp\
     pathlistwidget.cpp \
     imagepreviewwidget.cpp \
     sidebarpopup.cpp \
-    dragscrollarea.cpp
+    dragscrollarea.cpp \
+    paletteview.cpp \
+    palettepopup.cpp \
+    colorpalette.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -158,7 +161,10 @@ HEADERS  += mainwindow.h \
     layershuffletype.h \
     imagepreviewwidget.h \
     sidebarpopup.h \
-    dragscrollarea.h
+    dragscrollarea.h \
+    paletteview.h \
+    palettepopup.h \
+    colorpalette.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \
