@@ -4,7 +4,6 @@
 #include <QWidget>
 
 class CanvasWidget;
-class ToolListPopup;
 class ToolListWidgetPrivate;
 class ToolListWidget : public QWidget
 {
@@ -19,7 +18,6 @@ public:
 
 protected:
     CanvasWidget *canvas;
-    ToolListPopup *popup;
 
 private:
     QScopedPointer<ToolListWidgetPrivate> const d_ptr;

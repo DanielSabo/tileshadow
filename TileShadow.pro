@@ -85,7 +85,6 @@ SOURCES += main.cpp\
     layerlistwidget.cpp \
     layerlistview.cpp \
     toolsettingswidget.cpp \
-    toollistpopup.cpp \
     imagefiles.cpp \
     toolsettinginfo.cpp \
     canvasrender.cpp \
@@ -104,7 +103,8 @@ SOURCES += main.cpp\
     filedialog.cpp \
     userpathsdialog.cpp \
     pathlistwidget.cpp \
-    imagepreviewwidget.cpp
+    imagepreviewwidget.cpp \
+    sidebarpopup.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -134,7 +134,6 @@ HEADERS  += mainwindow.h \
     layerlistview.h \
     toolsettingswidget.h \
     blendmodes.h \
-    toollistpopup.h \
     imagefiles.h \
     strokecontext.h \
     toolsettinginfo.h \
@@ -156,7 +155,8 @@ HEADERS  += mainwindow.h \
     userpathsdialog.h \
     pathlistwidget.h \
     layershuffletype.h \
-    imagepreviewwidget.h
+    imagepreviewwidget.h \
+    sidebarpopup.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \

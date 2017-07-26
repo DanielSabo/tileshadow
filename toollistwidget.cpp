@@ -1,24 +1,23 @@
 #include "toollistwidget.h"
-
 #include <QVBoxLayout>
 #include <QPushButton>
-
 #include <QDebug>
-
 #include "canvaswidget.h"
-#include "toollistpopup.h"
 #include "toolfactory.h"
+#include "sidebarpopup.h"
+#include "toollistview.h"
 
 class ToolListWidgetPrivate
 {
 public:
-    QPushButton *toolPopupButton;
+    QPushButton *toolPopupButton = nullptr;
+    SidebarPopup *popup = nullptr;
+    ToolListView *toolListView = nullptr;
 };
 
 ToolListWidget::ToolListWidget(CanvasWidget *canvas, QWidget *parent) :
     QWidget(parent),
     canvas(canvas),
-    popup(new ToolListPopup(this)),
     d_ptr(new ToolListWidgetPrivate)
 {
     Q_D(ToolListWidget);
@@ -27,12 +26,22 @@ ToolListWidget::ToolListWidget(CanvasWidget *canvas, QWidget *parent) :
     layout->setSpacing(3);
     layout->setContentsMargins(0, 0, 0, 0);
 
+    d->popup = new SidebarPopup(this);
+    QVBoxLayout *popup_layout = new QVBoxLayout(d->popup);
+    popup_layout->setSpacing(3);
+    popup_layout->setContentsMargins(1, 1, 1, 1);
+    d->toolListView = new ToolListView();
+    popup_layout->addWidget(d->toolListView);
+    connect(d->toolListView, &ToolListView::selectionChanged, this, [this, d](QString const &toolPath) {
+        d->popup->hide();
+        pickTool(toolPath);
+    });
+
     d->toolPopupButton = new QPushButton("Tools...");
     connect(d->toolPopupButton, &QPushButton::clicked, this, &ToolListWidget::showPopup);
     layout->addWidget(d->toolPopupButton);
 
     connect(canvas, &CanvasWidget::updateTool, this, &ToolListWidget::updateTool);
-    connect(popup, &ToolListPopup::toolSelected, this, &ToolListWidget::pickTool);
     reloadTools();
     updateTool();
 }
@@ -43,14 +52,18 @@ ToolListWidget::~ToolListWidget()
 
 void ToolListWidget::reloadTools()
 {
-    popup->setToolList(ToolFactory::listTools());
+    Q_D(ToolListWidget);
+
+    d->toolListView->setToolList(ToolFactory::listTools());
 }
 
 
 void ToolListWidget::updateTool()
 {
+    Q_D(ToolListWidget);
+
     QString activeTool = canvas->getActiveTool();
-    popup->setActiveTool(activeTool);
+    d->toolListView->setActiveTool(activeTool);
 }
 
 void ToolListWidget::pickTool(QString const &toolPath)
@@ -62,9 +75,5 @@ void ToolListWidget::showPopup()
 {
     Q_D(ToolListWidget);
 
-    QPoint buttonPos = d->toolPopupButton->mapToGlobal(d->toolPopupButton->pos());
-    int originY = buttonPos.y() + d->toolPopupButton->height() / 2;
-    int originX = mapToGlobal(pos()).x();
-
-    popup->reposition(window()->frameGeometry(), QPoint(originX, originY));
+    d->popup->reposition(this, d->toolPopupButton);
 }
