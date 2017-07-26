@@ -29,8 +29,6 @@ public:
     void colorDialChanged(const QColor &color);
 
     template <typename T> void updateSetting(const QString &settingID, T value);
-    void updateFloatSetting(const QString &settingID, float value);
-    void updateBoolSetting(const QString &settingID, bool value);
 
     void addSetting(const ToolSettingInfo &info);
     void addSlider(const QString &settingID, ToolSettingInfoType::Type sliderType, const QString &name, float min, float max);
@@ -79,26 +77,6 @@ void ToolSettingsWidgetPrivate::colorDialChanged(const QColor &color)
     freezeUpdates = false;
 }
 
-void ToolSettingsWidgetPrivate::updateFloatSetting(const QString &settingID, float value)
-{
-    if (freezeUpdates)
-        return;
-
-    freezeUpdates = true;
-    canvas->setToolSetting(settingID, QVariant::fromValue<float>(value));
-    freezeUpdates = false;
-}
-
-void ToolSettingsWidgetPrivate::updateBoolSetting(const QString &settingID, bool value)
-{
-    if (freezeUpdates)
-        return;
-
-    freezeUpdates = true;
-    canvas->setToolSetting(settingID, QVariant::fromValue<bool>(value));
-    freezeUpdates = false;
-}
-
 template <typename T> void ToolSettingsWidgetPrivate::updateSetting(const QString &settingID, T value)
 {
     if (freezeUpdates)
@@ -124,7 +102,7 @@ void ToolSettingsWidgetPrivate::addSlider(const QString &settingID, ToolSettingI
 
     q->layout()->addWidget(label);
     q->layout()->addWidget(slider);
-    QObject::connect(slider, &QSlider::valueChanged, [=] (int value) { updateFloatSetting(settingID, float(value) / 100.0f); });
+    QObject::connect(slider, &QSlider::valueChanged, [=] (int value) { updateSetting<float>(settingID, float(value) / 100.0f); });
 
     items.push_back({settingID, sliderType, label, slider});
 }
@@ -135,7 +113,7 @@ void ToolSettingsWidgetPrivate::addCheckbox(const QString &settingID, const QStr
 
     QCheckBox *check = new QCheckBox(name, q);
     q->layout()->addWidget(check);
-    QObject::connect(check, &QCheckBox::stateChanged, [=] (int state) { updateBoolSetting(settingID, state == Qt::Checked); });
+    QObject::connect(check, &QCheckBox::stateChanged, [=] (int state) { updateSetting<bool>(settingID, state == Qt::Checked); });
 
     items.push_back({settingID, ToolSettingInfoType::Checkbox, nullptr, check});
 }
