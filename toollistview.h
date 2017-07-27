@@ -1,12 +1,11 @@
 #ifndef TOOLLISTVIEW_H
 #define TOOLLISTVIEW_H
 
-#include <QWidget>
-#include <QAbstractScrollArea>
+#include "dragscrollarea.h"
 #include "toolfactory.h"
 
 class ToolListViewPrivate;
-class ToolListView : public QAbstractScrollArea
+class ToolListView : public DragScrollArea
 {
     Q_OBJECT
 public:
@@ -16,12 +15,11 @@ public:
     void setToolList(ToolList const &list);
     void setActiveTool(const QString &toolPath);
 
-    QSize viewportSizeHint() const;
-    void paintEvent(QPaintEvent *event);
-    void resizeEvent(QResizeEvent *event);
-    void mousePressEvent(QMouseEvent *event);
-    void mouseMoveEvent(QMouseEvent *event);
-    void mouseReleaseEvent(QMouseEvent *event);
+    QSize rowSize() const override;
+    int rowCount() const override;
+
+    void paintEvent(QPaintEvent *event) override;
+    void viewportClicked(QMouseEvent *event) override;
 
 private:
     QScopedPointer<ToolListViewPrivate> const d_ptr;

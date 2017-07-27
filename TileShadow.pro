@@ -104,7 +104,8 @@ SOURCES += main.cpp\
     userpathsdialog.cpp \
     pathlistwidget.cpp \
     imagepreviewwidget.cpp \
-    sidebarpopup.cpp
+    sidebarpopup.cpp \
+    dragscrollarea.cpp
 
 HEADERS  += mainwindow.h \
     systeminfodialog.h \
@@ -156,7 +157,8 @@ HEADERS  += mainwindow.h \
     pathlistwidget.h \
     layershuffletype.h \
     imagepreviewwidget.h \
-    sidebarpopup.h
+    sidebarpopup.h \
+    dragscrollarea.h
 
 FORMS    += mainwindow.ui \
     systeminfodialog.ui \

@@ -14,15 +14,10 @@ public:
 
     QString selectedToolPath;
     ToolList tools;
-
-    QPoint mousePressLocation;
-    bool mousePress;
-    bool dragScroll;
-    int dragScrollInitialValue;
 };
 
 ToolListView::ToolListView(QWidget *parent)
-    : QAbstractScrollArea(parent),
+    : DragScrollArea(parent),
       d_ptr(new ToolListViewPrivate)
 {
     Q_D(ToolListView);
@@ -38,23 +33,22 @@ ToolListView::ToolListView(QWidget *parent)
     d->hPad = 4;
     d->vPad = 2;
     d->rowSize = QSize(100, fontMetrics().height() + d->vPad * 2);
-
-    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
-    setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
-    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 }
 
 ToolListView::~ToolListView()
 {
 }
 
-QSize ToolListView::viewportSizeHint() const
+void ToolListView::viewportClicked(QMouseEvent *event)
 {
-    Q_D(const ToolListView);
+    Q_D(ToolListView);
 
-    return QSize(d->rowSize.width(),
-                 d->rowSize.height() * qMax<int>(1, d->tools.size()));
+    if (event->button() != Qt::LeftButton)
+        return;
+
+    int clickedRow = (event->pos().y() + verticalScrollBar()->value()) / d->rowSize.height();
+    if (clickedRow >= 0 && clickedRow < d->tools.size())
+        selectionChanged(d->tools.at(clickedRow).first);
 }
 
 void ToolListView::paintEvent(QPaintEvent *event)
@@ -98,62 +92,6 @@ void ToolListView::paintEvent(QPaintEvent *event)
     }
 }
 
-void ToolListView::mousePressEvent(QMouseEvent *event)
-{
-    Q_D(ToolListView);
-
-    if (event->button() != Qt::LeftButton)
-        return;
-
-    d->mousePressLocation = event->pos();
-    d->dragScrollInitialValue = verticalScrollBar()->value();
-    d->mousePress = true;
-    d->dragScroll = false;
-}
-
-void ToolListView::mouseMoveEvent(QMouseEvent *event)
-{
-    Q_D(ToolListView);
-
-    if (d->mousePress && !d->dragScroll)
-    {
-        if ((event->pos() - d->mousePressLocation).manhattanLength() > d->rowSize.height())
-            d->dragScroll = true;
-    }
-
-    if (d->dragScroll)
-    {
-        verticalScrollBar()->setValue(d->dragScrollInitialValue - event->pos().y() + d->mousePressLocation.y());
-    }
-}
-
-void ToolListView::mouseReleaseEvent(QMouseEvent *event)
-{
-    Q_D(ToolListView);
-
-    if (event->button() != Qt::LeftButton)
-        return;
-
-    if (!d->dragScroll)
-    {
-        int clickedRow = (event->y() + verticalScrollBar()->value()) / d->rowSize.height();
-        if (clickedRow >= 0 && clickedRow < d->tools.size())
-            selectionChanged(d->tools.at(clickedRow).first);
-    }
-
-    d->mousePress = false;
-    d->dragScroll = false;
-}
-
-void ToolListView::resizeEvent(QResizeEvent *event)
-{
-    Q_D(ToolListView);
-    verticalScrollBar()->setSingleStep(d->rowSize.height());
-    verticalScrollBar()->setPageStep(height());
-    verticalScrollBar()->setSizeIncrement(1, 1);
-    verticalScrollBar()->setRange(0, qMax(0, viewportSizeHint().height() - viewport()->height()));
-}
-
 void ToolListView::setToolList(const ToolList &list)
 {
     Q_D(ToolListView);
@@ -174,4 +112,16 @@ void ToolListView::setActiveTool(const QString &toolPath)
     Q_D(ToolListView);
     d->selectedToolPath = toolPath;
     update();
+}
+
+QSize ToolListView::rowSize() const
+{
+    Q_D(const ToolListView);
+    return d->rowSize;
+}
+
+int ToolListView::rowCount() const
+{
+    Q_D(const ToolListView);
+    return d->tools.size();
 }
