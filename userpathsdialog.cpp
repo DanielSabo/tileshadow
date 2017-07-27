@@ -22,8 +22,10 @@ void UserPathsDialog::savePaths()
     QSettings settings;
     QStringList toolPaths = ui->toolListWidget->getPaths();
     settings.setValue("Paths/UserTools", toolPaths);
-    QStringList patternPaths = ui->fillPatternListWidget->getPaths();
+    QStringList patternPaths = ui->patternListWidget->getPaths();
     settings.setValue("Paths/UserPatterns", patternPaths);
+    QStringList palettePaths = ui->paletteListWidget->getPaths();
+    settings.setValue("Paths/UserPalettes", palettePaths);
 }
 
 void UserPathsDialog::showEvent(QShowEvent *event)
@@ -32,5 +34,7 @@ void UserPathsDialog::showEvent(QShowEvent *event)
     QStringList toolPaths = settings.value("Paths/UserTools").toStringList();
     ui->toolListWidget->setPaths({ToolFactory::getUserToolsPath()}, toolPaths);
     QStringList patternPaths = settings.value("Paths/UserPatterns").toStringList();
-    ui->fillPatternListWidget->setPaths({ToolFactory::getUserPatternPath()}, patternPaths);
+    ui->patternListWidget->setPaths({ToolFactory::getUserPatternPath()}, patternPaths);
+    QStringList palettePaths = settings.value("Paths/UserPalettes").toStringList();
+    ui->paletteListWidget->setPaths({ToolFactory::getUserPalettePath()}, palettePaths);
 }

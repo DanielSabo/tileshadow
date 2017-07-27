@@ -42,7 +42,24 @@
     </widget>
    </item>
    <item>
-    <widget class="PathListWidget" name="fillPatternListWidget" native="true">
+    <widget class="PathListWidget" name="patternListWidget" native="true">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>1</verstretch>
+      </sizepolicy>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="palettePathsLabel">
+     <property name="text">
+      <string>&lt;b&gt;Palettes:&lt;/b&gt;</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="PathListWidget" name="paletteListWidget" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
        <horstretch>0</horstretch>
