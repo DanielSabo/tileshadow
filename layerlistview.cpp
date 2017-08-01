@@ -555,23 +555,37 @@ bool LayerListView::eventFilter(QObject *watched, QEvent *event)
 {
     Q_D(LayerListView);
 
-    if (watched == d->nameEditor && event->type() == QEvent::KeyPress)
+    if (watched == d->nameEditor)
     {
-        QKeyEvent *key = static_cast<QKeyEvent *>(event);
-        if (key->key() == Qt::Key_Enter ||
-            key->key() == Qt::Key_Return)
+        if (event->type() == QEvent::KeyPress)
         {
-            d->things[d->selectedThing].name = d->nameEditor->text();
-            d->nameEditor->hide();
-            emit edited(d->things[d->selectedThing].absoluteIndex, NameColumn,
-                        QVariant::fromValue<QString>(d->things[d->selectedThing].name));
-            recalulateSize();
-            return true;
+            QKeyEvent *key = static_cast<QKeyEvent *>(event);
+            if (key->key() == Qt::Key_Enter ||
+                key->key() == Qt::Key_Return)
+            {
+                d->things[d->selectedThing].name = d->nameEditor->text();
+                d->nameEditor->hide();
+                emit edited(d->things[d->selectedThing].absoluteIndex, NameColumn,
+                            QVariant::fromValue<QString>(d->things[d->selectedThing].name));
+                recalulateSize();
+                return true;
+            }
+            else if (key->key() == Qt::Key_Escape)
+            {
+                d->nameEditor->hide();
+                return true;
+            }
         }
-        else if (key->key() == Qt::Key_Escape)
+        else if (event->type() == QEvent::ShortcutOverride)
         {
-            d->nameEditor->hide();
-            return true;
+            QKeyEvent *key = static_cast<QKeyEvent *>(event);
+            if (key->key() == Qt::Key_Enter  ||
+                key->key() == Qt::Key_Return ||
+                key->key() == Qt::Key_Escape)
+            {
+                event->accept();
+                return true;
+            }
         }
     }
 
