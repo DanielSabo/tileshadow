@@ -11,7 +11,7 @@ CanvasLayer::CanvasLayer(QString name)
       mode(BlendMode::Over),
       opacity(1.0f),
       type(LayerType::Layer),
-      tiles(new TileMap)
+      tiles(std::make_shared<TileMap>())
 {
 }
 
