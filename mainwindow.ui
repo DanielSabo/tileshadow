@@ -310,6 +310,9 @@
    <property name="toolTip">
     <string>Merge Layer Down</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+D</string>
+   </property>
   </action>
   <action name="actionSet_Background_Color">
    <property name="text">
