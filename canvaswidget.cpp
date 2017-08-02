@@ -512,7 +512,7 @@ void CanvasWidget::paintGL()
     if (action == CanvasAction::RotateLayer ||
         action == CanvasAction::ScaleLayer)
     {
-        QPoint center = (d->transformLayer.origin + d->transformLayer.translation) * viewScale - canvasOrigin;
+        QPoint center = mapFromCanvas(d->transformLayer.origin + d->transformLayer.translation);
         int radius = d->transformWidgetSize;
         render->drawToolCursor(center, radius * 2 + 3);
         render->drawToolCursor(center, 10);
@@ -820,7 +820,7 @@ void CanvasWidget::toggleTransformMode(CanvasAction::Action const mode)
         action = mode;
         actionButton = Qt::NoButton;
         QPoint viewCenter = {width() / 2, height() / 2};
-        d->transformLayer.origin = (viewCenter + canvasOrigin) / viewScale;
+        d->transformLayer.origin = mapToCanvas(viewCenter);
         d->transformLayer.scale = {1.0f, 1.0f};
         d->transformLayer.translation = {0, 0};
         d->transformLayer.transientAngle = 0.0f;
@@ -858,10 +858,11 @@ void CanvasWidget::setScale(float newScale)
     // as it was before. Otherwise keep the center of the canvas in the same position.
     QPoint centerPoint = mapFromGlobal(QCursor::pos());
     if (!rect().contains(centerPoint))
-        centerPoint = QPoint(size().width(), size().height()) / 2;
+        centerPoint = QPoint(width(), height()) / 2;
 
-    canvasOrigin = (canvasOrigin + centerPoint) * (newScale / viewScale) - centerPoint;
+    QPoint canvasPoint = mapToCanvas(centerPoint);
     viewScale = newScale;
+    canvasOrigin += mapFromCanvas(canvasPoint) - centerPoint;
 
     update();
 }
@@ -2214,7 +2215,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent *event)
 {
     Q_D(CanvasWidget);
 
-    QPointF pos = (event->localPos() + canvasOrigin) / viewScale;
+    QPointF pos = mapToCanvas(event->localPos());
     float pressure = 0.5f;
     ulong timestamp = event->timestamp();
     bool wasTablet = false;
@@ -2404,7 +2405,7 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
 
     if (action == CanvasAction::MouseStroke)
     {
-        QPointF pos = (event->localPos() + canvasOrigin) / viewScale;
+        QPointF pos = mapToCanvas(event->localPos());
         ulong newTimestamp = event->timestamp();
 
         strokeTo(pos, 0.5f, float(newTimestamp - d->strokeEventTimestamp));
@@ -2413,8 +2414,8 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
     }
     else if (action == CanvasAction::DrawLine)
     {
-        QPointF start = (actionOrigin + canvasOrigin) / viewScale;
-        QPointF end = (event->localPos() + canvasOrigin) / viewScale;
+        QPointF start = mapToCanvas(actionOrigin);
+        QPointF end = mapToCanvas(event->localPos());
         if (event->modifiers() & Qt::ShiftModifier)
             end = snapPoint(end - start) + start;
         lineTo(start, end);
@@ -2436,7 +2437,7 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
     }
     else if (action == CanvasAction::EditFrame)
     {
-        QPoint pos = (event->pos() + canvasOrigin) / viewScale;
+        QPoint pos = mapToCanvas(event->pos());
 
         if (actionButton == Qt::NoButton)
         {
@@ -2492,7 +2493,7 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
     {
         if (actionButton == Qt::LeftButton)
         {
-            QPointF pos = (event->localPos() + canvasOrigin) / viewScale;
+            QPointF pos = mapToCanvas(event->localPos());
 
             if (d->transformLayer.mode == TransformToolMode::MoveOrigin)
             {
@@ -2576,7 +2577,7 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
         }
         else if (actionButton == Qt::NoButton)
         {
-            QPointF pos = (event->localPos() + canvasOrigin) / viewScale;
+            QPointF pos = mapToCanvas(event->localPos());
             d->transformLayer.mode = d->transformToolHandle(pos, action, viewScale);
             updateCursor();
         }
@@ -2592,7 +2593,7 @@ void CanvasWidget::tabletEvent(QTabletEvent *event)
     Q_D(CanvasWidget);
 
     QEvent::Type eventType = event->type();
-    QPointF point = (event->posF() + canvasOrigin) / viewScale;
+    QPointF point = mapToCanvas(event->posF());
 
     updateModifiers(event);
 
@@ -2734,6 +2735,26 @@ void CanvasWidget::enterEvent(QEvent * event)
 {
     updateCursor();
     update();
+}
+
+QPoint CanvasWidget::mapToCanvas(QPoint p)
+{
+    return (p + canvasOrigin) / viewScale;
+}
+
+QPointF CanvasWidget::mapToCanvas(QPointF p)
+{
+    return (p + canvasOrigin) / viewScale;
+}
+
+QPoint CanvasWidget::mapFromCanvas(QPoint p)
+{
+    return (p * viewScale) - canvasOrigin;
+}
+
+QPointF CanvasWidget::mapFromCanvas(QPointF p)
+{
+    return (p * viewScale) - canvasOrigin;
 }
 
 void CanvasWidget::updateModifiers(QInputEvent *event)

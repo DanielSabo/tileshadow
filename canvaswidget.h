@@ -171,6 +171,11 @@ private:
     QPoint actionOrigin;
     Qt::MouseButton actionButton;
 
+    QPoint mapToCanvas(QPoint p) ;
+    QPointF mapToCanvas(QPointF p);
+    QPoint mapFromCanvas(QPoint p) ;
+    QPointF mapFromCanvas(QPointF p);
+
     void updateModifiers(QInputEvent *event);
     void updateCursor();
 
