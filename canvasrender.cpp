@@ -436,16 +436,15 @@ void CanvasRender::ensureTiles(TileMap const &tiles)
         glFinish();
 }
 
-static void insertRectTiles(TileSet &tileSet, QRect pixelRect)
+namespace {
+void insertRectTiles(TileSet &tileSet, QRect const &pixelRect)
 {
-    int x0 = tile_indice(pixelRect.left(), TILE_PIXEL_WIDTH);
-    int x1 = tile_indice(pixelRect.right(), TILE_PIXEL_WIDTH);
-    int y0 = tile_indice(pixelRect.top(), TILE_PIXEL_HEIGHT);
-    int y1 = tile_indice(pixelRect.bottom(), TILE_PIXEL_HEIGHT);
+    QRect tileBounds = boundingTiles(pixelRect);
 
-    for (int y = y0; y <= y1; ++y)
-        for (int x = x0; x <= x1; ++x)
+    for (int y = tileBounds.top(); y <= tileBounds.bottom(); ++y)
+        for (int x = tileBounds.left(); x <= tileBounds.right(); ++x)
             tileSet.insert({x, y});
+}
 }
 
 void CanvasRender::renderTileMap(TileMap &tiles)
