@@ -24,6 +24,7 @@ struct GLShaderProgram
     GLuint vertexArray;
 };
 
+class QMatrix;
 class CanvasContext;
 class CanvasRender
 {
@@ -35,7 +36,7 @@ public:
 
     struct : GLShaderProgram {
         GLuint tileOrigin;
-        GLuint tileSize;
+        GLuint tileScale;
         GLuint tileImage;
         GLuint tilePixels;
         GLuint binSize;
@@ -94,8 +95,8 @@ public:
     void renderView(QPoint newOrigin, QSize newSize, float newScale, QRect newFrame, bool fullRedraw);
     void drawToolCursor(QPoint cursorPos, float cusrorRadius, QColor outerColor = Qt::black, QColor innerColor = Qt::white);
     void drawColorDots(QColor dotPreviewColor);
-    void drawFrame(QRect frame);
 private:
+    void drawFrame(QRectF frame, const QMatrix &canvasToViewport);
     void renderTile(int x, int y, CanvasTile *tile);
 };
 

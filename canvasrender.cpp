@@ -5,6 +5,7 @@
 #include <qmath.h>
 #include <QColor>
 #include <QRegion>
+#include <QMatrix>
 #include <QDebug>
 
 #ifdef __APPLE__
@@ -107,7 +108,7 @@ CanvasRender::CanvasRender() :
     if (tileShader.program)
     {
         tileShader.tileOrigin = glFuncs->glGetUniformLocation(tileShader.program, "tileOrigin");
-        tileShader.tileSize   = glFuncs->glGetUniformLocation(tileShader.program, "tileSize");
+        tileShader.tileScale  = glFuncs->glGetUniformLocation(tileShader.program, "tileScale");
         tileShader.tileImage  = glFuncs->glGetUniformLocation(tileShader.program, "tileImage");
         tileShader.tilePixels = glFuncs->glGetUniformLocation(tileShader.program, "tilePixels");
         tileShader.binSize    = glFuncs->glGetUniformLocation(tileShader.program, "binSize");
@@ -115,9 +116,9 @@ CanvasRender::CanvasRender() :
 
     std::vector<float> shaderVerts({
         0.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f,
+        TILE_PIXEL_WIDTH, 0.0f,
+        TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT,
+        0.0f, TILE_PIXEL_HEIGHT,
     });
     uploadVertexData2f(glFuncs, tileShader, shaderVerts);
 
@@ -509,20 +510,13 @@ void CanvasRender::renderView(QPoint newOrigin, QSize newSize, float newScale, Q
     glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, backbufferFramebuffer);
     glFuncs->glViewport(0, 0, viewSize.width(), viewSize.height());
 
-    int widgetWidth  = viewSize.width();
-    int widgetHeight = viewSize.height();
-
-    int originTileX = tile_indice(viewOrigin.x() / viewScale, TILE_PIXEL_WIDTH);
-    int originTileY = tile_indice(viewOrigin.y() / viewScale, TILE_PIXEL_HEIGHT);
-
-    float worldTileWidth = (2.0f / widgetWidth) * viewScale * TILE_PIXEL_WIDTH;
-    float worldOriginX = -viewOrigin.x() * (2.0f / widgetWidth) - 1.0f;
-
-    float worldTileHeight = (2.0f / widgetHeight) * viewScale * TILE_PIXEL_HEIGHT;
-    float worldOriginY = viewOrigin.y() * (2.0f / widgetHeight) - worldTileHeight + 1.0f;
-
-    int tileCountX = ceil(widgetWidth / (TILE_PIXEL_WIDTH * viewScale)) + 1;
-    int tileCountY = ceil(widgetHeight / (TILE_PIXEL_HEIGHT * viewScale)) + 1;
+    QMatrix viewportToCanvas; // Transform from GL coordinates to canvas pixels
+    viewportToCanvas.scale(1.0 / viewScale, 1.0 / viewScale);
+    viewportToCanvas.translate(viewOrigin.x(), viewOrigin.y());
+    viewportToCanvas.scale(viewSize.width(), viewSize.height());
+    viewportToCanvas.translate(0.5, 0.5);
+    viewportToCanvas.scale(0.5, -0.5);
+    QMatrix canvasToViewport = viewportToCanvas.inverted();
 
     int zoomFactor = viewScale >= 1.0f ? 1 : 1 / viewScale;
 
@@ -530,18 +524,17 @@ void CanvasRender::renderView(QPoint newOrigin, QSize newSize, float newScale, Q
 
     glFuncs->glActiveTexture(GL_TEXTURE0);
     glFuncs->glUniform1i(tileShader.tileImage, 0);
-    glFuncs->glUniform2f(tileShader.tileSize, worldTileWidth, worldTileHeight);
+    glFuncs->glUniform2f(tileShader.tileScale, canvasToViewport.m11(), canvasToViewport.m22());
     glFuncs->glUniform2f(tileShader.tilePixels, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT);
     glFuncs->glUniform1i(tileShader.binSize, zoomFactor);
     glFuncs->glBindVertexArray(tileShader.vertexArray);
 
     auto drawOneTile = [&](int ix, int iy) {
-        float offsetX = ix * worldTileWidth + worldOriginX;
-        float offsetY = worldOriginY - iy * worldTileHeight;
+        QPointF offset = canvasToViewport.map(QPointF(ix * TILE_PIXEL_WIDTH, iy * TILE_PIXEL_HEIGHT));
 
         GLuint tileBuffer = getGLBuf(ix, iy);
         glFuncs->glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA8, tileBuffer);
-        glFuncs->glUniform2f(tileShader.tileOrigin, offsetX, offsetY);
+        glFuncs->glUniform2f(tileShader.tileOrigin, offset.x(), offset.y());
         glFuncs->glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
     };
@@ -560,8 +553,10 @@ void CanvasRender::renderView(QPoint newOrigin, QSize newSize, float newScale, Q
 
     if (fullRedraw || dirtyBackground)
     {
-        for (int ix = originTileX; ix < tileCountX + originTileX; ++ix)
-            for (int iy = originTileY; iy < tileCountY + originTileY; ++iy)
+        QRect tileBounds = boundingTiles(viewportToCanvas.mapRect(QRectF(-1.0, -1.0, 2.0, 2.0)).toAlignedRect());
+
+        for (int ix = tileBounds.left(); ix <= tileBounds.right(); ++ix)
+            for (int iy = tileBounds.top(); iy <= tileBounds.bottom(); ++iy)
                 drawOneTile(ix, iy);
     }
     else
@@ -576,7 +571,7 @@ void CanvasRender::renderView(QPoint newOrigin, QSize newSize, float newScale, Q
         glFuncs->glStencilMask(0x00);
     }
 
-    drawFrame(viewFrame);
+    drawFrame(viewFrame, canvasToViewport);
 
     if (stencilTiles)
     {
@@ -688,7 +683,7 @@ namespace {
     }
 }
 
-void CanvasRender::drawFrame(QRect frame)
+void CanvasRender::drawFrame(QRectF frame, QMatrix const &canvasToViewport)
 {
     if (frame.isEmpty())
         return;
@@ -696,31 +691,27 @@ void CanvasRender::drawFrame(QRect frame)
     QColor fillColor(Qt::black);
     fillColor.setAlphaF(0.35);
 
-    // Map the frame rect to gl coordinates
-    float frameWidth = viewScale * frame.width() * 2.0f / viewSize.width();
-    float frameHeight = viewScale * frame.height() * 2.0f / viewSize.height();
-    float frameX = ((viewScale * frame.x() - viewOrigin.x()) / viewSize.width() * 2.0f) - 1.0f;
-    float frameY = 1.0f - ((viewScale * (frame.y() + frame.height()) - viewOrigin.y()) / viewSize.height() * 2.0f);
+    frame = canvasToViewport.mapRect(frame);
 
     std::vector<float> shaderVerts;
 
-    if (frameX + frameWidth < 1.0f) // Right
-        appendRectVerts(shaderVerts, {{frameX + frameWidth, frameY}, QPointF{1.0f, 1.0f}});
-    if (frameY + frameHeight < 1.0f) // Top
-        appendRectVerts(shaderVerts, {{frameX + frameWidth, frameY + frameHeight}, QPointF{-1.0f, 1.0f}});
-    if (frameX > -1.0f) // Left
-        appendRectVerts(shaderVerts, {{frameX, frameY + frameHeight}, QPointF{-1.0f, -1.0f}});
-    if (frameY > -1.0f) // Bottom
-        appendRectVerts(shaderVerts, {{frameX, frameY}, QPointF{1.0f, -1.0f}});
+    if (frame.right() < 1.0f) // Right
+        appendRectVerts(shaderVerts, {frame.topRight(), QPointF{1.0f, 1.0f}});
+    if (frame.bottom() < 1.0f) // Top
+        appendRectVerts(shaderVerts, {frame.bottomRight(), QPointF{-1.0f, 1.0f}});
+    if (frame.left() > -1.0f) // Left
+        appendRectVerts(shaderVerts, {frame.bottomLeft(), QPointF{-1.0f, -1.0f}});
+    if (frame.top() > -1.0f) // Bottom
+        appendRectVerts(shaderVerts, {frame.topLeft(), QPointF{1.0f, -1.0f}});
 
     if(!shaderVerts.empty())
     {
         float extraX = (2.0f * 2.0f) / viewSize.width();
         float extraY = (2.0f * 2.0f) / viewSize.height();
-        appendRectVerts(shaderVerts, {{frameX + frameWidth, frameY}, QSizeF(extraX, frameHeight + extraY)}); // Right
-        appendRectVerts(shaderVerts, {{frameX + frameWidth, frameY + frameHeight}, QSizeF(-(frameWidth + extraX), extraY)}); // Top
-        appendRectVerts(shaderVerts, {{frameX, frameY + frameHeight}, QSizeF(-extraX, -(frameHeight + extraY))}); // Left
-        appendRectVerts(shaderVerts, {{frameX, frameY}, QSizeF(frameWidth + extraX, -extraY)}); // Bottom
+        appendRectVerts(shaderVerts, {frame.topRight(), QSizeF(extraX, frame.height() + extraY)}); // Right
+        appendRectVerts(shaderVerts, {frame.bottomRight(), QSizeF(-(frame.width() + extraX), extraY)}); // Top
+        appendRectVerts(shaderVerts, {frame.bottomLeft(), QSizeF(-extraX, -(frame.height() + extraY))}); // Left
+        appendRectVerts(shaderVerts, {frame.topLeft(), QSizeF(frame.width() + extraX, -extraY)}); // Bottom
 
         glFuncs->glEnable(GL_BLEND);
         glFuncs->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
