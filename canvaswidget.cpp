@@ -2550,6 +2550,9 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
                         scaleVector = {absY * (scaleVector.x() / absX), absY * (scaleVector.y() / absY)};
                 }
 
+                scaleVector.setX(d->transformLayer.transientScale.x() * scaleVector.x());
+                scaleVector.setY(d->transformLayer.transientScale.y() * scaleVector.y());
+
                 if (event->modifiers() & Qt::ShiftModifier)
                 {
                     float absX = fabs(scaleVector.x());
@@ -2559,8 +2562,7 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
                     scaleVector.setY(absY > 1.0f ? round(scaleVector.y()) : copysignf(1.0f, scaleVector.y()));
                 }
 
-                d->transformLayer.scale.rx() = d->transformLayer.transientScale.x() * scaleVector.x();
-                d->transformLayer.scale.ry() = d->transformLayer.transientScale.y() * scaleVector.y();
+                d->transformLayer.scale = scaleVector.toPointF();
             }
 
             if (d->transformLayer.mode != TransformToolMode::MoveOrigin)
