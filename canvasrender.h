@@ -2,16 +2,12 @@
 #define CANVASRENDER_H
 
 #include "canvaswidget-opencl.h"
+#include "tileset.h"
+#include <map>
 #include <QColor>
 #include <QPoint>
 #include <QRect>
 #include <QOpenGLFunctions_3_2_Core>
-#include <map>
-#include "tileset.h"
-#include "canvaslayer.h"
-#include "canvasstack.h"
-#include "canvasundoevent.h"
-#include "strokecontext.h"
 
 struct GLShaderProgram
 {
