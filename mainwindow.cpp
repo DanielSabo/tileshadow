@@ -134,6 +134,11 @@ void MainWindow::connectActions()
     // View
     connect(ui->actionZoom_In, &QAction::triggered, this, &MainWindow::actionZoomIn);
     connect(ui->actionZoom_Out, &QAction::triggered, this, &MainWindow::actionZoomOut);
+    connect(ui->actionReset_View, &QAction::triggered, this, &MainWindow::actionResetView);
+    connect(ui->actionMirror_Vertical, &QAction::triggered, this, &MainWindow::actionViewMirrorVertical);
+    connect(ui->actionMirror_Horizontal, &QAction::triggered, this, &MainWindow::actionViewMirrorHorizontal);
+    connect(ui->actionRotate_View_Counterclockwise, &QAction::triggered, this, &MainWindow::actionViewRotateCounterclockwise);
+    connect(ui->actionRotate_View_Clockwise, &QAction::triggered, this, &MainWindow::actionViewRotateClockwise);
 
     // Tool
     connect(ui->actionIncrease_Tool_Size, &QAction::triggered, this, &MainWindow::actionToolSizeIncrease);
@@ -214,12 +219,19 @@ void MainWindow::updateTitle()
     else
         title = QFileInfo(windowFilePath()).fileName() + "[*]";
 
-    float scale = canvas->getScale();
+    auto vt = canvas->getViewTransform();
 
-    if (scale >= 1.0)
-        title += " - " + QString::number(scale * 100, 'f', 0) + "%";
+    if (vt.scale >= 1.0)
+        title += " - " + QString::number(vt.scale * 100, 'f', 0) + "%";
     else
-        title += " - " + QString::number(scale * 100, 'f', 2) + "%";
+        title += " - " + QString::number(vt.scale * 100, 'f', 2) + "%";
+
+    if ((vt.mirrorHorizontal || vt.mirrorVertical) && (vt.angle != 0.0f))
+        title += tr(" (Flipped, Rotated)");
+    else if (vt.mirrorHorizontal || vt.mirrorVertical)
+        title += tr(" (Flipped)");
+    else if (vt.angle != 0.0f)
+        title += tr(" (Rotated)");
 
     setWindowTitle(title);
 }
@@ -737,6 +749,54 @@ void MainWindow::actionZoomIn()
 void MainWindow::actionZoomOut()
 {
     canvas->setScale(canvas->getScale() * 0.5);
+    updateTitle();
+}
+
+void MainWindow::actionResetView()
+{
+    auto vt = canvas->getViewTransform();
+    vt.angle = 0.0f;
+    vt.mirrorHorizontal = false;
+    vt.mirrorVertical = false;
+    canvas->setViewTransform(vt);
+    updateTitle();
+}
+
+void MainWindow::actionViewMirrorVertical()
+{
+    auto vt = canvas->getViewTransform();
+    vt.mirrorVertical = !vt.mirrorVertical;
+    canvas->setViewTransform(vt);
+    updateTitle();
+}
+
+void MainWindow::actionViewMirrorHorizontal()
+{
+    auto vt = canvas->getViewTransform();
+    vt.mirrorHorizontal = !vt.mirrorHorizontal;
+    canvas->setViewTransform(vt);
+    updateTitle();
+}
+
+void MainWindow::actionViewRotateCounterclockwise()
+{
+    auto vt = canvas->getViewTransform();
+    if (vt.mirrorHorizontal != vt.mirrorVertical)
+        vt.angle += 90.0f;
+    else
+        vt.angle -= 90.0f;
+    canvas->setViewTransform(vt);
+    updateTitle();
+}
+
+void MainWindow::actionViewRotateClockwise()
+{
+    auto vt = canvas->getViewTransform();
+    if (vt.mirrorHorizontal != vt.mirrorVertical)
+        vt.angle -= 90.0f;
+    else
+        vt.angle += 90.0f;
+    canvas->setViewTransform(vt);
     updateTitle();
 }
 

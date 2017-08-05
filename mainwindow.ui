@@ -122,6 +122,12 @@
     </property>
     <addaction name="actionZoom_In"/>
     <addaction name="actionZoom_Out"/>
+    <addaction name="separator"/>
+    <addaction name="actionReset_View"/>
+    <addaction name="actionMirror_Vertical"/>
+    <addaction name="actionMirror_Horizontal"/>
+    <addaction name="actionRotate_View_Counterclockwise"/>
+    <addaction name="actionRotate_View_Clockwise"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -371,7 +377,7 @@
   </action>
   <action name="actionRotate_Layer">
    <property name="text">
-    <string>Rotate Layer</string>
+    <string>Rotate &amp;Layer</string>
    </property>
    <property name="shortcut">
     <string>R</string>
@@ -470,10 +476,47 @@
   </action>
   <action name="actionScale_Layer">
    <property name="text">
-    <string>Scale/Flip Layer</string>
+    <string>Scale/Flip La&amp;yer</string>
    </property>
    <property name="shortcut">
     <string>T</string>
+   </property>
+  </action>
+  <action name="actionReset_View">
+   <property name="text">
+    <string>&amp;Reset Orientation</string>
+   </property>
+  </action>
+  <action name="actionMirror_Horizontal">
+   <property name="text">
+    <string>&amp;Mirror Horizontal</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Right</string>
+   </property>
+  </action>
+  <action name="actionMirror_Vertical">
+   <property name="text">
+    <string>Mirror Vertical</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Up</string>
+   </property>
+  </action>
+  <action name="actionRotate_View_Counterclockwise">
+   <property name="text">
+    <string>Rotate Counterclockwise</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Left</string>
+   </property>
+  </action>
+  <action name="actionRotate_View_Clockwise">
+   <property name="text">
+    <string>Rotate Clockwise</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Down</string>
    </property>
   </action>
  </widget>

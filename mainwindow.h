@@ -66,6 +66,11 @@ public slots:
     void actionRedo();
     void actionZoomIn();
     void actionZoomOut();
+    void actionResetView();
+    void actionViewMirrorVertical();
+    void actionViewMirrorHorizontal();
+    void actionViewRotateCounterclockwise();
+    void actionViewRotateClockwise();
     void actionToolSizeIncrease();
     void actionToolSizeDecrease();
     void actionResetTool();
