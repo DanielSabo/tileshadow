@@ -82,11 +82,7 @@ static void dynamicVertexData2f(QOpenGLFunctions_3_2_Core *glFuncs,
 }
 
 CanvasRender::CanvasRender() :
-    glFuncs(new QOpenGLFunctions_3_2_Core()),
-    backgroundGLTile(0),
-    dirtyBackground(true),
-    viewScale(0.0f),
-    viewPixelRatio(1)
+    glFuncs(new QOpenGLFunctions_3_2_Core())
 {
     if (!glFuncs->initializeOpenGLFunctions())
     {
@@ -108,7 +104,7 @@ CanvasRender::CanvasRender() :
     if (tileShader.program)
     {
         tileShader.tileOrigin = glFuncs->glGetUniformLocation(tileShader.program, "tileOrigin");
-        tileShader.tileScale  = glFuncs->glGetUniformLocation(tileShader.program, "tileScale");
+        tileShader.tileMatrix = glFuncs->glGetUniformLocation(tileShader.program, "tileMatrix");
         tileShader.tileImage  = glFuncs->glGetUniformLocation(tileShader.program, "tileImage");
         tileShader.tilePixels = glFuncs->glGetUniformLocation(tileShader.program, "tilePixels");
         tileShader.binSize    = glFuncs->glGetUniformLocation(tileShader.program, "binSize");
@@ -467,15 +463,21 @@ void CanvasRender::renderTileMap(TileMap &tiles)
         clFinish(SharedOpenCL::getSharedOpenCL()->cmdQueue);
 }
 
-void CanvasRender::renderView(QPoint newOrigin, QSize newSize, float newScale, QRect newFrame, bool fullRedraw)
+void CanvasRender::renderView(QPoint newOrigin, QSize newSize, float newScale, float newAngle, bool newMirrorHoriz, bool newMirrorVert, QRect newFrame, bool fullRedraw)
 {
-    if (viewScale != newScale)
-        fullRedraw = true;
-    viewScale = newScale;
+    fullRedraw |= (viewScale != newScale);
+    fullRedraw |= (viewAngle != newAngle);
+    fullRedraw |= (mirrorHoriz != newMirrorHoriz);
+    fullRedraw |= (mirrorVert != newMirrorVert);
+    fullRedraw |= (viewFrame != newFrame);
 
-    if (viewFrame != newFrame)
-        fullRedraw = true;
+    viewScale = newScale;
+    viewAngle = newAngle;
+    mirrorHoriz = newMirrorHoriz;
+    mirrorVert = newMirrorVert;
     viewFrame = newFrame;
+
+    QVector<QRect> dirtyRects;
 
     if (viewSize != newSize)
     {
@@ -490,18 +492,9 @@ void CanvasRender::renderView(QPoint newOrigin, QSize newSize, float newScale, Q
         shiftFramebuffer(newOrigin.x() - viewOrigin.x(),
                          newOrigin.y() - viewOrigin.y());
 
-        QRegion dirtyRegion = QRegion{QRect{newOrigin, viewSize}};
-        dirtyRegion -= QRect{viewOrigin, viewSize};
-        for (QRect &dirtyRect: dirtyRegion.rects())
-        {
-            int pad = viewScale > 1.0f ? std::ceil(viewScale) : 0;
-            int x = std::floor(dirtyRect.x() / viewScale);
-            int y = std::floor(dirtyRect.y() / viewScale);
-            int w = std::ceil((dirtyRect.width() + pad) / viewScale);
-            int h = std::ceil((dirtyRect.height() + pad) / viewScale);
-
-            insertRectTiles(dirtyTiles, {x, y, w, h});
-        }
+        QRegion dirtyRegion = QRegion{QRect{{0,0}, viewSize}};
+        dirtyRegion -= QRect{viewOrigin - newOrigin, viewSize};
+        dirtyRects = dirtyRegion.rects();
     }
 
     viewSize = newSize;
@@ -510,9 +503,12 @@ void CanvasRender::renderView(QPoint newOrigin, QSize newSize, float newScale, Q
     glFuncs->glBindFramebuffer(GL_FRAMEBUFFER, backbufferFramebuffer);
     glFuncs->glViewport(0, 0, viewSize.width(), viewSize.height());
 
-    QMatrix viewportToCanvas; // Transform from GL coordinates to canvas pixels
-    viewportToCanvas.scale(1.0 / viewScale, 1.0 / viewScale);
-    viewportToCanvas.translate(viewOrigin.x(), viewOrigin.y());
+    QMatrix widgetToCanvas;
+    widgetToCanvas.scale(1.0 / viewScale, 1.0 / viewScale);
+    widgetToCanvas.rotate(-viewAngle);
+    widgetToCanvas.scale(mirrorHoriz ? -1.0 : 1.0, mirrorVert ? -1.0 : 1.0);
+    widgetToCanvas.translate(viewOrigin.x(), viewOrigin.y());
+    QMatrix viewportToCanvas = widgetToCanvas;
     viewportToCanvas.scale(viewSize.width(), viewSize.height());
     viewportToCanvas.translate(0.5, 0.5);
     viewportToCanvas.scale(0.5, -0.5);
@@ -524,7 +520,11 @@ void CanvasRender::renderView(QPoint newOrigin, QSize newSize, float newScale, Q
 
     glFuncs->glActiveTexture(GL_TEXTURE0);
     glFuncs->glUniform1i(tileShader.tileImage, 0);
-    glFuncs->glUniform2f(tileShader.tileScale, canvasToViewport.m11(), canvasToViewport.m22());
+    // vertex.xx * tileMatrix.xy + vertex.yy * tileMatrix.zw
+    // x = vertex.x * tileMatrix.x + vertex.y * tileMatrix.z
+    // y = vertex.x * tileMatrix.y + vertex.y * tileMatrix.w
+    glFuncs->glUniform4f(tileShader.tileMatrix, canvasToViewport.m11(), canvasToViewport.m12(),
+                                                canvasToViewport.m21(), canvasToViewport.m22());
     glFuncs->glUniform2f(tileShader.tilePixels, TILE_PIXEL_WIDTH, TILE_PIXEL_HEIGHT);
     glFuncs->glUniform1i(tileShader.binSize, zoomFactor);
     glFuncs->glBindVertexArray(tileShader.vertexArray);
@@ -553,6 +553,7 @@ void CanvasRender::renderView(QPoint newOrigin, QSize newSize, float newScale, Q
 
     if (fullRedraw || dirtyBackground)
     {
+        glClear(GL_COLOR_BUFFER_BIT);
         QRect tileBounds = boundingTiles(viewportToCanvas.mapRect(QRectF(-1.0, -1.0, 2.0, 2.0)).toAlignedRect());
 
         for (int ix = tileBounds.left(); ix <= tileBounds.right(); ++ix)
@@ -561,6 +562,9 @@ void CanvasRender::renderView(QPoint newOrigin, QSize newSize, float newScale, Q
     }
     else
     {
+        for (QRectF rect: dirtyRects)
+            insertRectTiles(dirtyTiles, widgetToCanvas.mapRect(rect).toAlignedRect());
+
         for (QPoint const &iter: dirtyTiles)
             drawOneTile(iter.x(), iter.y());
     }

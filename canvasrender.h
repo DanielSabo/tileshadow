@@ -32,11 +32,11 @@ public:
     CanvasRender();
     ~CanvasRender();
 
-    QOpenGLFunctions_3_2_Core *glFuncs;
+    QOpenGLFunctions_3_2_Core *glFuncs = nullptr;
 
     struct : GLShaderProgram {
         GLuint tileOrigin;
-        GLuint tileScale;
+        GLuint tileMatrix;
         GLuint tileImage;
         GLuint tilePixels;
         GLuint binSize;
@@ -59,9 +59,9 @@ public:
         GLuint fillColor;
     } canvasFrameShader;
 
-    GLuint backbufferFramebuffer;
-    GLuint backbufferRenderbuffer;
-    GLuint backbufferStencilbuffer;
+    GLuint backbufferFramebuffer = 0;
+    GLuint backbufferRenderbuffer = 0;
+    GLuint backbufferStencilbuffer = 0;
 
     typedef struct {
         GLuint glBuf;
@@ -70,17 +70,20 @@ public:
 
     typedef std::map<QPoint, RenderTile, _tilePointCompare> GLTileMap;
 
-    GLuint backgroundGLTile;
+    GLuint backgroundGLTile = 0;
     GLTileMap glTiles;
 
     TileSet dirtyTiles;
-    bool dirtyBackground;
+    bool dirtyBackground = true;
 
     QPoint viewOrigin;
     QSize viewSize;
-    float viewScale;
-    int viewPixelRatio;
+    float viewScale = 1.0f;
+    float viewAngle = 0.0f;
+    int viewPixelRatio = 1;
     QRect viewFrame;
+    bool mirrorHoriz = false;
+    bool mirrorVert = false;
 
     void resizeFramebuffer(int w, int h);
     void shiftFramebuffer(int xOffset, int yOffset);
@@ -92,7 +95,7 @@ public:
     void ensureTiles(const TileMap &tiles);
     void renderTileMap(TileMap &tiles);
 
-    void renderView(QPoint newOrigin, QSize newSize, float newScale, QRect newFrame, bool fullRedraw);
+    void renderView(QPoint newOrigin, QSize newSize, float newScale, float newAngle, bool newMirrorHoriz, bool newMirrorVert, QRect newFrame, bool fullRedraw);
     void drawToolCursor(QPoint cursorPos, float cusrorRadius, QColor outerColor = Qt::black, QColor innerColor = Qt::white);
     void drawColorDots(QColor dotPreviewColor);
 private:

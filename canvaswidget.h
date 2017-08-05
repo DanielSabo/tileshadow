@@ -62,6 +62,27 @@ public:
         QByteArray serialzedTool;
     };
 
+    struct ViewStateInfo
+    {
+        ViewStateInfo() {}
+        ViewStateInfo(float s, float a, bool h, bool v) : scale(s), angle(a), mirrorHorizontal(h), mirrorVertical(v) {}
+        ViewStateInfo(ViewStateInfo const &other) = default;
+        ViewStateInfo & operator =(ViewStateInfo const &other) = default;
+
+        float scale = 1.0f;
+        float angle = 0.0f;
+        bool mirrorHorizontal = false;
+        bool mirrorVertical = false;
+
+        bool operator ==(ViewStateInfo const &o) {
+            return (scale == o.scale) && (angle == o.angle) &&
+                   (mirrorHorizontal == o.mirrorHorizontal) && (mirrorVertical == o.mirrorVertical);
+        }
+        bool operator !=(ViewStateInfo const &o) {
+            return !(operator ==(o));
+        }
+    };
+
     void setToolColor(const QColor &color);
     QColor getToolColor();
     void setActiveTool(const QString &toolName);
@@ -81,6 +102,8 @@ public:
 
     float getScale();
     void  setScale(float newScale);
+    ViewStateInfo getViewTransform();
+    void setViewTransform(ViewStateInfo vt);
 
     bool getModified();
     void setModified(bool state);
@@ -164,7 +187,6 @@ private:
 
     CanvasAction::Action action;
     QColor toolColor;
-    float viewScale;
     int lastNewLayerNumber;
     bool modified;
     QPoint canvasOrigin;
