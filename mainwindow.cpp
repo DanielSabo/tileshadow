@@ -93,6 +93,10 @@ MainWindow::MainWindow(QWidget *parent) :
         "QSplitter::Handle:hover {"
         "background-color: palette(highlight);"
         "}"));
+
+    // A hack to put a seperator before "Enter Full Screen"
+    ui->menuView->setSeparatorsCollapsible(false);
+    ui->menuView->addSeparator();
 #endif
 
     setFocus();
