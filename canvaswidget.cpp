@@ -2596,8 +2596,8 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent *event)
                     float absX = fabs(scaleVector.x());
                     float absY = fabs(scaleVector.y());
 
-                    scaleVector.setX(absX > 1.0f ? round(scaleVector.x()) : copysignf(1.0f, scaleVector.x()));
-                    scaleVector.setY(absY > 1.0f ? round(scaleVector.y()) : copysignf(1.0f, scaleVector.y()));
+                    scaleVector.setX(absX > 1.0f ? round(scaleVector.x()) : 1.0f / round(1.0f / scaleVector.x()));
+                    scaleVector.setY(absY > 1.0f ? round(scaleVector.y()) : 1.0f / round(1.0f / scaleVector.y()));
                 }
 
                 d->transformLayer.scale = scaleVector.toPointF();
