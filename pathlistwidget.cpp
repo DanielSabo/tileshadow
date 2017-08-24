@@ -28,7 +28,7 @@ PathListWidget::PathListWidget(QWidget *parent)
 {
     Q_D(PathListWidget);
 
-    d->contextMenu = new QMenu();
+    d->contextMenu = new QMenu(this);
     d->showAction = d->contextMenu->addAction(tr("Show directory"));
 
     auto l = new QVBoxLayout(this);
