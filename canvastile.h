@@ -14,13 +14,12 @@ static const int TILE_PIXEL_WIDTH  = 128;
 static const int TILE_PIXEL_HEIGHT = 128;
 static const int TILE_COMP_TOTAL = TILE_PIXEL_WIDTH * TILE_PIXEL_HEIGHT * 4;
 
-/* From GEGL */
-static inline int tile_indice (int coordinate, int stride)
+static inline int tile_indice(int coordinate, int stride)
 {
-    if (coordinate >= 0)
-        return coordinate / stride;
-    else
-        return ((coordinate + 1) / stride) - 1;
+    // GCC and Clang are smart enough to turn this
+    // into a bit shift at any optimization level.
+    int n = (coordinate < 0) ? -1 : 0;
+    return (coordinate - n) / stride + n;
 }
 
 class CanvasTile
