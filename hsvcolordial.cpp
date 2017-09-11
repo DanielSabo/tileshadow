@@ -45,6 +45,12 @@ struct ColorDialMetrics {
     float outerRadius;
     float innerRadius;
 };
+
+// Hue rotates counter-clockwise with 0 (red) on the right hand side
+float hueFromXY(float x, float y)
+{
+    return atan2(y, -x) / (2 * M_PI) + 0.5;
+}
 }
 
 HSVColorDial::HSVColorDial(QWidget *parent) :
@@ -103,32 +109,6 @@ void HSVColorDial::resizeEvent(QResizeEvent *event)
     Q_D(HSVColorDial);
     d->renderedDial = QImage();
     d->renderedInnerBox = QImage();
-}
-
-static float hueFromXY(float x, float y)
-{
-    float theta;
-
-    if (y >= 0.0)
-    {
-        if (x * x < 0.001)
-            theta = M_PI / 2;
-        else if (x >= 0.0)
-            theta = atan(y / x);
-        else
-            theta = M_PI + atan(y / x);
-    }
-    else
-    {
-        if (x * x < 0.001)
-            theta = M_PI / 2 + M_PI;
-        else if (x >= 0.0)
-            theta = 2 * M_PI + atan(y / x);
-        else
-            theta = M_PI + atan(y / x);
-    }
-
-    return 1.0 - theta / (2 * M_PI);
 }
 
 void HSVColorDial::paintEvent(QPaintEvent *event)
