@@ -100,7 +100,7 @@ void writeBackground(QZipWriter &writer, QString const &path, CanvasTile *tile, 
 
             for (int col = 0; col < resultBounds.width(); col++)
             {
-                int tileX = row % TILE_PIXEL_WIDTH;
+                int tileX = col % TILE_PIXEL_WIDTH;
 
                 rowPtr[col * 3 + 0] = qToBigEndian((uint16_t)(srcPtr[tileX * 4 + 0] * 0xFFFF));
                 rowPtr[col * 3 + 1] = qToBigEndian((uint16_t)(srcPtr[tileX * 4 + 1] * 0xFFFF));
