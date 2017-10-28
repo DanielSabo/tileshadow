@@ -80,6 +80,36 @@ BlendMode::Mode oraOpToMode(QString opName)
     return BlendMode::Over;
 }
 
+void writePixelRGBA(const float *in, uint16_t *out)
+{
+    float r = in[0];
+    float g = in[1];
+    float b = in[2];
+    float a = in[3];
+
+    if (a <= 0.0f)
+    {
+        out[0] = 0;
+        out[1] = 0;
+        out[2] = 0;
+        out[3] = 0;
+    }
+    else {
+        if (a > 1.0f)
+        {
+            r /= a;
+            g /= a;
+            b /= a;
+            a = 1.0f;
+        }
+
+        out[0] = qToBigEndian((uint16_t)(r * 0xFFFF));
+        out[1] = qToBigEndian((uint16_t)(g * 0xFFFF));
+        out[2] = qToBigEndian((uint16_t)(b * 0xFFFF));
+        out[3] = qToBigEndian((uint16_t)(a * 0xFFFF));
+    }
+}
+
 void writeBackground(QZipWriter &writer, QString const &path, CanvasTile *tile, QSize const &tileBounds)
 {
     QSize resultBounds(TILE_PIXEL_WIDTH * tileBounds.width(),
@@ -91,12 +121,12 @@ void writeBackground(QZipWriter &writer, QString const &path, CanvasTile *tile, 
         size_t rowComps = resultBounds.width() * 3;
 
         uint16_t *rowPtr = layerData.get();
-        float *tileData = tile->mapHost();
+        const float *tileData = tile->mapHost();
 
         for (int row = 0; row < resultBounds.height(); row++)
         {
             int tileY = row % TILE_PIXEL_HEIGHT;
-            float *srcPtr = tileData + (TILE_PIXEL_WIDTH * 4) * tileY;
+            const float *srcPtr = tileData + (TILE_PIXEL_WIDTH * 4) * tileY;
 
             for (int col = 0; col < resultBounds.width(); col++)
             {
@@ -177,26 +207,13 @@ void writeStack(QXmlStreamWriter &stackXML,
                                                      + (4 * ix * TILE_PIXEL_WIDTH);
                         if (tile)
                         {
-                            float *tileData = tile->mapHost();
+                            const float *tileData = tile->mapHost();
 
                             for (int row = 0; row < TILE_PIXEL_HEIGHT; row++)
                             {
                                 for (int col = 0; col < TILE_PIXEL_WIDTH; col++)
                                 {
-
-                                    rowPtr[col * 4 + 3] = qToBigEndian((uint16_t)(tileData[col * 4 + 3] * 0xFFFF));
-                                    if (rowPtr[col * 4 + 3])
-                                    {
-                                        rowPtr[col * 4 + 0] = qToBigEndian((uint16_t)(tileData[col * 4 + 0] * 0xFFFF));
-                                        rowPtr[col * 4 + 1] = qToBigEndian((uint16_t)(tileData[col * 4 + 1] * 0xFFFF));
-                                        rowPtr[col * 4 + 2] = qToBigEndian((uint16_t)(tileData[col * 4 + 2] * 0xFFFF));
-                                    }
-                                    else
-                                    {
-                                        rowPtr[col * 4 + 0] = 0;
-                                        rowPtr[col * 4 + 1] = 0;
-                                        rowPtr[col * 4 + 2] = 0;
-                                    }
+                                    writePixelRGBA(tileData + (col * 4), rowPtr + (col * 4));
                                 }
 
                                 rowPtr += rowComps;
