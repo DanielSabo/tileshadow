@@ -832,7 +832,7 @@ void CanvasWidget::toggleTransformMode(CanvasAction::Action const mode)
     }
     else if (action != CanvasAction::None)
         return;
-    else if (!d->currentLayerEditable && !d->quickmaskActive)
+    else if (!d->currentLayerMoveable && !d->quickmaskActive)
         return;
     else
     {
@@ -1432,7 +1432,6 @@ void CanvasWidget::translateCurrentLayer(int x,  int y)
     modified = true;
 }
 
-
 void CanvasWidget::updateLayerTransform(QMatrix matrix)
 {
     Q_D(CanvasWidget);
@@ -1448,13 +1447,25 @@ void CanvasWidget::updateLayerTransform(QMatrix matrix)
         if (coalesceToken && coalesceToken->deref() == true)
             return;
 
-        CanvasLayer *targetLayer, *undoLayer;
-        getPaintingTargets(ctx, targetLayer, undoLayer);
+        CanvasLayer *targetLayer, *sourceLayer;
 
-        if (!undoLayer)
-            return;
+        if (!ctx->quickmask->visible)
+        {
+            targetLayer = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
+            if (!ctx->currentLayerCopy)
+            {
+                // If the current layer is a group generate a cached rendering of it
+                ctx->currentLayerCopy = targetLayer->flattened();
+            }
+            sourceLayer = ctx->currentLayerCopy.get();
+        }
+        else
+        {
+            targetLayer = ctx->quickmask.get();
+            sourceLayer = ctx->quickmaskCopy.get();
+        }
 
-        std::unique_ptr<CanvasLayer> newLayer = undoLayer->applyMatrix(matrix);
+        std::unique_ptr<CanvasLayer> newLayer = sourceLayer->applyMatrix(matrix);
 
         tileSetInsert(ctx->dirtyTiles, targetLayer->getTileSet());
         tileSetInsert(ctx->dirtyTiles, newLayer->getTileSet());
@@ -1469,39 +1480,73 @@ void CanvasWidget::transformCurrentLayer(QMatrix const &matrix)
 {
     Q_D(CanvasWidget);
 
-    // Ref'ing the token will discard any pending updateLayerTranslate() events
+    // Ref'ing the token will discard any pending updateLayerTransform() events
     if (d->motionCoalesceToken)
         d->motionCoalesceToken->ref();
     d->motionCoalesceToken.reset();
 
     CanvasContext *ctx = getContext();
 
-    CanvasLayer *targetLayer, *undoLayer;
-    getPaintingTargets(ctx, targetLayer, undoLayer);
+    CanvasLayer *currentLayer;
+    CanvasLayer *sourceLayer;
 
-    if (!undoLayer)
-        return;
+    if (ctx->quickmask->visible)
+    {
+        currentLayer = ctx->quickmask.get();
+        sourceLayer = ctx->quickmaskCopy.get();
+    }
+    else
+    {
+        currentLayer = layerFromAbsoluteIndex(&ctx->layers, ctx->currentLayer);
+        sourceLayer = ctx->currentLayerCopy.get();
+    }
 
-    std::unique_ptr<CanvasLayer> newLayer = undoLayer->applyMatrix(matrix);
-    newLayer->prune();
+    if (currentLayer->type == LayerType::Layer)
+    {
+        std::unique_ptr<CanvasLayer> newLayer = sourceLayer->applyMatrix(matrix);
+        newLayer->prune();
 
-    CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
-    undoEvent->targetTileMap = targetLayer->tiles;
-    undoEvent->currentLayer = ctx->currentLayer;
+        CanvasUndoTiles *undoEvent = new CanvasUndoTiles();
+        undoEvent->targetTileMap = currentLayer->tiles;
+        undoEvent->currentLayer = ctx->currentLayer;
 
-    /* Add the layers currently visible tiles (which may differ from the undo tiles) to the dirty list */
-    tileSetInsert(ctx->dirtyTiles, targetLayer->getTileSet());
-    /* Add the newly translated tiles */
-    TileSet layerTiles = newLayer->getTileSet();
-    tileSetInsert(ctx->dirtyTiles, layerTiles);
+        /* Add the layers currently visible tiles (which may differ from the undo tiles) to the dirty list */
+        TileSet layerTiles = currentLayer->getTileSet();
+        ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
+        /* Add the newly transformed tiles*/
+        layerTiles = newLayer->getTileSet();
+        ctx->dirtyTiles.insert(layerTiles.begin(), layerTiles.end());
 
-    /* The undo tiles are the original layer + new layer */
-    tileSetInsert(layerTiles, ctx->currentLayerCopy->getTileSet());
+        // The undo tiles are the original layer + new layer
+        TileSet originalTiles = sourceLayer->getTileSet();
+        layerTiles.insert(originalTiles.begin(), originalTiles.end());
 
-    targetLayer->takeTiles(newLayer.get());
+        currentLayer->takeTiles(newLayer.get());
 
-    transferUndoEventTiles(undoEvent, layerTiles, undoLayer, targetLayer);
-    ctx->addUndoEvent(undoEvent);
+        transferUndoEventTiles(undoEvent, layerTiles, sourceLayer, currentLayer);
+        ctx->addUndoEvent(undoEvent);
+    }
+    else if (currentLayer->type == LayerType::Group)
+    {
+        /* Add the layers currently visible tiles to the dirty list */
+        TileSet dirtyTiles = currentLayer->getTileSet();
+        ctx->dirtyTiles.insert(dirtyTiles.begin(), dirtyTiles.end());
+        /* Discard the temporary render */
+        currentLayer->tiles->clear();
+        ctx->currentLayerCopy.reset(nullptr);
+
+        std::unique_ptr<CanvasLayer> newLayer = currentLayer->applyMatrix(matrix);
+        newLayer->prune();
+
+        /* Add the newly transformed tiles*/
+        dirtyTiles = newLayer->getTileSet();
+        ctx->dirtyTiles.insert(dirtyTiles.begin(), dirtyTiles.end());
+
+        ctx->addUndoEvent(new CanvasUndoLayers(&ctx->layers, ctx->currentLayer));
+
+        /* Take the transformed children */
+        std::swap(currentLayer->children, newLayer->children);
+    }
 
     update();
     modified = true;
