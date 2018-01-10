@@ -172,11 +172,11 @@ std::unique_ptr<CanvasLayer> CanvasLayer::applyMatrix(const QMatrix &matrix) con
 {
     std::unique_ptr<CanvasLayer> result = shellCopy();
 
-    if (type != LayerType::Layer)
-    {
-        qCritical() << "Can't apply matrix to non-Layer layer type:" << type;
-    }
-    else
+    if (type == LayerType::Group)
+        for (auto const &child: children)
+            result->children.append(child->applyMatrix(matrix).release());
+
+    if (!tiles->empty())
     {
         QMatrix inversion = matrix.inverted();
 
