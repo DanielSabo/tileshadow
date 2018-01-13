@@ -76,6 +76,14 @@ struct SortKey
 
     bool operator<(const SortKey &b) const
     {
+        if (dirname.isEmpty())
+        {
+            if (!b.dirname.isEmpty())
+                return true;
+        }
+        else if (b.dirname.isEmpty())
+            return false;
+
         int cmp = QString::compare(dirname, b.dirname, Qt::CaseInsensitive);
         if (cmp < 0)
             return true;
