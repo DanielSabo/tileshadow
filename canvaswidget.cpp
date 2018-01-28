@@ -2272,6 +2272,19 @@ bool CanvasWidget::eventFilter(QObject *obj, QEvent *event)
     {
         updateModifiers(static_cast<QInputEvent *>(event));
     }
+#if defined(Q_OS_MAC)
+    // Hack around popup windows not generating leave events on OSX
+    else if (event->type() == QEvent::Show && underMouse())
+    {
+        QWidget *w = qobject_cast<QWidget *>(obj);
+
+        if (w && w->windowFlags() & Qt::Popup)
+        {
+            QEvent e(QEvent::Leave);
+            leaveEvent(&e);
+        }
+    }
+#endif
 
     if (deviceWasEraser != d->deviceIsEraser)
     {
