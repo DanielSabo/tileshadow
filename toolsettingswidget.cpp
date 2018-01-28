@@ -268,6 +268,13 @@ bool ToolSettingsWidget::eventFilter(QObject *watched, QEvent *event)
     return false;
 }
 
+void ToolSettingsWidget::showPalettePopup()
+{
+    Q_D(ToolSettingsWidget);
+
+    d->palettePopup->reposition(this, d->toolColorDial);
+}
+
 void ToolSettingsWidget::updateTool(bool pathChangeOrReset)
 {
     Q_D(ToolSettingsWidget);

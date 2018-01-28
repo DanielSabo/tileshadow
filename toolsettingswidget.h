@@ -19,6 +19,9 @@ private:
     QScopedPointer<ToolSettingsWidgetPrivate> const d_ptr;
     Q_DECLARE_PRIVATE(ToolSettingsWidget)
 
+public slots:
+    void showPalettePopup();
+
 private slots:
     void updateTool(bool pathChangeOrReset);
 };

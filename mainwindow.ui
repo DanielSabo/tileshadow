@@ -167,6 +167,8 @@
     <addaction name="actionAdvanced_Settings"/>
     <addaction name="actionResetTool"/>
     <addaction name="separator"/>
+    <addaction name="actionShow_Color_Palette"/>
+    <addaction name="separator"/>
     <addaction name="actionDraw_Line"/>
    </widget>
    <addaction name="menuFile"/>
@@ -517,6 +519,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Down</string>
+   </property>
+  </action>
+  <action name="actionShow_Color_Palette">
+   <property name="text">
+    <string>Show Color Palette</string>
+   </property>
+   <property name="shortcut">
+    <string>P</string>
    </property>
   </action>
  </widget>

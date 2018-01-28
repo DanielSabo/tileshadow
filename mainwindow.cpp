@@ -46,7 +46,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
     };
 
-    addSidebarWidget(new ToolSettingsWidget(canvas, this), QSizePolicy::Preferred);
+    auto toolSettingsWidget = new ToolSettingsWidget(canvas, this);
+    connect(ui->actionShow_Color_Palette, &QAction::triggered,
+            toolSettingsWidget, &ToolSettingsWidget::showPalettePopup);
+    addSidebarWidget(toolSettingsWidget, QSizePolicy::Preferred);
     addSidebarWidget(new ToolListWidget(canvas, this), QSizePolicy::Preferred);
     addSidebarWidget(new LayerListWidget(canvas, this), QSizePolicy::Expanding);
 
