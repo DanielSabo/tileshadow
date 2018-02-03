@@ -105,6 +105,20 @@ QByteArray MaskBuffer::toPNG() const
     return encodedBytes;
 }
 
+QImage MaskBuffer::toImage() const
+{
+    QImage image = QImage(bounds.width(), bounds.height(), QImage::Format_Indexed8);
+
+    image.setColorCount(0xFF);
+    for (int i = 0; i <= 0xFF; i++)
+        image.setColor(i, qRgba(i, i, i, 0xFF));
+
+    for (int i = 0; i < bounds.height(); ++i)
+        memcpy(image.scanLine(i), data.get() + (bounds.width() * i), bounds.width());
+
+    return image;
+}
+
 MipSet<MaskBuffer> singleFromMask(MaskBuffer const &source)
 {
     MipSet<MaskBuffer> result;
