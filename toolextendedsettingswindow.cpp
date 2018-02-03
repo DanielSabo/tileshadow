@@ -658,32 +658,71 @@ void ToolExtendedSettingsWindowPrivate::exportMasks()
     if (masks.empty())
         return;
 
+    QString formatBundle = QObject::tr("Image Directory (*)");
+    QString formatGIH = QObject::tr("GIMP Animated Brush (*.gih)");
+    QString formatPNG = QObject::tr("PNG Image (*.png)");
+    QString formats;
+
+    if (masks.size() == 1)
+        formats = formatPNG;
+    else
+        formats = formatGIH + ";;" + formatBundle;
+
+    QString selectedFormat;
+
     QString exportPath = FileDialog::getSaveFileName(nullptr,
                                                      QObject::tr("Export Masks"),
-                                                     QDir::homePath());
+                                                     QDir::homePath(),
+                                                     formats,
+                                                     &selectedFormat);
 
     if (exportPath.isEmpty())
         return;
 
-    if (QFileInfo::exists(exportPath))
+    if (selectedFormat == formatPNG)
     {
-        QMessageBox::warning(nullptr,
-                             QObject::tr("Export path already exists"),
-                             QObject::tr("Export can't overwrite files or directores, please pick a different file name."));
-        return;
-    }
-
-    QDir exportDirectory(exportPath);
-    exportDirectory.mkpath(exportDirectory.absolutePath());
-
-    int index = 1;
-    for (auto const &mask: masks)
-    {
-        QString exportFilename = QObject::tr("mask") + QString("-%1.png").arg(index++, 2, 10, QChar('0'));
-        QFile exportFile(exportDirectory.absoluteFilePath(exportFilename));
+        QFile exportFile(exportPath);
         exportFile.open(QIODevice::WriteOnly);
-        exportFile.write(mask.invert().toPNG());
+        exportFile.write(masks[0].invert().toPNG());
         exportFile.close();
+    }
+    else if (selectedFormat == formatGIH)
+    {
+        QList<QImage> images;
+        for (auto const &mask: masks)
+            images.append(mask.toImage());
+        QByteArray data = writeGIH(images);
+
+        if (!data.isNull())
+        {
+            QFile exportFile(exportPath);
+            exportFile.open(QIODevice::WriteOnly);
+            exportFile.write(data);
+            exportFile.close();
+        }
+    }
+    else
+    {
+        if (QFileInfo::exists(exportPath))
+        {
+            QMessageBox::warning(nullptr,
+                                 QObject::tr("Export path already exists"),
+                                 QObject::tr("Export can't overwrite files or directores, please pick a different file name."));
+            return;
+        }
+
+        QDir exportDirectory(exportPath);
+        exportDirectory.mkpath(exportDirectory.absolutePath());
+
+        int index = 1;
+        for (auto const &mask: masks)
+        {
+            QString exportFilename = QObject::tr("mask") + QString("-%1.png").arg(index++, 2, 10, QChar('0'));
+            QFile exportFile(exportDirectory.absoluteFilePath(exportFilename));
+            exportFile.open(QIODevice::WriteOnly);
+            exportFile.write(mask.invert().toPNG());
+            exportFile.close();
+        }
     }
 }
 
