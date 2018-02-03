@@ -2,6 +2,7 @@
 #include <QDataStream>
 #include <QString>
 #include <QDebug>
+#include <QBuffer>
 
 QImage readGBR(QIODevice *file)
 {
@@ -74,5 +75,71 @@ QList<QImage> readGIH(QIODevice *file)
         if (!image.isNull())
             result.append(image);
     }
+    return result;
+}
+
+namespace {
+void writeGBR_internal(QBuffer &buffer, QImage const image)
+{
+    QDataStream stream(&buffer);
+
+    uint32_t headerLength = 28+1;
+    uint32_t version = 2;
+    uint32_t width = image.width();
+    uint32_t height = image.height();
+    uint32_t format = image.depth() <= 8 ? 1 : 4;
+    uint32_t magic = ('G' << 24) + ('I' << 16) + ('M' << 8) + 'P';
+    uint32_t spacing = 100;
+    uint8_t name = 0;
+    stream << headerLength << version << width << height << format << magic << spacing << name;
+
+    if (format == 1)
+    {
+        for (int y = 0; y < image.height(); ++y)
+            for (int x = 0; x < image.width(); ++x)
+            {
+                QRgb p = image.pixel(x, y);
+                stream << (uint8_t)qRed(p);
+            }
+    }
+    else
+    {
+        for (int y = 0; y < image.height(); ++y)
+            for (int x = 0; x < image.width(); ++x)
+            {
+                QRgb p = image.pixel(x, y);
+                stream << (uint8_t)qRed(p) << (uint8_t)qGreen(p) << (uint8_t)qBlue(p) << (uint8_t)qAlpha(p);
+            }
+    }
+}
+}
+
+QByteArray writeGBR(QImage const image)
+{
+    QByteArray result;
+    QBuffer buffer(&result);
+    buffer.open(QIODevice::WriteOnly);
+    writeGBR_internal(buffer, image);
+    buffer.close();
+
+    return result;
+}
+
+QByteArray writeGIH(QList<QImage> const images)
+{
+    if (images.empty())
+        return {};
+
+    QByteArray result;
+    QBuffer buffer(&result);
+    buffer.open(QIODevice::WriteOnly);
+    buffer.write("Brush\n", 6);
+    // We need to include the number of images but the rest of the parasite string is optional
+    buffer.write(QString("%1\n").arg(images.size()).toUtf8());
+
+    for (auto const &image: images)
+        writeGBR_internal(buffer, image);
+    buffer.close();
+
     return result;
 }
