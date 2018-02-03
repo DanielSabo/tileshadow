@@ -21,6 +21,7 @@ QStringList showFileDialog(QWidget                 *parent,
                            const QString           &caption,
                            const QString           &dir,
                            const QString           &filter,
+                           QString                 *selectedFilter,
                            QFileDialog::Options     options,
                            QFileDialog::AcceptMode  acceptMode,
                            QFileDialog::FileMode    fileMode)
@@ -44,7 +45,11 @@ QStringList showFileDialog(QWidget                 *parent,
 
     QStringList result;
     if (dialog.exec() == QDialog::Accepted)
+    {
         result = dialog.selectedFiles();
+        if (selectedFilter)
+            *selectedFilter = dialog.selectedNameFilter();
+    }
 
 #ifdef Q_OS_LINUX
     settings.setValue("FileDialog/geometry", dialog.saveGeometry());
@@ -62,7 +67,7 @@ QString FileDialog::getSaveFileName(QWidget              *parent,
                                     QString              *selectedFilter,
                                     QFileDialog::Options  options)
 {
-    return showFileDialog(parent, caption, dir, filter, options, QFileDialog::AcceptSave, QFileDialog::AnyFile).value(0);
+    return showFileDialog(parent, caption, dir, filter, selectedFilter, options, QFileDialog::AcceptSave, QFileDialog::AnyFile).value(0);
 }
 
 QString FileDialog::getOpenFileName(QWidget              *parent,
@@ -72,7 +77,7 @@ QString FileDialog::getOpenFileName(QWidget              *parent,
                                     QString              *selectedFilter,
                                     QFileDialog::Options  options)
 {
-    return showFileDialog(parent, caption, dir, filter, options, QFileDialog::AcceptOpen, QFileDialog::ExistingFile).value(0);
+    return showFileDialog(parent, caption, dir, filter, selectedFilter, options, QFileDialog::AcceptOpen, QFileDialog::ExistingFile).value(0);
 }
 
 QStringList FileDialog::getOpenFileNames(QWidget              *parent,
@@ -82,10 +87,13 @@ QStringList FileDialog::getOpenFileNames(QWidget              *parent,
                                          QString              *selectedFilter,
                                          QFileDialog::Options  options)
 {
-    return showFileDialog(parent, caption, dir, filter, options, QFileDialog::AcceptOpen, QFileDialog::ExistingFiles);
+    return showFileDialog(parent, caption, dir, filter, selectedFilter, options, QFileDialog::AcceptOpen, QFileDialog::ExistingFiles);
 }
 
-QString FileDialog::getExistingDirectory(QWidget *parent, const QString &caption, const QString &dir, QFileDialog::Options options)
+QString FileDialog::getExistingDirectory(QWidget              *parent,
+                                         const QString        &caption,
+                                         const QString        &dir,
+                                         QFileDialog::Options  options)
 {
-    return showFileDialog(parent, caption, dir, QString(), options, QFileDialog::AcceptOpen, QFileDialog::Directory).value(0);
+    return showFileDialog(parent, caption, dir, QString(), nullptr, options, QFileDialog::AcceptOpen, QFileDialog::Directory).value(0);
 }
