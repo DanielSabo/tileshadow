@@ -884,7 +884,7 @@ void CanvasWidget::setViewTransform(CanvasWidget::ViewStateInfo vt)
 {
     Q_D(CanvasWidget);
 
-    vt.scale = qBound(0.25f, vt.scale, 4.0f);
+    vt.scale = qBound(0.125f, vt.scale, 4.0f);
     while (vt.angle >= 360.0f)
         vt.angle -= 360.0f;
     while (vt.angle < 0.0f)
